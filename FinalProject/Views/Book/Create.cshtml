@@ -1,0 +1,122 @@
+@model FinalProject.Models.Book
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Book</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Isbn" class="control-label"></label>
+                <input asp-for="Isbn" class="form-control" />
+                <span asp-validation-for="Isbn" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Title" class="control-label"></label>
+                <input asp-for="Title" class="form-control" />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Description" class="control-label"></label>
+                <input asp-for="Description" class="form-control" />
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="PublicationDate" class="control-label"></label>
+                <input asp-for="PublicationDate" class="form-control" />
+                <span asp-validation-for="PublicationDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ListPrice" class="control-label"></label>
+                <input asp-for="ListPrice" class="form-control" />
+                <span asp-validation-for="ListPrice" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="AuthorId" class="control-label"></label>
+                <select asp-for="AuthorId" class ="form-control" asp-items="ViewBag.AuthorId"></select>
+            </div>
+            <div class="form-group">
+                <label asp-for="PublisherId" class="control-label"></label>
+                <select asp-for="PublisherId" class ="form-control" asp-items="ViewBag.PublisherId"></select>
+            </div>
+            <div class="form-group">
+                <label asp-for="GenreId" class="control-label"></label>
+                <select asp-for="GenreId" class ="form-control" asp-items="ViewBag.GenreId"></select>
+            </div>
+            <div class="form-group">
+                <label asp-for="Language" class="control-label"></label>
+                <input asp-for="Language" class="form-control" />
+                <span asp-validation-for="Language" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Format" class="control-label"></label>
+                <input asp-for="Format" class="form-control" />
+                <span asp-validation-for="Format" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="AvailabilityStock" class="control-label"></label>
+                <input asp-for="AvailabilityStock" class="form-control" />
+                <span asp-validation-for="AvailabilityStock" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="AvailabilityLibrary" /> @Html.DisplayNameFor(model => model.AvailabilityLibrary)
+                </label>
+            </div>
+            <div class="form-group">
+                <label asp-for="Rating" class="control-label"></label>
+                <input asp-for="Rating" class="form-control" />
+                <span asp-validation-for="Rating" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="RatingCount" class="control-label"></label>
+                <input asp-for="RatingCount" class="form-control" />
+                <span asp-validation-for="RatingCount" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="OnSale" /> @Html.DisplayNameFor(model => model.OnSale)
+                </label>
+            </div>
+            <div class="form-group">
+                <label asp-for="SaleDiscount" class="control-label"></label>
+                <input asp-for="SaleDiscount" class="form-control" />
+                <span asp-validation-for="SaleDiscount" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SaleStartDate" class="control-label"></label>
+                <input asp-for="SaleStartDate" class="form-control" />
+                <span asp-validation-for="SaleStartDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SaleEndDate" class="control-label"></label>
+                <input asp-for="SaleEndDate" class="form-control" />
+                <span asp-validation-for="SaleEndDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DateAdded" class="control-label"></label>
+                <input asp-for="DateAdded" class="form-control" />
+                <span asp-validation-for="DateAdded" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DateUpdated" class="control-label"></label>
+                <input asp-for="DateUpdated" class="form-control" />
+                <span asp-validation-for="DateUpdated" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+

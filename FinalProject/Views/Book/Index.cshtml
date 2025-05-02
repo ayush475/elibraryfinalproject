@@ -1,0 +1,149 @@
+@model IEnumerable<FinalProject.Models.Book>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Isbn)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Title)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Description)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.PublicationDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.ListPrice)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Language)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Format)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.AvailabilityStock)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.AvailabilityLibrary)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Rating)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.RatingCount)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.OnSale)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SaleDiscount)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SaleStartDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SaleEndDate)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DateAdded)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DateUpdated)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Author)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Publisher)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Genre)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Isbn)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Title)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Description)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.PublicationDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ListPrice)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Language)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Format)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.AvailabilityStock)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.AvailabilityLibrary)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Rating)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.RatingCount)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.OnSale)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.SaleDiscount)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.SaleStartDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.SaleEndDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DateAdded)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DateUpdated)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Author.FirstName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Publisher.Name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Genre.Name)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.BookId">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.BookId">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.BookId">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
