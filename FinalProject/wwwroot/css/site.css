@@ -12,13 +12,99 @@
   --info: #17a2b8;
 }
 
+/* Body and Layout Structure */
 body {
   font-family: 'Poppins', sans-serif;
   color: #444;
   background-color: #f9f9f9;
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Ensures body takes at least full viewport height */
+  margin: 0;
 }
 
+/* Main Content Area */
+.main-content {
+  flex: 1; /* Allows main content to grow and push footer down */
+  padding: 30px 0 100px; /* Top, right/left, bottom padding */
+  position: relative;
+}
+
+.content-wrapper {
+  min-height: calc(100vh - 300px); /* Adjust based on header/footer height */
+  padding-bottom: 40px; /* Extra space before footer */
+}
+
+/* Header/Navbar Styles (unchanged from your original) */
+.navbar {
+  background-color: #fff;
+  padding: 15px 0;
+  transition: all 0.3s ease;
+}
+
+.navbar-brand {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--primary);
+  padding: 0;
+}
+
+/* Footer Styles with adjustments */
+.footer {
+  background-color: #fff;
+  color: #444;
+  font-size: 14px;
+  box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.05);
+  margin-top: auto; /* Pushes footer to bottom */
+  width: 100%;
+}
+
+.footer-top {
+  padding: 60px 0 30px;
+  background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
+  url('https://source.unsplash.com/random/1000x500/?pattern') center/cover no-repeat;
+}
+
+.footer-bottom {
+  background-color: #f8f9fa;
+  border-top: 1px solid #eee;
+  font-size: 14px;
+  padding: 20px 0;
+}
+
+/* Form-specific adjustments for long pages */
+.form-container {
+  max-height: none;
+  overflow-y: visible;
+}
+
+.long-form-page .main-content {
+  padding-bottom: 150px; /* Extra space for long forms */
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+  .main-content {
+    padding-bottom: 120px;
+  }
+
+  .content-wrapper {
+    min-height: calc(100vh - 280px);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .main-content {
+    padding-bottom: 140px;
+  }
+
+  .content-wrapper {
+    min-height: calc(100vh - 260px);
+  }
+}
+
+/* Keep all your existing styles below this line */
+/* ... rest of your existing CSS ... */
 h1, h2, h3, h4, h5, h6, .navbar-brand {
   font-family: 'Montserrat', sans-serif;
   font-weight: 600;
