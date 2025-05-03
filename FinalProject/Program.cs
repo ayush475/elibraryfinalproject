@@ -10,6 +10,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews(); // This registers MVC controllers and views
+builder.Services.AddAuthentication("CookieAuth") // "CookieAuth" is the default scheme name
+    .AddCookie("CookieAuth", options =>
+    {
+        options.Cookie.Name = "FinalProject"; // Set a custom cookie name
+        options.LoginPath = "/Members/Login"; // Path to your login page
+        options.AccessDeniedPath = "/Members/AccessDenied"; // Path for access denied
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Cookie expiration time
+        options.SlidingExpiration = true; // Renew cookie on activity
+    });
+
+// Add Authorization services
+builder.Services.AddAuthorization();
 
 // --- Register ApplicationDbContext with Dependency Injection ---
 // Get the MySQL connection string from appsettings.json

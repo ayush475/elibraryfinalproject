@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="BCrypt.Net-Core" Version="1.6.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.15" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.15">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -20,6 +21,14 @@
         </PackageReference>
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
         <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Views\Members\Create.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Members\Delete.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Members\Details.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Members\Edit.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Members\Index.cshtml" />
     </ItemGroup>
 
 </Project>

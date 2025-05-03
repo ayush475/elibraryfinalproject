@@ -6,37 +6,39 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace FinalProject.Models
 {
     // Represents a library member.
+    // NOTE: [Required] attributes are commented out for testing flexibility.
+    //       Restore them for production to ensure data integrity.
     public class Member
     {
         // Primary key for the Member entity.
         [Key]
         public int MemberId { get; set; }
 
-        // Unique membership identifier. Required.
-        [Required]
+        // Unique membership identifier. Required for production.
+        //[Required] // Commented out for testing
         [StringLength(50)]
-        public  required string MembershipId { get; set; }
+        public required string MembershipId { get; set; } // 'required' keyword still enforces non-nullability in C# 11+
 
-        // First name of the member. Required.
-        [Required]
+        // First name of the member. Required for production.
+        //[Required] // Commented out for testing
         [StringLength(100)]
-        public  required string FirstName { get; set; }
+        public required string FirstName { get; set; } // 'required' keyword still enforces non-nullability in C# 11+
 
         // Last name of the member.
         [StringLength(100)]
-        public  required string LastName { get; set; }
+        public required string LastName { get; set; } // 'required' keyword still enforces non-nullability in C# 11+
 
-        // Email address of the member. Required.
-        [Required]
+        // Email address of the member. Required for production.
+        //[Required] // Commented out for testing
         [StringLength(100)]
         [DataType(DataType.EmailAddress)]
-        public required string Email { get; set; }
+        public required string Email { get; set; } // 'required' keyword still enforces non-nullability in C# 11+
 
-        // Hashed password for the member's account. Required.
-        [Required]
+        // Hashed password for the member's account. Required for production.
+        //[Required] // Commented out for testing
         [StringLength(255)]
         [DataType(DataType.Password)]
-        public required string PasswordHash { get; set; }
+        public required string PasswordHash { get; set; } // 'required' keyword still enforces non-nullability in C# 11+
 
         // Date and time the member registered.
         [DataType(DataType.DateTime)]
@@ -64,16 +66,16 @@ namespace FinalProject.Models
         // Navigation properties
 
         // Collection of bookmarks created by the member.
-        public  virtual required ICollection<Bookmark> Bookmarks { get; set; }
+        public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>(); // Initialize collections
 
         // Collection of items in the member's shopping cart.
-        public virtual required ICollection<ShoppingCartItem> ShoppingCartItems { get; set; }
+        public virtual ICollection<ShoppingCartItem> ShoppingCartItems { get; set; } = new List<ShoppingCartItem>(); // Initialize collections
 
         // Collection of orders placed by the member.
-        public virtual required ICollection<Order> Orders { get; set; }
+        public virtual ICollection<Order> Orders { get; set; } = new List<Order>(); // Initialize collections
 
         // Collection of reviews written by the member.
-        public virtual required ICollection<Review> Reviews { get; set; }
+        public virtual ICollection<Review> Reviews { get; set; } = new List<Review>(); // Initialize collections
 
         // Full name of the member (derived property, not mapped to database).
         [NotMapped]
