@@ -20,10 +20,70 @@ namespace FinalProject.Controllers
         }
 
         // GET: Book
-        public async Task<IActionResult> Index()
+        // Modified Index action to include search, pagination, and ordering
+        public async Task<IActionResult> Index(string searchString, int? pageNumber)
         {
-            var applicationDbContext = _context.Books.Include(b => b.Author).Include(b => b.Genre).Include(b => b.Publisher);
-            return View(await applicationDbContext.ToListAsync());
+            // Define the number of items per page
+            int pageSize = 10; // You can adjust this value
+
+            // Start with the base query including related entities
+            var books = _context.Books
+                .Include(b => b.Author)
+                .Include(b => b.Genre)
+                .Include(b => b.Publisher)
+                .AsQueryable(); // Use AsQueryable() to build the query before executing
+
+            // Apply search filter if a search string is provided
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                // Filter books by Title, Author's FirstName, or Author's LastName
+                // You can add more fields to search if needed
+                books = books.Where(b => b.Title.Contains(searchString)
+                                       || (b.Author != null && b.Author.FirstName.Contains(searchString))
+                                       || (b.Author != null && b.Author.LastName.Contains(searchString))
+                                       || (b.Isbn != null && b.Isbn.Contains(searchString))); // Also search by ISBN
+            }
+
+            // Add ordering - Order by DateAdded in descending order to show latest first
+            // You could also order by PublicationDate if that's more appropriate for "latest"
+            books = books.OrderByDescending(b => b.DateAdded);
+
+            // Get the total number of items after filtering and ordering (needed for pagination)
+            var totalItems = await books.CountAsync();
+
+            // Calculate the total number of pages
+            var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            // Determine the current page number (default to 1 if not provided or invalid)
+            int currentPage = (pageNumber ?? 1);
+            if (currentPage < 1)
+            {
+                currentPage = 1;
+            }
+            else if (currentPage > totalPages && totalPages > 0) // Prevent going past the last page
+            {
+                 currentPage = totalPages;
+            }
+             else if (totalPages == 0) // Handle case where there are no books
+            {
+                 currentPage = 1;
+            }
+
+
+            // Apply pagination using Skip and Take
+            var paginatedBooks = await books
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Pass pagination information to the view using ViewBag
+            ViewBag.CurrentPage = currentPage;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.PageSize = pageSize;
+            ViewBag.SearchString = searchString; // Pass the search string back to the view
+
+            // Return the paginated, filtered, and ordered list of books to the view
+            return View(paginatedBooks);
         }
 
         // GET: Book/Details/5
@@ -65,6 +125,9 @@ namespace FinalProject.Controllers
         {
             if (ModelState.IsValid)
             {
+                // Set DateAdded and DateUpdated when creating a new book
+                book.DateAdded = DateTime.Now;
+                book.DateUpdated = DateTime.Now;
                 _context.Add(book);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -110,6 +173,8 @@ namespace FinalProject.Controllers
             {
                 try
                 {
+                    // Update DateUpdated when editing
+                    book.DateUpdated = DateTime.Now;
                     _context.Update(book);
                     await _context.SaveChangesAsync();
                 }

@@ -1,52 +1,67 @@
-﻿@{
-    ViewData["Title"] = "Home"; // Changed title to be more relevant
+﻿@model List<FinalProject.Models.Book> 
+
+@{
+    ViewData["Title"] = "Home - E-Library"; // More descriptive and branded title
+    // Retrieve pagination and search data from ViewBag
+    var currentPage = ViewBag.CurrentPage ?? 1; // Default to 1 if null
+    var totalPages = ViewBag.TotalPages ?? 1;   // Default to 1 if null
+    var searchString = ViewBag.SearchString;
+    // pageSize is not strictly needed in the view for this implementation, but can be retrieved if desired
+    // var pageSize = ViewBag.PageSize;
 }
 
 @* Ensure your _Layout.cshtml includes Bootstrap CSS/JS (Bootstrap 5 recommended) *@
+@* You might also need to include Font Awesome or similar for icons if you use them *@
 
 <div class="container mt-4"> @* Use a container for standard padding and centering *@
 
-    @* Optional: A welcoming hero section or banner *@
-    <div class="jumbotron text-center bg-light p-4 mb-4">
-        <h1 class="display-4">Welcome to Our E-Library</h1>
-        <p class="lead">Discover a world of books at your fingertips.</p>
-        @* You could add a call to action here *@
+    @* Welcoming Hero Section - Enhanced Styling *@
+    <div class="p-5 mb-4 bg-light rounded-3 shadow-sm"> @* Increased padding, added shadow *@
+        <div class="container-fluid py-5 text-center"> @* Centered text *@
+            <h1 class="display-4 fw-bold">Welcome to Our E-Library</h1>
+            <p class="fs-5 col-md-8 mx-auto">Discover a world of knowledge and stories. Find your next great read with ease.</p> @* Added margin auto for centering *@
+            @* Optional: Add a button or link to browse all books or a featured section *@
+            @* <a class="btn btn-primary btn-lg mt-3" href="#" role="button">Browse All Books</a> *@
+        </div>
     </div>
 
-    @* Search Section *@
-    <div class="search-section mb-4">
-        <h2 class="mb-3">Find Your Next Read</h2> @* Added margin-bottom *@
-        <form action="/Search" method="get"> @* Placeholder form *@
-            <div class="input-group">
-                <input type="text" class="form-control" placeholder="Search by title, author, or keyword..." name="query">
-                <button class="btn btn-primary" type="submit">Search</button>
+    @* Search Section - Improved Layout *@
+    <div class="search-section mb-5"> @* Increased bottom margin *@
+        <h2 class="mb-4 text-center">Find Your Next Read</h2> @* Centered heading *@
+        @* Form submits to the Index action of the Book controller *@
+        <form asp-controller="Book" asp-action="Index" method="get">
+            <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden"> @* Larger input group, shadow, rounded corners *@
+                @* Input field for the search string, name matches the controller parameter *@
+                <input type="text" class="form-control border-0 px-4 rounded-pill-start" placeholder="Search by title, author, or ISBN..." name="searchString" value="@searchString" aria-label="Search"> @* Removed border, added padding, rounded left *@
+                <button class="btn btn-primary px-4 rounded-pill-end" type="submit">Search</button> @* Added padding, rounded right *@
             </div>
         </form>
     </div>
 
-    @* Filter Options Section *@
-    <div class="filter-section row mb-4"> @* Using row for potentially more complex filter layouts later *@
-        <div class="col-12"> @* Filters take full width on all screens *@
-             <h2 class="mb-3">Filter Books</h2> @* Added margin-bottom *@
-             @* Using d-flex with flex-wrap allows filters to wrap on smaller screens *@
+    @* Filter Options Section (Placeholder) - Slightly improved styling *@
+    <div class="filter-section row mb-5"> @* Increased bottom margin *@
+        <div class="col-12">
+             <h2 class="mb-4 text-center">Filter Books (Placeholder)</h2> @* Centered heading *@
              <div class="d-flex flex-wrap justify-content-center">
-                <div class="dropdown me-2 mb-2"> @* Placeholder Dropdown Filter, added mb-2 for spacing when wrapped *@
-                    <button class="btn btn-secondary dropdown-toggle" type="button" id="categoryFilterButton" data-bs-toggle="dropdown" aria-expanded="false">
+                @* Placeholder Dropdown Filter - You would need server-side logic or client-side JS
+                   to make these functional and affect the search/pagination. *@
+                <div class="dropdown me-2 mb-2">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="categoryFilterButton" data-bs-toggle="dropdown" aria-expanded="false"> @* Outline button style *@
                         Category (Placeholder)
                     </button>
-                    <ul class="dropdown-menu" aria-labelledby="categoryFilterButton">
+                    <ul class="dropdown-menu shadow-sm" aria-labelledby="categoryFilterButton"> @* Added shadow to dropdown *@
                         <li><a class="dropdown-item" href="#">Fiction</a></li>
                         <li><a class="dropdown-item" href="#">Non-Fiction</a></li>
                         <li><a class="dropdown-item" href="#">Science Fiction</a></li>
-                         <li><hr class="dropdown-divider"></li> @* Separator example *@
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#">All Categories</a></li>
                     </ul>
                 </div>
-                <div class="dropdown me-2 mb-2"> @* Another Placeholder Filter *@
-                     <button class="btn btn-secondary dropdown-toggle" type="button" id="genreFilterButton" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="dropdown me-2 mb-2">
+                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="genreFilterButton" data-bs-toggle="dropdown" aria-expanded="false"> @* Outline button style *@
                         Genre (Placeholder)
                     </button>
-                    <ul class="dropdown-menu" aria-labelledby="genreFilterButton">
+                    <ul class="dropdown-menu shadow-sm" aria-labelledby="genreFilterButton"> @* Added shadow to dropdown *@
                         <li><a class="dropdown-item" href="#">Mystery</a></li>
                         <li><a class="dropdown-item" href="#">Thriller</a></li>
                         <li><a class="dropdown-item" href="#">Romance</a></li>
@@ -54,60 +69,156 @@
                         <li><a class="dropdown-item" href="#">All Genres</a></li>
                     </ul>
                 </div>
-                @* Add more filter dropdowns or controls here. Use me-2 and mb-2 for spacing *@
              </div>
         </div>
     </div>
 
-    @* Book Listing Area Placeholder *@
-    <div class="book-list-area mb-4">
-        <h2 class="mb-3">Featured Books</h2> @* Added margin-bottom *@
-        @* This is where you would loop through your Book Model data to display books *@
-        <div class="row"> @* Use row for the grid *@
+    @* Book Listing Area - THIS SECTION DISPLAYS THE BOOKS *@
+    <div class="book-list-area mb-5"> @* Increased bottom margin *@
+        @* Removed the <h2>Book Results</h2> heading as requested *@
+        @if (Model != null && Model.Any())
+        {
+            <div class="row">
+                @* Loop through the paginated list of books received from the controller *@
+                @foreach (var book in Model)
+                {
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
+                        @* Enhanced Card Styling *@
+                        <div class="card h-100 shadow-sm rounded-3 border-0 hover-lift"> @* Added shadow, more rounded corners, removed border, added hover effect class *@
+                            @* Display book cover image if available, otherwise use a placeholder *@
+                            <img src="@(string.IsNullOrEmpty(book.CoverImageUrl) ? "https://placehold.co/150x200/e9ecef/495057?text=No+Cover" : book.CoverImageUrl)"
+                                 class="card-img-top img-fluid rounded-top-3" alt="Cover of @book.Title" @* More rounded top corners *@
+                                 onerror="this.onerror=null; this.src='https://placehold.co/150x200/e9ecef/495057?text=No+Cover';"> @* Added error handling for image loading *@
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-truncate">@book.Title</h5> @* Truncate long titles *@
+                                @* Display Author's full name if Author is not null *@
+                                <p class="card-text text-muted text-truncate">by @(book.Author != null ? $"{book.Author.FirstName} {book.Author.LastName}" : "Unknown Author")</p> @* Truncate long author names *@
 
-             @* Example placeholder for where book cards would go: *@
-             @* Use col-12 for x-small, col-sm-6 for small, col-md-4 for medium, col-lg-3 for large screens *@
-             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4"> @* Added more responsive column classes *@
-                <div class="card h-100"> @* h-100 makes cards in a row the same height *@
-                    <img src="https://via.placeholder.com/150x200" class="card-img-top img-fluid" alt="Book Cover Placeholder"> @* Added img-fluid *@
-                    <div class="card-body d-flex flex-column"> @* d-flex flex-column for sticky button at bottom *@
-                        <h5 class="card-title">Book Title Placeholder</h5>
-                        <p class="card-text">Author Name Placeholder</p>
-                        @* Use mt-auto to push the button to the bottom if using flex-column *@
-                        <a href="#" class="btn btn-sm btn-outline-primary mt-auto">Details</a>
+                                @* Display price, sale info *@
+                                <p class="card-text mt-2"> @* Added top margin *@
+                                    @if (book.OnSale && book.SaleDiscount.HasValue)
+                                    {
+                                        <span class="text-decoration-line-through text-muted me-2">@book.ListPrice.ToString("C")</span> @* Added right margin *@
+                                        var salePrice = book.ListPrice * (1 - (book.SaleDiscount.Value / 100));
+                                        <span class="text-danger fw-bold">@salePrice.ToString("C")</span>
+                                        <span class="badge bg-success ms-2">@book.SaleDiscount.Value% OFF</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="fw-bold">@book.ListPrice.ToString("C")</span>
+                                    }
+                                </p>
+
+                                @* Link to book details *@
+                                <a asp-controller="Book" asp-action="Details" asp-route-id="@book.BookId" class="btn btn-sm btn-primary mt-auto">Details</a> @* Primary button style *@
+                            </div>
+                        </div>
                     </div>
-                </div>
-             </div>
-
-              @* Repeat the above col-12 col-sm-6 col-md-4 col-lg-3 div for each book placeholder *@
-              <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
-                <div class="card h-100">
-                    <img src="https://via.placeholder.com/150x200" class="card-img-top img-fluid" alt="Book Cover Placeholder">
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title">Book Title Placeholder 2</h5>
-                        <p class="card-text">Author Name Placeholder 2</p>
-                        <a href="#" class="btn btn-sm btn-outline-primary mt-auto">Details</a>
-                    </div>
-                </div>
-             </div>
-
-              @* Add more book card placeholders here *@
-
-        </div> @* End of Book Listing Row *@
-         @* End of Book Listing Loop Area *@
+                }
+            </div> @* End of Book Listing Row *@
+        }
+        else
+        {
+            @* Message when no books are found *@
+            <div class="alert alert-info text-center" role="alert">
+                No books found matching your criteria.
+            </div>
+        }
     </div>
 
-    @* Pagination Section *@
-    <div class="pagination-section d-flex justify-content-center mb-4"> @* Added mb-4 for spacing below pagination *@
-        <nav aria-label="Page navigation example">
-            <ul class="pagination">
-                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                <li class="page-item"><a class="page-link" href="#">Next</a></li>
-            </ul>
-        </nav>
-    </div>
+    @* Pagination Section - Centered and Styled *@
+    @if (totalPages > 1)
+    {
+        <div class="pagination-section d-flex justify-content-center mb-4">
+            <nav aria-label="Book page navigation">
+                <ul class="pagination shadow-sm rounded"> @* Added shadow and rounded corners to pagination *@
+                    @* Previous Page Link *@
+                    <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                        <a class="page-link" asp-controller="Book" asp-action="Index"
+                           asp-route-pageNumber="@(currentPage - 1)"
+                           asp-route-searchString="@searchString" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span> Previous
+                        </a>
+                    </li>
+
+                    @* Page Number Links (Simplified - shows a few pages around the current one) *@
+                    @{
+                        int startPage = Math.Max(1, currentPage - 2);
+                        int endPage = Math.Min(totalPages, currentPage + 2);
+
+                        // Show first page link if not in the visible range
+                        if (startPage > 1)
+                        {
+                            <li class="page-item"><a class="page-link" asp-controller="Book" asp-action="Index" asp-route-pageNumber="1" asp-route-searchString="@searchString">1</a></li>
+                            // Add ellipsis if there's a gap between the first page and the startPage
+                            if (startPage > 2)
+                            {
+                                <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                            }
+                        }
+
+                        // Show links for pages around the current page
+                        for (int i = startPage; i <= endPage; i++)
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <a class="page-link" asp-controller="Book" asp-action="Index"
+                                   asp-route-pageNumber="@i"
+                                   asp-route-searchString="@searchString">@i</a>
+                            </li>
+                        }
+
+                        // Show last page link if not in the visible range
+                        if (endPage < totalPages)
+                        {
+                             // Add ellipsis if there's a gap between the endPage and the last page
+                            if (endPage < totalPages - 1)
+                            {
+                                <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                            }
+                            <li class="page-item"><a class="page-link" asp-controller="Book" asp-action="Index" asp-route-pageNumber="@totalPages" asp-route-searchString="@searchString">@totalPages</a></li>
+                        }
+                    }
+
+
+                    @* Next Page Link *@
+                    <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                        <a class="page-link" asp-controller="Book" asp-action="Index"
+                           asp-route-pageNumber="@(currentPage + 1)"
+                           asp-route-searchString="@searchString" aria-label="Next">
+                            Next <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
 
 </div>
+
+@* Optional: Add custom CSS for subtle effects like hover *@
+<style>
+    .hover-lift {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-5px); /* Lifts the card slightly */
+        box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important; /* More prominent shadow on hover */
+    }
+
+    /* Custom styling for rounded pill search input group */
+    .rounded-pill-start {
+        border-top-left-radius: 50rem !important;
+        border-bottom-left-radius: 50rem !important;
+    }
+
+    .rounded-pill-end {
+         border-top-right-radius: 50rem !important;
+        border-bottom-right-radius: 50rem !important;
+    }
+</style>
+
+@* Optional: Add a script section for any client-side enhancements if needed *@
+@section Scripts {
+    @* Example: Add client-side validation for the search form or dynamic filtering *@
+}
