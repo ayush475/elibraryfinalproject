@@ -1,8 +1,113 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home"; // Changed title to be more relevant
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@* Ensure your _Layout.cshtml includes Bootstrap CSS/JS (Bootstrap 5 recommended) *@
+
+<div class="container mt-4"> @* Use a container for standard padding and centering *@
+
+    @* Optional: A welcoming hero section or banner *@
+    <div class="jumbotron text-center bg-light p-4 mb-4">
+        <h1 class="display-4">Welcome to Our E-Library</h1>
+        <p class="lead">Discover a world of books at your fingertips.</p>
+        @* You could add a call to action here *@
+    </div>
+
+    @* Search Section *@
+    <div class="search-section mb-4">
+        <h2 class="mb-3">Find Your Next Read</h2> @* Added margin-bottom *@
+        <form action="/Search" method="get"> @* Placeholder form *@
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Search by title, author, or keyword..." name="query">
+                <button class="btn btn-primary" type="submit">Search</button>
+            </div>
+        </form>
+    </div>
+
+    @* Filter Options Section *@
+    <div class="filter-section row mb-4"> @* Using row for potentially more complex filter layouts later *@
+        <div class="col-12"> @* Filters take full width on all screens *@
+             <h2 class="mb-3">Filter Books</h2> @* Added margin-bottom *@
+             @* Using d-flex with flex-wrap allows filters to wrap on smaller screens *@
+             <div class="d-flex flex-wrap justify-content-center">
+                <div class="dropdown me-2 mb-2"> @* Placeholder Dropdown Filter, added mb-2 for spacing when wrapped *@
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="categoryFilterButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        Category (Placeholder)
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="categoryFilterButton">
+                        <li><a class="dropdown-item" href="#">Fiction</a></li>
+                        <li><a class="dropdown-item" href="#">Non-Fiction</a></li>
+                        <li><a class="dropdown-item" href="#">Science Fiction</a></li>
+                         <li><hr class="dropdown-divider"></li> @* Separator example *@
+                        <li><a class="dropdown-item" href="#">All Categories</a></li>
+                    </ul>
+                </div>
+                <div class="dropdown me-2 mb-2"> @* Another Placeholder Filter *@
+                     <button class="btn btn-secondary dropdown-toggle" type="button" id="genreFilterButton" data-bs-toggle="dropdown" aria-expanded="false">
+                        Genre (Placeholder)
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="genreFilterButton">
+                        <li><a class="dropdown-item" href="#">Mystery</a></li>
+                        <li><a class="dropdown-item" href="#">Thriller</a></li>
+                        <li><a class="dropdown-item" href="#">Romance</a></li>
+                         <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">All Genres</a></li>
+                    </ul>
+                </div>
+                @* Add more filter dropdowns or controls here. Use me-2 and mb-2 for spacing *@
+             </div>
+        </div>
+    </div>
+
+    @* Book Listing Area Placeholder *@
+    <div class="book-list-area mb-4">
+        <h2 class="mb-3">Featured Books</h2> @* Added margin-bottom *@
+        @* This is where you would loop through your Book Model data to display books *@
+        <div class="row"> @* Use row for the grid *@
+
+             @* Example placeholder for where book cards would go: *@
+             @* Use col-12 for x-small, col-sm-6 for small, col-md-4 for medium, col-lg-3 for large screens *@
+             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4"> @* Added more responsive column classes *@
+                <div class="card h-100"> @* h-100 makes cards in a row the same height *@
+                    <img src="https://via.placeholder.com/150x200" class="card-img-top img-fluid" alt="Book Cover Placeholder"> @* Added img-fluid *@
+                    <div class="card-body d-flex flex-column"> @* d-flex flex-column for sticky button at bottom *@
+                        <h5 class="card-title">Book Title Placeholder</h5>
+                        <p class="card-text">Author Name Placeholder</p>
+                        @* Use mt-auto to push the button to the bottom if using flex-column *@
+                        <a href="#" class="btn btn-sm btn-outline-primary mt-auto">Details</a>
+                    </div>
+                </div>
+             </div>
+
+              @* Repeat the above col-12 col-sm-6 col-md-4 col-lg-3 div for each book placeholder *@
+              <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
+                <div class="card h-100">
+                    <img src="https://via.placeholder.com/150x200" class="card-img-top img-fluid" alt="Book Cover Placeholder">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">Book Title Placeholder 2</h5>
+                        <p class="card-text">Author Name Placeholder 2</p>
+                        <a href="#" class="btn btn-sm btn-outline-primary mt-auto">Details</a>
+                    </div>
+                </div>
+             </div>
+
+              @* Add more book card placeholders here *@
+
+        </div> @* End of Book Listing Row *@
+         @* End of Book Listing Loop Area *@
+    </div>
+
+    @* Pagination Section *@
+    <div class="pagination-section d-flex justify-content-center mb-4"> @* Added mb-4 for spacing below pagination *@
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item"><a class="page-link" href="#">Next</a></li>
+            </ul>
+        </nav>
+    </div>
+
 </div>

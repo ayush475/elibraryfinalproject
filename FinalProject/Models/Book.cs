@@ -10,47 +10,55 @@ namespace FinalProject.Models
         [Key]
         public int BookId { get; set; }
 
-        // International Standard Book Number (ISBN). Required and unique.
+        // International Standard Book Number (ISBN). Can be optional for initial testing.
+        // [Required] // <-- Comment out or remove for temporary relaxation
+        [StringLength(255)]
+        public string? Isbn { get; set; } // Made nullable
+
+        // Title of the book. Remains required as it's essential.
         [Required]
         [StringLength(255)]
-        public required string  Isbn { get; set; }
+        public required string Title { get; set; } // Still required
 
-        // Title of the book. Required.
-        [Required]
-        [StringLength(255)]
-        public required string Title { get; set; }
+        // Description or summary of the book. Can be optional for initial testing.
+        // [Required] // <-- Comment out or remove for temporary relaxation
+        public string? Description { get; set; } // Made nullable
 
-        // Description or summary of the book.
-        public required string Description { get; set; }
+        // ** Suggestion: Add a Cover Image URL for UI **
+        // Placeholder for the book cover image URL. Nullable for initial testing.
+        [StringLength(1000)] // Allow longer URLs
+        public string? CoverImageUrl { get; set; } // Added this property
 
-        // Publication date of the book. Nullable.
+        // Publication date of the book. Nullable. (Already nullable)
         [Column(TypeName = "Date")]
         [DataType(DataType.Date)]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
         public DateTime? PublicationDate { get; set; }
 
-        // The list price of the book. Required.
-        [Required]
+        // The list price of the book. Required, as books usually have a price.
+        [Required] // Keep required
         [Column(TypeName = "decimal(10, 2)")]
         [DisplayFormat(DataFormatString = "{0:C}")]
         public decimal ListPrice { get; set; }
 
-        // Foreign key for the Author. Nullable if author is unknown.
+        // Foreign key for the Author. Nullable. (Already nullable)
         public int? AuthorId { get; set; }
 
-        // Foreign key for the Publisher. Nullable if publisher is unknown.
+        // Foreign key for the Publisher. Nullable. (Already nullable)
         public int? PublisherId { get; set; }
 
-        // Foreign key for the Genre. Nullable if genre is unknown.
+        // Foreign key for the Genre. Nullable. (Already nullable)
         public int? GenreId { get; set; }
 
-        // Language of the book.
+        // Language of the book. Can be optional for initial testing.
+        // [Required] // <-- Comment out or remove for temporary relaxation
         [StringLength(50)]
-        public required string Language { get; set; }
+        public string? Language { get; set; } // Made nullable
 
-        // Format of the book (e.g., Hardcover, Paperback, Ebook).
+        // Format of the book (e.g., Hardcover, Paperback, Ebook). Can be optional.
+        // [Required] // <-- Comment out or remove for temporary relaxation
         [StringLength(50)]
-        public required string Format { get; set; }
+        public string? Format { get; set; } // Made nullable
 
         // Number of copies available in stock for purchase.
         public int AvailabilityStock { get; set; } = 0;
@@ -58,7 +66,7 @@ namespace FinalProject.Models
         // Indicates if the book is available for borrowing from the library.
         public bool AvailabilityLibrary { get; set; } = false;
 
-        // Average rating of the book (out of 5). Nullable.
+        // Average rating of the book (out of 5). Nullable. (Already nullable)
         [Column(TypeName = "decimal(3, 2)")]
         public decimal? Rating { get; set; }
 
@@ -68,16 +76,16 @@ namespace FinalProject.Models
         // Indicates if the book is currently on sale.
         public bool OnSale { get; set; } = false;
 
-        // Discount percentage if the book is on sale. Nullable.
+        // Discount percentage if the book is on sale. Nullable. (Already nullable)
         [Column(TypeName = "decimal(5, 2)")]
         public decimal? SaleDiscount { get; set; }
 
-        // Start date of the sale. Nullable.
+        // Start date of the sale. Nullable. (Already nullable)
         [Column(TypeName = "Date")]
         [DataType(DataType.Date)]
         public DateTime? SaleStartDate { get; set; }
 
-        // End date of the sale. Nullable.
+        // End date of the sale. Nullable. (Already nullable)
         [Column(TypeName = "Date")]
         [DataType(DataType.Date)]
         public DateTime? SaleEndDate { get; set; }
@@ -91,33 +99,34 @@ namespace FinalProject.Models
         public DateTime DateUpdated { get; set; } = DateTime.Now;
 
         // Navigation properties
+        // IMPORTANT for testing without related data: Make these nullable or remove 'required'.
+        // Using 'virtual' is good practice for lazy loading, but the 'required' keyword enforces existence.
 
-        // The Author of the book.
+        // The Author of the book. Made nullable for temporary testing ease.
         [ForeignKey("AuthorId")]
-        public virtual  required Author Author { get; set; }
+        public virtual Author? Author { get; set; } // Made nullable
 
-        // The Publisher of the book.
+        // The Publisher of the book. Made nullable for temporary testing ease.
         [ForeignKey("PublisherId")]
-        public virtual required Publisher Publisher { get; set; }
+        public virtual Publisher? Publisher { get; set; } // Made nullable
 
-        // The Genre of the book.
+        // The Genre of the book. Made nullable for temporary testing ease.
         [ForeignKey("GenreId")]
-        public virtual required Genre Genre { get; set; }
+        public virtual Genre? Genre { get; set; } // Made nullable
 
-        // Collection of available formats for this book.
-        public virtual required ICollection<BookFormat> BookFormats { get; set; }
+        // Collection of available formats for this book. Made nullable/non-required.
+        public virtual ICollection<BookFormat>? BookFormats { get; set; } // Made nullable
 
-        // Collection of reviews for this book.
-        public  virtual  required ICollection<Review> Reviews { get; set; }
+        // Collection of reviews for this book. Made nullable/non-required.
+        public virtual ICollection<Review>? Reviews { get; set; } // Made nullable
 
-        // Collection of bookmarks for this book.
-        public virtual required ICollection<Bookmark> Bookmarks { get; set; }
+        // Collection of bookmarks for this book. Made nullable/non-required.
+        public virtual ICollection<Bookmark>? Bookmarks { get; set; } // Made nullable
 
-        // Collection of shopping cart items containing this book.
-        public virtual required ICollection<ShoppingCartItem> ShoppingCartItems { get; set; }
+        // Collection of shopping cart items containing this book. Made nullable/non-required.
+        public virtual ICollection<ShoppingCartItem>? ShoppingCartItems { get; set; } // Made nullable
 
-        // Collection of order items containing this book.
-        public virtual  required ICollection<OrderItem> OrderItems { get; set; }
+        // Collection of order items containing this book. Made nullable/non-required.
+        public virtual ICollection<OrderItem>? OrderItems { get; set; } // Made nullable
     }
 }
-

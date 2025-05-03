@@ -29,6 +29,16 @@
       <_ContentIncludedByDefault Remove="Views\Members\Details.cshtml" />
       <_ContentIncludedByDefault Remove="Views\Members\Edit.cshtml" />
       <_ContentIncludedByDefault Remove="Views\Members\Index.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Book\Create.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Book\Delete.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Book\Details.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Book\Edit.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Book\Index.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Author\Create.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Author\Delete.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Author\Details.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Author\Edit.cshtml" />
+      <_ContentIncludedByDefault Remove="Views\Author\Index.cshtml" />
     </ItemGroup>
 
 </Project>
