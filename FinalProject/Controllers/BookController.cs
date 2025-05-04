@@ -5,8 +5,13 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using FinalProject.Data;
+using FinalProject.Data; // Make sure this namespace matches your DbContext location
 using FinalProject.Models;
+using Microsoft.AspNetCore.Authorization; // Needed for the [Authorize] attribute
+using System.Security.Claims; // Needed to access user claims
+using Microsoft.AspNetCore.Http; // Needed for accessing Request.Headers.Referer
+using Microsoft.AspNetCore.Authentication; // Needed for signing out
+using Microsoft.AspNetCore.Authentication.Cookies; // Needed for CookieAuthenticationDefaults.AuthenticationScheme
 
 namespace FinalProject.Controllers
 {
@@ -21,6 +26,7 @@ namespace FinalProject.Controllers
 
         // GET: Book
         // Modified Index action to include search, pagination, ordering, and filtering by Genre and Author
+        // Now also fetches bookmarked book IDs for authenticated users.
         public async Task<IActionResult> Index(string searchString, int? pageNumber, int? genreId, int? authorId)
         {
             // Define the number of items per page
@@ -37,10 +43,10 @@ namespace FinalProject.Controllers
             if (!string.IsNullOrEmpty(searchString))
             {
                 // Filter books by Title, Author's FirstName, or Author's LastName
-                // You can add more fields to search if needed
+                // Add null checks for Author before accessing its properties (Fixes CS8602 warning)
                 books = books.Where(b => b.Title.Contains(searchString)
-                                       || (b.Author != null && b.Author.FirstName.Contains(searchString))
-                                       || (b.Author != null && b.Author.LastName.Contains(searchString))
+                                       || (b.Author != null && b.Author.FirstName != null && b.Author.FirstName.Contains(searchString))
+                                       || (b.Author != null && b.Author.LastName != null && b.Author.LastName.Contains(searchString))
                                        || (b.Isbn != null && b.Isbn.Contains(searchString))); // Also search by ISBN
             }
 
@@ -55,7 +61,6 @@ namespace FinalProject.Controllers
             {
                 books = books.Where(b => b.AuthorId == authorId.Value);
             }
-
 
             // Add ordering - Order by DateAdded in descending order to show latest first
             // You could also order by PublicationDate if that's more appropriate for "latest"
@@ -82,12 +87,33 @@ namespace FinalProject.Controllers
                  currentPage = 1;
             }
 
-
             // Apply pagination using Skip and Take
             var paginatedBooks = await books
                 .Skip((currentPage - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            // --- Fetch Bookmarked Book IDs for Authenticated User ---
+            // Use null-conditional operator for safer access to User.Identity
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                // Get the MemberId (integer primary key) from the claims
+                var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (!string.IsNullOrEmpty(memberIdString) && int.TryParse(memberIdString, out int memberId))
+                {
+                    // Get the IDs of books bookmarked by this member
+                    var bookmarkedBookIds = await _context.Bookmarks
+                        .Where(b => b.MemberId == memberId) // Use the integer MemberId
+                        .Select(b => b.BookId)
+                        .ToListAsync();
+
+                    // Pass the list of bookmarked book IDs to the view
+                    ViewBag.BookmarkedBookIds = bookmarkedBookIds;
+                }
+            }
+            // --- End Fetch Bookmarked Book IDs ---
+
 
             // Pass pagination, search, and filter information to the view using ViewBag
             ViewBag.CurrentPage = currentPage;
@@ -100,7 +126,8 @@ namespace FinalProject.Controllers
             // Populate dropdown lists for Genre and Author for the view
             // Add a default "All" option with value 0 or null
             ViewBag.Genres = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name", genreId);
-            ViewBag.Authors = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName), "AuthorId", "FirstName", authorId); // You might want to display full name later
+            // Add null checks for Author properties when creating SelectList (Fixes CS8602 warning)
+            ViewBag.Authors = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName).Select(a => new { a.AuthorId, FullName = $"{a.FirstName ?? ""} {a.LastName ?? ""}".Trim() }), "AuthorId", "FullName", authorId);
 
 
             // Return the paginated, filtered, and ordered list of books to the view
@@ -125,13 +152,31 @@ namespace FinalProject.Controllers
                 return NotFound();
             }
 
+            // --- Check if the book is bookmarked by the current user for the Details view ---
+            // Use null-conditional operator for safer access to User.Identity
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                // Get the MemberId (integer primary key) from the claims
+                var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (!string.IsNullOrEmpty(memberIdString) && int.TryParse(memberIdString, out int memberId))
+                {
+                    var isBookmarked = await _context.Bookmarks
+                        .AnyAsync(b => b.MemberId == memberId && b.BookId == id); // Use the integer MemberId
+                    ViewBag.IsBookmarked = isBookmarked;
+                }
+            }
+            // --- End Check for Details view ---
+
+
             return View(book);
         }
 
         // GET: Book/Create
         public IActionResult Create()
         {
-            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName), "AuthorId", "FirstName");
+            // Add null checks for Author properties when creating SelectList (Fixes CS8602 warning)
+            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName).Select(a => new { a.AuthorId, FullName = $"{a.FirstName ?? ""} {a.LastName ?? ""}".Trim() }), "AuthorId", "FullName");
             ViewData["GenreId"] = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name");
             ViewData["PublisherId"] = new SelectList(_context.Publishers.OrderBy(p => p.Name), "PublisherId", "Name");
             return View();
@@ -153,7 +198,8 @@ namespace FinalProject.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName), "AuthorId", "FirstName", book.AuthorId);
+            // Add null checks for Author properties when creating SelectList (Fixes CS8602 warning)
+            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName).Select(a => new { a.AuthorId, FullName = $"{a.FirstName ?? ""} {a.LastName ?? ""}".Trim() }), "AuthorId", "FullName", book.AuthorId);
             ViewData["GenreId"] = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name", book.GenreId);
             ViewData["PublisherId"] = new SelectList(_context.Publishers.OrderBy(p => p.Name), "PublisherId", "Name", book.PublisherId);
             return View(book);
@@ -172,7 +218,8 @@ namespace FinalProject.Controllers
             {
                 return NotFound();
             }
-            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName), "AuthorId", "FirstName", book.AuthorId);
+            // Add null checks for Author properties when creating SelectList (Fixes CS8602 warning)
+            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName).Select(a => new { a.AuthorId, FullName = $"{a.FirstName ?? ""} {a.LastName ?? ""}".Trim() }), "AuthorId", "FullName", book.AuthorId);
             ViewData["GenreId"] = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name", book.GenreId);
             ViewData["PublisherId"] = new SelectList(_context.Publishers.OrderBy(p => p.Name), "PublisherId", "Name", book.PublisherId);
             return View(book);
@@ -212,7 +259,8 @@ namespace FinalProject.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName), "AuthorId", "FirstName", book.AuthorId);
+            // Add null checks for Author properties when creating SelectList (Fixes CS8602 warning)
+            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName).Select(a => new { a.AuthorId, FullName = $"{a.FirstName ?? ""} {a.LastName ?? ""}".Trim() }), "AuthorId", "FullName", book.AuthorId);
             ViewData["GenreId"] = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name", book.GenreId);
             ViewData["PublisherId"] = new SelectList(_context.Publishers.OrderBy(p => p.Name), "PublisherId", "Name", book.PublisherId);
             return View(book);
@@ -258,5 +306,94 @@ namespace FinalProject.Controllers
         {
             return _context.Books.Any(e => e.BookId == id);
         }
+
+        // --- Bookmark Action ---
+        // This action allows an authenticated member to bookmark a book.
+        [HttpPost] // Use POST for actions that change data
+        [Authorize] // Requires the user to be authenticated
+        [ValidateAntiForgeryToken] // Good practice for POST requests from views
+        public async Task<IActionResult> Bookmark(int bookId)
+        {
+            // Get the authenticated user's MemberId (as a string) from the claims.
+            // ClaimTypes.NameIdentifier stores the MemberId (the integer primary key) from the login process.
+            var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Determine the return URL. Prioritize the Referer header if available and local.
+            // Otherwise, default to the Index page.
+            var returnUrl = Request.Headers["Referer"].ToString();
+            if (string.IsNullOrEmpty(returnUrl) || !Url.IsLocalUrl(returnUrl))
+            {
+                returnUrl = Url.Action(nameof(Index), "Book"); // Default to Index
+            }
+
+            // Check if the MemberId claim is present and can be parsed as an integer.
+            if (string.IsNullOrEmpty(memberIdString) || !int.TryParse(memberIdString, out int memberId))
+            {
+                // If the claim is missing or invalid, it indicates an authentication issue.
+                TempData["Message"] = "Authentication failed. Please log in again.";
+                // Consider signing out the user if the identity seems invalid
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); // Use constant for scheme
+                // Redirect to the Login action in the Member controller using string literals
+                return RedirectToAction("Login", "Member");
+            }
+
+            // Find the member using the MemberId (the primary key) obtained from the claims.
+            // This is the correct way to identify the authenticated member in the database.
+            var member = await _context.Members.FindAsync(memberId);
+
+            if (member == null)
+            {
+                // Member not found in the database for the given MemberId from claims.
+                // This is a serious issue indicating a potential database problem or data inconsistency.
+                TempData["Message"] = "Error: Your member account data could not be found in the database.";
+                // Consider logging this error internally for debugging.
+                // Consider signing out the user as their authenticated identity doesn't match a database record.
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); // Use constant for scheme
+                return RedirectToAction("Login", "Member");
+            }
+
+            // Check if the book exists.
+            var book = await _context.Books.FindAsync(bookId); // FindAsync is efficient for primary keys
+            if (book == null)
+            {
+                TempData["Message"] = $"Error: Book with ID {bookId} not found.";
+                return Redirect(returnUrl);
+            }
+
+            // Check if the bookmark already exists for this member and book using AnyAsync for efficiency.
+            var existingBookmark = await _context.Bookmarks
+                .AnyAsync(b => b.MemberId == member.MemberId && b.BookId == bookId);
+
+            if (existingBookmark)
+            {
+                // Bookmark already exists.
+                 TempData["Message"] = "This book is already bookmarked.";
+                 return Redirect(returnUrl);
+            }
+
+            // Create the new bookmark.
+            var newBookmark = new Bookmark
+            {
+                MemberId = member.MemberId, // Use the MemberId from the found member
+                BookId = bookId,
+                DateAdded = DateTime.Now, // Set the date added
+                // FIXED: Explicitly set the required navigation properties
+                Member = member,
+                Book = book
+            };
+
+            // Add the bookmark to the database context.
+            _context.Bookmarks.Add(newBookmark);
+
+            // Save changes to the database.
+            await _context.SaveChangesAsync();
+
+            // Indicate success and redirect back to the origin page.
+             TempData["Message"] = "Book bookmarked successfully!";
+             return Redirect(returnUrl);
+        }
+
+        // --- End Bookmark Action ---
+
     }
 }

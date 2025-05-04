@@ -8,6 +8,7 @@
     var searchString = ViewBag.SearchString;
     var selectedGenreId = ViewBag.SelectedGenreId;
     var selectedAuthorId = ViewBag.SelectedAuthorId;
+    var bookmarkedBookIds = ViewBag.BookmarkedBookIds as List<int>; // Retrieve bookmarked IDs
 
     // Define a placeholder image URL for books without covers
     var placeholderImageUrl = "https://placehold.co/128x192/e0e0e0/333333?text=No+Cover";
@@ -45,6 +46,16 @@
     </div>
 </form>
 
+@* Display TempData message if it exists *@
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        @TempData["Message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+
 @* Display books in a card layout *@
 <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
     @foreach (var item in Model)
@@ -68,8 +79,30 @@
                     <div class="d-flex justify-content-between align-items-center">
                          <div class="btn-group">
                             <a asp-action="Details" asp-route-id="@item.BookId" class="btn btn-sm btn-outline-secondary">Details</a>
-                            <a asp-action="Edit" asp-route-id="@item.BookId" class="btn btn-sm btn-outline-secondary">Edit</a>
-                        </div>
+                            @* Display Bookmark button or Bookmarked status *@
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                // Check if the current book's ID is in the list of bookmarked IDs
+                                if (bookmarkedBookIds != null && bookmarkedBookIds.Contains(item.BookId))
+                                {
+                                    <span class="btn btn-sm btn-success disabled" title="You have bookmarked this book.">Bookmarked</span>
+                                }
+                                else
+                                {
+                                    @* Create a small form for the Bookmark action *@
+                                    <form asp-controller="Book" asp-action="Bookmark" method="post" style="display:inline;">
+                                        <input type="hidden" name="bookId" value="@item.BookId" />
+                                        @Html.AntiForgeryToken() @* Include the anti-forgery token *@
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Bookmark this book">Bookmark</button>
+                                    </form>
+                                }
+                            }
+                            else
+                            {
+                                @* Optional: Show a disabled button or message for unauthenticated users *@
+                                <span class="btn btn-sm btn-outline-secondary disabled" title="Login to bookmark books">Bookmark</span>
+                            }
+                         </div>
                          <small class="text-muted">Added: @item.DateAdded.ToString("yyyy-MM-dd")</small>
                     </div>
                 </div>
