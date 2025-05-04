@@ -79,6 +79,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                          <div class="btn-group">
                             <a asp-action="Details" asp-route-id="@item.BookId" class="btn btn-sm btn-outline-secondary">Details</a>
+
                             @* Display Bookmark button or Bookmarked status *@
                             @if (User.Identity.IsAuthenticated)
                             {
@@ -96,11 +97,24 @@
                                         <button type="submit" class="btn btn-sm btn-outline-primary" title="Bookmark this book">Bookmark</button>
                                     </form>
                                 }
+
+                                @* --- Add to Cart Button --- *@
+                                @* Create a small form for the AddToCart action *@
+                                <form asp-controller="Book" asp-action="AddToCart" method="post" style="display:inline;">
+                                    <input type="hidden" name="bookId" value="@item.BookId" />
+                                    @* Optional: Add a quantity input if needed, default is 1 in the controller *@
+                                    @* <input type="number" name="quantity" value="1" min="1" style="width: 50px;" /> *@
+                                    @Html.AntiForgeryToken() @* Include the anti-forgery token *@
+                                    <button type="submit" class="btn btn-sm btn-success" title="Add this book to your cart">Add to Cart</button>
+                                </form>
+                                @* --- End Add to Cart Button --- *@
+
                             }
                             else
                             {
-                                @* Optional: Show a disabled button or message for unauthenticated users *@
+                                @* Optional: Show disabled buttons or messages for unauthenticated users *@
                                 <span class="btn btn-sm btn-outline-secondary disabled" title="Login to bookmark books">Bookmark</span>
+                                <span class="btn btn-sm btn-outline-secondary disabled" title="Login to add to cart">Add to Cart</span>
                             }
                          </div>
                          <small class="text-muted">Added: @item.DateAdded.ToString("yyyy-MM-dd")</small>

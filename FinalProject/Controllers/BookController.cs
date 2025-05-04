@@ -395,5 +395,91 @@ namespace FinalProject.Controllers
 
         // --- End Bookmark Action ---
 
+
+        // --- AddToCart Action ---
+        // This action allows an authenticated member to add a book to their shopping cart.
+        [HttpPost] // Use POST for actions that change data
+        [Authorize] // Requires the user to be authenticated
+        [ValidateAntiForgeryToken] // Good practice for POST requests from views
+        public async Task<IActionResult> AddToCart(int bookId, int quantity = 1) // Default quantity to 1
+        {
+            // Get the authenticated user's MemberId from the claims.
+            var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Determine the return URL, similar to the Bookmark action.
+            var returnUrl = Request.Headers["Referer"].ToString();
+            if (string.IsNullOrEmpty(returnUrl) || !Url.IsLocalUrl(returnUrl))
+            {
+                returnUrl = Url.Action(nameof(Index), "Book"); // Default to Index
+            }
+
+            // Validate MemberId from claims.
+            if (string.IsNullOrEmpty(memberIdString) || !int.TryParse(memberIdString, out int memberId))
+            {
+                TempData["Message"] = "Authentication failed. Please log in again.";
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return RedirectToAction("Login", "Member");
+            }
+
+            // Find the member in the database.
+            var member = await _context.Members.FindAsync(memberId);
+            if (member == null)
+            {
+                TempData["Message"] = "Error: Your member account data could not be found in the database.";
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return RedirectToAction("Login", "Member");
+            }
+
+            // Validate the bookId and check if the book exists.
+            var book = await _context.Books.FindAsync(bookId);
+            if (book == null)
+            {
+                TempData["Message"] = $"Error: Book with ID {bookId} not found.";
+                return Redirect(returnUrl);
+            }
+
+            // Ensure quantity is at least 1.
+            if (quantity < 1)
+            {
+                quantity = 1;
+            }
+
+            // Check if the book is already in the member's shopping cart.
+            var cartItem = await _context.ShoppingCartItems
+                .FirstOrDefaultAsync(item => item.MemberId == member.MemberId && item.BookId == bookId);
+
+            if (cartItem == null)
+            {
+                // Item is not in the cart, create a new one.
+                cartItem = new ShoppingCartItem
+                {
+                    MemberId = member.MemberId,
+                    BookId = bookId,
+                    Quantity = quantity,
+                    DateAdded = DateTime.Now,
+                    // Explicitly set navigation properties if needed for EF Core tracking
+                    Member = member,
+                    Book = book
+                };
+                _context.ShoppingCartItems.Add(cartItem);
+                TempData["Message"] = $"{book.Title} added to your cart.";
+            }
+            else
+            {
+                // Item is already in the cart, update the quantity.
+                cartItem.Quantity += quantity;
+                cartItem.DateAdded = DateTime.Now; // Optionally update date added on quantity change
+                _context.Update(cartItem);
+                TempData["Message"] = $"Quantity for {book.Title} updated in your cart.";
+            }
+
+            // Save changes to the database.
+            await _context.SaveChangesAsync();
+
+            // Redirect back to the origin page.
+            return Redirect(returnUrl);
+        }
+        // --- End AddToCart Action ---
+
     }
 }
