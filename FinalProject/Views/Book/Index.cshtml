@@ -8,193 +8,75 @@
     var searchString = ViewBag.SearchString;
     var selectedGenreId = ViewBag.SelectedGenreId;
     var selectedAuthorId = ViewBag.SelectedAuthorId;
+
+    // Define a placeholder image URL for books without covers
+    var placeholderImageUrl = "https://placehold.co/128x192/e0e0e0/333333?text=No+Cover";
 }
 
 <h1>Book List</h1>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create" class="btn btn-primary">Create New</a>
 </p>
 
 @* Add the search and filter form *@
 <form asp-controller="Book" asp-action="Index" method="get">
-    <div class="form-actions no-color">
-        <p>
-            Find by title, author, or ISBN: <input type="text" name="searchString" value="@searchString" />
-
-            @* Genre Filter Dropdown *@
-            <label for="genreId">Genre:</label>
-            <select name="genreId" id="genreId" asp-items="@ViewBag.Genres">
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label for="searchString" class="form-label">Find by title, author, or ISBN:</label>
+            <input type="text" name="searchString" id="searchString" value="@searchString" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label for="genreId" class="form-label">Genre:</label>
+            <select name="genreId" id="genreId" asp-items="@ViewBag.Genres" class="form-select">
                 <option value="">-- All Genres --</option> @* Add "All" option *@
             </select>
-
-            @* Author Filter Dropdown *@
-            <label for="authorId">Author:</label>
-            <select name="authorId" id="authorId" asp-items="@ViewBag.Authors">
+        </div>
+        <div class="col-md-3">
+            <label for="authorId" class="form-label">Author:</label>
+            <select name="authorId" id="authorId" asp-items="@ViewBag.Authors" class="form-select">
                  <option value="">-- All Authors --</option> @* Add "All" option *@
             </select>
-
-            <input type="submit" value="Filter/Search" class="btn btn-primary" /> |
-            <a asp-action="Index">Back to Full List</a>
-        </p>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+             <button type="submit" class="btn btn-primary me-2">Filter/Search</button>
+             <a asp-action="Index" class="btn btn-secondary">Clear</a> @* Changed "Back to Full List" to "Clear" *@
+        </div>
     </div>
 </form>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Isbn)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Title)
-            </th>
-            @* Optional: Hide Description to keep table concise, maybe show on Details *@
-            @*<th>
-                @Html.DisplayNameFor(model => model.Description)
-            </th>*@
-            @* Optional: Hide Cover Image URL in the main table *@
-            @*<th>
-                @Html.DisplayNameFor(model => model.CoverImageUrl)
-            </th>*@
-            <th>
-                @Html.DisplayNameFor(model => model.PublicationDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ListPrice)
-            </th>
-            @* Optional: Hide some less critical columns for a cleaner table overview *@
-            @*<th>
-                @Html.DisplayNameFor(model => model.Language)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Format)
-            </th>*@
-            <th>
-                @Html.DisplayNameFor(model => model.AvailabilityStock)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.AvailabilityLibrary)
-            </th>
-             <th>
-                @Html.DisplayNameFor(model => model.Rating)
-            </th>
-            @* Optional: Hide RatingCount for a cleaner table *@
-            @*<th>
-                @Html.DisplayNameFor(model => model.RatingCount)
-            </th>*@
-            <th>
-                @Html.DisplayNameFor(model => model.OnSale)
-            </th>
-             @* Optional: Hide Sale details for a cleaner table *@
-            @*<th>
-                @Html.DisplayNameFor(model => model.SaleDiscount)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.SaleStartDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.SaleEndDate)
-            </th>*@
-            <th>
-                @Html.DisplayNameFor(model => model.DateAdded)
-            </th>
-             @* Optional: Hide DateUpdated for a cleaner table *@
-            @*<th>
-                @Html.DisplayNameFor(model => model.DateUpdated)
-            </th>*@
-            <th>
-                @Html.DisplayNameFor(model => model.Author)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Publisher)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Genre)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Isbn)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Title)
-            </td>
-            @* Description and Cover Image URL (hidden)*@
-            @*<td>
-                @Html.DisplayFor(modelItem => item.Description)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CoverImageUrl)
-            </td>*@
-            <td>
-                @Html.DisplayFor(modelItem => item.PublicationDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.ListPrice)
-            </td>
-             @* Language and Format (hidden)*@
-            @*<td>
-                @Html.DisplayFor(modelItem => item.Language)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Format)
-            </td>*@
-            <td>
-                @Html.DisplayFor(modelItem => item.AvailabilityStock)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.AvailabilityLibrary)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Rating)
-            </td>
-             @* RatingCount (hidden)*@
-            @*<td>
-                @Html.DisplayFor(modelItem => item.RatingCount)
-            </td>*@
-             <td>
-                @Html.DisplayFor(modelItem => item.OnSale)
-            </td>
-             @* Sale details (hidden)*@
-             @*<td>
-                @Html.DisplayFor(modelItem => item.SaleDiscount)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.SaleStartDate)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.SaleEndDate)
-            </td>*@
-             <td>
-                @Html.DisplayFor(modelItem => item.DateAdded)
-            </td>
-            @* DateUpdated (hidden)*@
-            @*<td>
-                @Html.DisplayFor(modelItem => item.DateUpdated)
-            </td>*@
-            <td>
-                @Html.DisplayFor(modelItem => item.Author.FirstName) @Html.DisplayFor(modelItem => item.Author.LastName) @* Display full author name *@
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Publisher.Name)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Genre.Name)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.BookId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.BookId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.BookId">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+@* Display books in a card layout *@
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+    @foreach (var item in Model)
+    {
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <img src="@(string.IsNullOrEmpty(item.CoverImageUrl) ? placeholderImageUrl : item.CoverImageUrl)"
+                     class="card-img-top" alt="Book Cover"
+                     style="height: 192px; object-fit: cover;"> @* Fixed height for consistent card size *@
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">@Html.DisplayFor(modelItem => item.Title)</h5>
+                    <p class="card-text text-muted small mb-1">
+                        by @(item.Author != null ? $"{item.Author.FirstName} {item.Author.LastName}" : "Unknown Author")
+                    </p>
+                     <p class="card-text text-muted small mb-1">
+                        Genre: @(item.Genre != null ? item.Genre.Name : "Unknown Genre")
+                    </p>
+                    <p class="card-text fw-bold mt-auto">@Html.DisplayFor(modelItem => item.ListPrice)</p> @* Push price to bottom *@
+                </div>
+                 <div class="card-footer bg-transparent border-top-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                         <div class="btn-group">
+                            <a asp-action="Details" asp-route-id="@item.BookId" class="btn btn-sm btn-outline-secondary">Details</a>
+                            <a asp-action="Edit" asp-route-id="@item.BookId" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        </div>
+                         <small class="text-muted">Added: @item.DateAdded.ToString("yyyy-MM-dd")</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @* Add Pagination Links *@
 @{
@@ -205,7 +87,7 @@
 
 @if (totalPages > 1) // Only show pagination if there's more than one page
 {
-    <nav aria-label="Page navigation example">
+    <nav aria-label="Page navigation example" class="mt-4">
         <ul class="pagination justify-content-center">
             <li class="page-item @prevDisabled">
                  <a asp-action="Index"
@@ -218,7 +100,7 @@
                 </a>
             </li>
 
-            @* Optional: Add page number links *@
+            @* Add page number links *@
              @for (var i = 1; i <= totalPages; i++)
             {
                 <li class="page-item @(i == currentPage ? "active" : "")">
@@ -247,7 +129,10 @@
         </ul>
     </nav>
 
-    <div class="text-center">
+    <div class="text-center mt-2">
         Page @currentPage of @totalPages
     </div>
 }
+
+@* Add Delete link separately or remove if not needed on this view *@
+@* The Delete link was previously in the table row, now you might want a dedicated delete page or a modal *@
