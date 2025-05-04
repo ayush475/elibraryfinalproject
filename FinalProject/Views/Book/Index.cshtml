@@ -1,14 +1,30 @@
 @model IEnumerable<FinalProject.Models.Book>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Books Index"; // More descriptive title
+    // Retrieve pagination and search data from ViewBag
+    var currentPage = ViewBag.CurrentPage;
+    var totalPages = ViewBag.TotalPages;
+    var searchString = ViewBag.SearchString;
 }
 
-<h1>Index</h1>
+<h1>Book List</h1>
 
 <p>
     <a asp-action="Create">Create New</a>
 </p>
+
+@* Add the search form *@
+<form asp-controller="Book" asp-action="Index" method="get">
+    <div class="form-actions no-color">
+        <p>
+            Find by title, author, or ISBN: <input type="text" name="searchString" value="@searchString" />
+            <input type="submit" value="Search" class="btn btn-primary" /> |
+            <a asp-action="Index">Back to Full List</a>
+        </p>
+    </div>
+</form>
+
 <table class="table">
     <thead>
         <tr>
@@ -18,40 +34,45 @@
             <th>
                 @Html.DisplayNameFor(model => model.Title)
             </th>
-            <th>
+            @* Optional: Hide Description to keep table concise, maybe show on Details *@
+            @*<th>
                 @Html.DisplayNameFor(model => model.Description)
-            </th>
-            <th>
+            </th>*@
+            @* Optional: Hide Cover Image URL in the main table *@
+            @*<th>
                 @Html.DisplayNameFor(model => model.CoverImageUrl)
-            </th>
+            </th>*@
             <th>
                 @Html.DisplayNameFor(model => model.PublicationDate)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.ListPrice)
             </th>
-            <th>
+            @* Optional: Hide some less critical columns for a cleaner table overview *@
+            @*<th>
                 @Html.DisplayNameFor(model => model.Language)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.Format)
-            </th>
+            </th>*@
             <th>
                 @Html.DisplayNameFor(model => model.AvailabilityStock)
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.AvailabilityLibrary)
             </th>
-            <th>
+             <th>
                 @Html.DisplayNameFor(model => model.Rating)
             </th>
-            <th>
+            @* Optional: Hide RatingCount for a cleaner table *@
+            @*<th>
                 @Html.DisplayNameFor(model => model.RatingCount)
-            </th>
+            </th>*@
             <th>
                 @Html.DisplayNameFor(model => model.OnSale)
             </th>
-            <th>
+             @* Optional: Hide Sale details for a cleaner table *@
+            @*<th>
                 @Html.DisplayNameFor(model => model.SaleDiscount)
             </th>
             <th>
@@ -59,13 +80,14 @@
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.SaleEndDate)
-            </th>
+            </th>*@
             <th>
                 @Html.DisplayNameFor(model => model.DateAdded)
             </th>
-            <th>
+             @* Optional: Hide DateUpdated for a cleaner table *@
+            @*<th>
                 @Html.DisplayNameFor(model => model.DateUpdated)
-            </th>
+            </th>*@
             <th>
                 @Html.DisplayNameFor(model => model.Author)
             </th>
@@ -87,24 +109,26 @@
             <td>
                 @Html.DisplayFor(modelItem => item.Title)
             </td>
-            <td>
+            @* Description and Cover Image URL (hidden)*@
+            @*<td>
                 @Html.DisplayFor(modelItem => item.Description)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.CoverImageUrl)
-            </td>
+            </td>*@
             <td>
                 @Html.DisplayFor(modelItem => item.PublicationDate)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.ListPrice)
             </td>
-            <td>
+             @* Language and Format (hidden)*@
+            @*<td>
                 @Html.DisplayFor(modelItem => item.Language)
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.Format)
-            </td>
+            </td>*@
             <td>
                 @Html.DisplayFor(modelItem => item.AvailabilityStock)
             </td>
@@ -114,13 +138,15 @@
             <td>
                 @Html.DisplayFor(modelItem => item.Rating)
             </td>
-            <td>
+             @* RatingCount (hidden)*@
+            @*<td>
                 @Html.DisplayFor(modelItem => item.RatingCount)
-            </td>
-            <td>
+            </td>*@
+             <td>
                 @Html.DisplayFor(modelItem => item.OnSale)
             </td>
-            <td>
+             @* Sale details (hidden)*@
+             @*<td>
                 @Html.DisplayFor(modelItem => item.SaleDiscount)
             </td>
             <td>
@@ -128,15 +154,16 @@
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.SaleEndDate)
-            </td>
-            <td>
+            </td>*@
+             <td>
                 @Html.DisplayFor(modelItem => item.DateAdded)
             </td>
-            <td>
+            @* DateUpdated (hidden)*@
+            @*<td>
                 @Html.DisplayFor(modelItem => item.DateUpdated)
-            </td>
+            </td>*@
             <td>
-                @Html.DisplayFor(modelItem => item.Author.FirstName)
+                @Html.DisplayFor(modelItem => item.Author.FirstName) @Html.DisplayFor(modelItem => item.Author.LastName) @* Display full author name *@
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.Publisher.Name)
@@ -153,3 +180,54 @@
 }
     </tbody>
 </table>
+
+@* Add Pagination Links *@
+@{
+    // Define route values for pagination links, preserving the current search string
+    var prevDisabled = (currentPage <= 1) ? "disabled" : "";
+    var nextDisabled = (currentPage >= totalPages) ? "disabled" : "";
+}
+
+@if (totalPages > 1) // Only show pagination if there's more than one page
+{
+    <nav aria-label="Page navigation example">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @prevDisabled">
+                 <a asp-action="Index"
+                   asp-route-pageNumber="@(currentPage - 1)"
+                   asp-route-searchString="@searchString"
+                   class="page-link">
+                    Previous
+                </a>
+            </li>
+
+            @* Optional: Add page number links (more complex, skipped for simplicity here)*@
+            @* You could loop from 1 to totalPages to create individual page links *@
+             @for (var i = 1; i <= totalPages; i++)
+            {
+                <li class="page-item @(i == currentPage ? "active" : "")">
+                    <a asp-action="Index"
+                       asp-route-pageNumber="@i"
+                       asp-route-searchString="@searchString"
+                       class="page-link">
+                        @i
+                    </a>
+                </li>
+            }
+
+
+            <li class="page-item @nextDisabled">
+                <a asp-action="Index"
+                   asp-route-pageNumber="@(currentPage + 1)"
+                   asp-route-searchString="@searchString"
+                   class="page-link">
+                    Next
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="text-center">
+        Page @currentPage of @totalPages
+    </div>
+}
