@@ -2,10 +2,12 @@
 
 @{
     ViewData["Title"] = "Books Index"; // More descriptive title
-    // Retrieve pagination and search data from ViewBag
+    // Retrieve pagination, search, and filter data from ViewBag
     var currentPage = ViewBag.CurrentPage;
     var totalPages = ViewBag.TotalPages;
     var searchString = ViewBag.SearchString;
+    var selectedGenreId = ViewBag.SelectedGenreId;
+    var selectedAuthorId = ViewBag.SelectedAuthorId;
 }
 
 <h1>Book List</h1>
@@ -14,12 +16,25 @@
     <a asp-action="Create">Create New</a>
 </p>
 
-@* Add the search form *@
+@* Add the search and filter form *@
 <form asp-controller="Book" asp-action="Index" method="get">
     <div class="form-actions no-color">
         <p>
             Find by title, author, or ISBN: <input type="text" name="searchString" value="@searchString" />
-            <input type="submit" value="Search" class="btn btn-primary" /> |
+
+            @* Genre Filter Dropdown *@
+            <label for="genreId">Genre:</label>
+            <select name="genreId" id="genreId" asp-items="@ViewBag.Genres">
+                <option value="">-- All Genres --</option> @* Add "All" option *@
+            </select>
+
+            @* Author Filter Dropdown *@
+            <label for="authorId">Author:</label>
+            <select name="authorId" id="authorId" asp-items="@ViewBag.Authors">
+                 <option value="">-- All Authors --</option> @* Add "All" option *@
+            </select>
+
+            <input type="submit" value="Filter/Search" class="btn btn-primary" /> |
             <a asp-action="Index">Back to Full List</a>
         </p>
     </div>
@@ -183,7 +198,7 @@
 
 @* Add Pagination Links *@
 @{
-    // Define route values for pagination links, preserving the current search string
+    // Define route values for pagination links, preserving the current search string and filter IDs
     var prevDisabled = (currentPage <= 1) ? "disabled" : "";
     var nextDisabled = (currentPage >= totalPages) ? "disabled" : "";
 }
@@ -196,19 +211,22 @@
                  <a asp-action="Index"
                    asp-route-pageNumber="@(currentPage - 1)"
                    asp-route-searchString="@searchString"
+                   asp-route-genreId="@selectedGenreId"
+                   asp-route-authorId="@selectedAuthorId"
                    class="page-link">
                     Previous
                 </a>
             </li>
 
-            @* Optional: Add page number links (more complex, skipped for simplicity here)*@
-            @* You could loop from 1 to totalPages to create individual page links *@
+            @* Optional: Add page number links *@
              @for (var i = 1; i <= totalPages; i++)
             {
                 <li class="page-item @(i == currentPage ? "active" : "")">
                     <a asp-action="Index"
                        asp-route-pageNumber="@i"
                        asp-route-searchString="@searchString"
+                       asp-route-genreId="@selectedGenreId"
+                       asp-route-authorId="@selectedAuthorId"
                        class="page-link">
                         @i
                     </a>
@@ -220,6 +238,8 @@
                 <a asp-action="Index"
                    asp-route-pageNumber="@(currentPage + 1)"
                    asp-route-searchString="@searchString"
+                   asp-route-genreId="@selectedGenreId"
+                   asp-route-authorId="@selectedAuthorId"
                    class="page-link">
                     Next
                 </a>

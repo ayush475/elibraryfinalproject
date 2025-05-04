@@ -20,8 +20,8 @@ namespace FinalProject.Controllers
         }
 
         // GET: Book
-        // Modified Index action to include search, pagination, and ordering
-        public async Task<IActionResult> Index(string searchString, int? pageNumber)
+        // Modified Index action to include search, pagination, ordering, and filtering by Genre and Author
+        public async Task<IActionResult> Index(string searchString, int? pageNumber, int? genreId, int? authorId)
         {
             // Define the number of items per page
             int pageSize = 10; // You can adjust this value
@@ -44,6 +44,19 @@ namespace FinalProject.Controllers
                                        || (b.Isbn != null && b.Isbn.Contains(searchString))); // Also search by ISBN
             }
 
+            // Apply Genre filter if a genreId is provided
+            if (genreId.HasValue && genreId.Value > 0) // Check if genreId has a value and is not the "All" option (assuming 0 or null for All)
+            {
+                books = books.Where(b => b.GenreId == genreId.Value);
+            }
+
+            // Apply Author filter if an authorId is provided
+            if (authorId.HasValue && authorId.Value > 0) // Check if authorId has a value and is not the "All" option
+            {
+                books = books.Where(b => b.AuthorId == authorId.Value);
+            }
+
+
             // Add ordering - Order by DateAdded in descending order to show latest first
             // You could also order by PublicationDate if that's more appropriate for "latest"
             books = books.OrderByDescending(b => b.DateAdded);
@@ -60,11 +73,11 @@ namespace FinalProject.Controllers
             {
                 currentPage = 1;
             }
-            else if (currentPage > totalPages && totalPages > 0) // Prevent going past the last page
+            else if (totalPages > 0 && currentPage > totalPages) // Prevent going past the last page if there are books
             {
                  currentPage = totalPages;
             }
-             else if (totalPages == 0) // Handle case where there are no books
+            else if (totalPages == 0) // Handle case where there are no books matching filters/search
             {
                  currentPage = 1;
             }
@@ -76,11 +89,19 @@ namespace FinalProject.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            // Pass pagination information to the view using ViewBag
+            // Pass pagination, search, and filter information to the view using ViewBag
             ViewBag.CurrentPage = currentPage;
             ViewBag.TotalPages = totalPages;
             ViewBag.PageSize = pageSize;
             ViewBag.SearchString = searchString; // Pass the search string back to the view
+            ViewBag.SelectedGenreId = genreId; // Pass the selected genre ID back
+            ViewBag.SelectedAuthorId = authorId; // Pass the selected author ID back
+
+            // Populate dropdown lists for Genre and Author for the view
+            // Add a default "All" option with value 0 or null
+            ViewBag.Genres = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name", genreId);
+            ViewBag.Authors = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName), "AuthorId", "FirstName", authorId); // You might want to display full name later
+
 
             // Return the paginated, filtered, and ordered list of books to the view
             return View(paginatedBooks);
@@ -110,9 +131,9 @@ namespace FinalProject.Controllers
         // GET: Book/Create
         public IActionResult Create()
         {
-            ViewData["AuthorId"] = new SelectList(_context.Authors, "AuthorId", "FirstName");
-            ViewData["GenreId"] = new SelectList(_context.Genres, "GenreId", "Name");
-            ViewData["PublisherId"] = new SelectList(_context.Publishers, "PublisherId", "Name");
+            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName), "AuthorId", "FirstName");
+            ViewData["GenreId"] = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name");
+            ViewData["PublisherId"] = new SelectList(_context.Publishers.OrderBy(p => p.Name), "PublisherId", "Name");
             return View();
         }
 
@@ -132,9 +153,9 @@ namespace FinalProject.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AuthorId"] = new SelectList(_context.Authors, "AuthorId", "FirstName", book.AuthorId);
-            ViewData["GenreId"] = new SelectList(_context.Genres, "GenreId", "Name", book.GenreId);
-            ViewData["PublisherId"] = new SelectList(_context.Publishers, "PublisherId", "Name", book.PublisherId);
+            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName), "AuthorId", "FirstName", book.AuthorId);
+            ViewData["GenreId"] = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name", book.GenreId);
+            ViewData["PublisherId"] = new SelectList(_context.Publishers.OrderBy(p => p.Name), "PublisherId", "Name", book.PublisherId);
             return View(book);
         }
 
@@ -151,9 +172,9 @@ namespace FinalProject.Controllers
             {
                 return NotFound();
             }
-            ViewData["AuthorId"] = new SelectList(_context.Authors, "AuthorId", "FirstName", book.AuthorId);
-            ViewData["GenreId"] = new SelectList(_context.Genres, "GenreId", "Name", book.GenreId);
-            ViewData["PublisherId"] = new SelectList(_context.Publishers, "PublisherId", "Name", book.PublisherId);
+            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName), "AuthorId", "FirstName", book.AuthorId);
+            ViewData["GenreId"] = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name", book.GenreId);
+            ViewData["PublisherId"] = new SelectList(_context.Publishers.OrderBy(p => p.Name), "PublisherId", "Name", book.PublisherId);
             return View(book);
         }
 
@@ -191,9 +212,9 @@ namespace FinalProject.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AuthorId"] = new SelectList(_context.Authors, "AuthorId", "FirstName", book.AuthorId);
-            ViewData["GenreId"] = new SelectList(_context.Genres, "GenreId", "Name", book.GenreId);
-            ViewData["PublisherId"] = new SelectList(_context.Publishers, "PublisherId", "Name", book.PublisherId);
+            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName), "AuthorId", "FirstName", book.AuthorId);
+            ViewData["GenreId"] = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name", book.GenreId);
+            ViewData["PublisherId"] = new SelectList(_context.Publishers.OrderBy(p => p.Name), "PublisherId", "Name", book.PublisherId);
             return View(book);
         }
 
