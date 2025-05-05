@@ -12,6 +12,7 @@ using System.Security.Claims; // Needed to access user claims
 using Microsoft.AspNetCore.Http; // Needed for accessing Request.Headers.Referer
 using Microsoft.AspNetCore.Authentication; // Needed for signing out
 using Microsoft.AspNetCore.Authentication.Cookies; // Needed for CookieAuthenticationDefaults.AuthenticationScheme
+using System.Diagnostics; // Required for Debug.WriteLine
 
 namespace FinalProject.Controllers
 {
@@ -135,10 +136,13 @@ namespace FinalProject.Controllers
         }
 
         // GET: Book/Details/5
-        public async Task<IActionResult> Details(int? id)
+          public async Task<IActionResult> Details(int? id)
         {
+            Debug.WriteLine($"BookController.Details action called for Book ID: {id}"); // Debugging line
+
             if (id == null)
             {
+                Debug.WriteLine("Book ID is null. Returning NotFound."); // Debugging line
                 return NotFound();
             }
 
@@ -147,26 +151,73 @@ namespace FinalProject.Controllers
                 .Include(b => b.Genre)
                 .Include(b => b.Publisher)
                 .FirstOrDefaultAsync(m => m.BookId == id);
+
             if (book == null)
             {
+                Debug.WriteLine($"Book with ID {id} not found. Returning NotFound."); // Debugging line
                 return NotFound();
             }
+            Debug.WriteLine($"Book found: {book.Title} (ID: {book.BookId})"); // Debugging line
 
-            // --- Check if the book is bookmarked by the current user for the Details view ---
-            // Use null-conditional operator for safer access to User.Identity
-            if (User?.Identity?.IsAuthenticated == true)
+
+            // --- Check if the logged-in user has a cancellable order item for this book ---
+            Debug.WriteLine($"Checking if user is authenticated: {User.Identity.IsAuthenticated}"); // Debugging line
+            if (User.Identity.IsAuthenticated)
             {
-                // Get the MemberId (integer primary key) from the claims
                 var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                 Debug.WriteLine($"MemberId claim string: {memberIdString}"); // Debugging line
 
-                if (!string.IsNullOrEmpty(memberIdString) && int.TryParse(memberIdString, out int memberId))
+                if (int.TryParse(memberIdString, out int memberId))
                 {
-                    var isBookmarked = await _context.Bookmarks
-                        .AnyAsync(b => b.MemberId == memberId && b.BookId == id); // Use the integer MemberId
-                    ViewBag.IsBookmarked = isBookmarked;
+                     Debug.WriteLine($"Successfully parsed MemberId: {memberId}"); // Debugging line
+                    // Define cancellable order statuses (must match those in OrdersController.CancelOrderItem)
+                    var cancellableStatuses = new[] { "Pending", "Placed" };
+                     Debug.WriteLine($"Cancellable statuses: {string.Join(", ", cancellableStatuses)}"); // Debugging line
+
+
+                    // Find a cancellable order item for this book and user
+                    var cancellableOrderItem = await _context.OrderItems
+                        .Include(oi => oi.Order) // Include the parent Order to check status and member
+                        .Where(oi => oi.BookId == id && // Match the current book
+                                     oi.Order.MemberId == memberId && // Match the logged-in user
+                                     cancellableStatuses.Contains(oi.Order.OrderStatus)) // Match cancellable statuses
+                        .Select(oi => new { oi.OrderItemId }) // Select only the ID
+                        .FirstOrDefaultAsync();
+
+                     Debug.WriteLine($"Query for cancellable order item executed."); // Debugging line
+
+                    // If a cancellable order item is found, pass its ID to the view
+                    if (cancellableOrderItem != null)
+                    {
+                         Debug.WriteLine($"Cancellable OrderItem found! ID: {cancellableOrderItem.OrderItemId}"); // Debugging line
+                        ViewBag.CancellableOrderItemId = cancellableOrderItem.OrderItemId;
+                    }
+                    else
+                    {
+                         Debug.WriteLine("No cancellable OrderItem found for this user and book."); // Debugging line
+                        ViewBag.CancellableOrderItemId = null; // Explicitly set to null if not found
+                    }
+
+                 // --- Check if the book is bookmarked by the current user ---
+                 // Ensure memberId is available before checking bookmarks
+                 var isBookmarked = await _context.Bookmarks
+                     .AnyAsync(b => b.MemberId == memberId && b.BookId == id);
+                 ViewBag.IsBookmarked = isBookmarked;
+                 Debug.WriteLine($"Bookmarked status for MemberId {memberId} and Book ID {id}: {isBookmarked}"); // Debugging line
+
+                }
+                else
+                {
+                     Debug.WriteLine("Failed to parse MemberId claim."); // Debugging line
                 }
             }
-            // --- End Check for Details view ---
+            else
+            {
+                 Debug.WriteLine("User is not authenticated. Skipping order item and bookmark checks."); // Debugging line
+                 ViewBag.CancellableOrderItemId = null; // Ensure ViewBag is null if not authenticated
+                 ViewBag.IsBookmarked = false; // Ensure ViewBag is false if not authenticated
+            }
+            // --- End Check for Cancellable Order Item and Bookmark ---
 
 
             return View(book);

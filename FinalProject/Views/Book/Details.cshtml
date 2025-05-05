@@ -4,179 +4,226 @@
     ViewData["Title"] = Model.Title; // Use the book title for the page title
 }
 
-<h1>@Html.DisplayFor(model => model.Title)</h1>
+@* Assuming Bootstrap CSS is already included in your layout file (_Layout.cshtml) *@
+@* If not, you would need to add the Bootstrap CDN link here: *@
+@* <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> *@
+@* And the Bootstrap JS bundle (for alerts, etc.): *@
+@* <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> *@
 
-@* Display TempData message if it exists *@
-@if (TempData["Message"] != null)
-{
-    <div class="alert alert-info alert-dismissible fade show" role="alert">
-        @TempData["Message"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
+<div class="container mt-4"> @* Use Bootstrap container and margin top *@
+
+    <h1 class="mb-4">@Html.DisplayFor(model => model.Title)</h1> @* Bootstrap heading with margin bottom *@
+
+    @* Display TempData message if it exists *@
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert"> @* Bootstrap alert styling *@
+            @TempData["Message"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card mb-4"> @* Bootstrap card container for details *@
+        <div class="card-body">
+            <h4 class="card-title mb-4">Details</h4>
+            <hr class="mb-4"/>
+
+            <div class="row"> @* Bootstrap row for details layout *@
+                @* Book Cover Image Section *@
+                <div class="col-md-4 mb-4 mb-md-0 d-flex justify-content-center align-items-start"> @* Responsive column, centering *@
+                    @if (!string.IsNullOrEmpty(Model.CoverImageUrl))
+                    {
+                        <img src="@Model.CoverImageUrl" alt="Book Cover" class="img-fluid rounded shadow-sm" style="max-height: 300px;" /> @* Bootstrap image classes *@
+                    }
+                    else
+                    {
+                         <div class="w-100 bg-light rounded shadow-sm d-flex align-items-center justify-content-center text-muted" style="height: 200px;">No cover image available</div> @* Placeholder styling *@
+                    }
+                </div>
+
+                @* Book Details List Section *@
+                <div class="col-md-8"> @* Responsive column *@
+                    <dl class="row"> @* Bootstrap row for definition list *@
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.Isbn)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.Isbn)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.Description)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.Description)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.PublicationDate)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.PublicationDate)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.ListPrice)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.ListPrice)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.Author)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @(Model.Author != null ? $"{Model.Author.FirstName} {Model.Author.LastName}" : "Unknown Author")
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.Publisher)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @(Model.Publisher != null ? Model.Publisher.Name : "Unknown Publisher")
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.Genre)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @(Model.Genre != null ? Model.Genre.Name : "Unknown Genre")
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.Language)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.Language)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.Format)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.Format)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.AvailabilityStock)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.AvailabilityStock)
+                        </dd>
+
+                         <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.AvailabilityLibrary)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.AvailabilityLibrary)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.Rating)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.Rating)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.RatingCount)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.RatingCount)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.OnSale)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.OnSale)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.SaleDiscount)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.SaleDiscount)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.SaleStartDate)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.SaleStartDate)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.SaleEndDate)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.SaleEndDate)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.DateAdded)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.DateAdded)
+                        </dd>
+
+                        <dt class="col-sm-3">
+                            @Html.DisplayNameFor(model => model.DateUpdated)
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.DateUpdated)
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
     </div>
-}
 
-<div>
-    <h4>Details</h4>
-    <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Isbn)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Isbn)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Description)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Description)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.CoverImageUrl)
-        </dt>
-        <dd class = "col-sm-10">
-            @* Display the image if URL exists *@
-            @if (!string.IsNullOrEmpty(Model.CoverImageUrl))
+    <div class="d-flex flex-wrap gap-2 mt-4"> @* Bootstrap flex container for buttons with gap and margin top *@
+        <a asp-action="Edit" asp-route-id="@Model?.BookId" class="btn btn-primary">Edit</a> @* Bootstrap primary button *@
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a> @* Bootstrap secondary button *@
+
+        @* Add Bookmark button on Details page *@
+        @if (User?.Identity?.IsAuthenticated == true)
+        {
+            // Check if the book is bookmarked (assuming ViewBag.IsBookmarked is set in Details action)
+            if (ViewBag.IsBookmarked != null && ViewBag.IsBookmarked == true)
             {
-                <img src="@Model.CoverImageUrl" alt="Book Cover" style="max-width: 200px; height: auto;" />
+                <span class="btn btn-success disabled" title="You have bookmarked this book.">Bookmarked</span> @* Bootstrap success button (disabled) *@
             }
             else
             {
-                 <span>No cover image available</span>
+                @* Create a small form for the Bookmark action *@
+                <form asp-controller="Book" asp-action="Bookmark" method="post" class="d-inline-block"> @* Bootstrap inline block form *@
+                    <input type="hidden" name="bookId" value="@Model?.BookId" />
+                    @Html.AntiForgeryToken() @* Include the anti-forgery token *@
+                    <button type="submit" class="btn btn-outline-primary" title="Bookmark this book">Bookmark</button> @* Bootstrap outline primary button *@
+                </form>
             }
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.PublicationDate)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.PublicationDate)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.ListPrice)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.ListPrice)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Author)
-        </dt>
-        <dd class = "col-sm-10">
-            @* Add null check for Author (Addresses CS8602 warning in views) *@
-            @(Model.Author != null ? $"{Model.Author.FirstName} {Model.Author.LastName}" : "Unknown Author")
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Publisher)
-        </dt>
-        <dd class = "col-sm-10">
-            @* Add null check for Publisher (Addresses CS8602 warning in views) *@
-            @(Model.Publisher != null ? Model.Publisher.Name : "Unknown Publisher")
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Genre)
-        </dt>
-        <dd class = "col-sm-10">
-            @* Add null check for Genre (Addresses CS8602 warning in views) *@
-            @(Model.Genre != null ? Model.Genre.Name : "Unknown Genre")
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Language)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Language)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Format)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Format)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.AvailabilityStock)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.AvailabilityStock)
-        </dd>
-         <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.AvailabilityLibrary)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.AvailabilityLibrary)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Rating)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Rating)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.RatingCount)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.RatingCount)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.OnSale)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.OnSale)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SaleDiscount)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SaleDiscount)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SaleStartDate)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SaleStartDate)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SaleEndDate)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SaleEndDate)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.DateAdded)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.DateAdded)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.DateUpdated)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.DateUpdated)
-        </dd>
-    </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.BookId">Edit</a> |
-    <a asp-action="Index">Back to List</a>
 
-    @* Add Bookmark button on Details page *@
-    @if (User?.Identity?.IsAuthenticated == true)
-    {
-        // Check if the book is bookmarked (assuming ViewBag.IsBookmarked is set in Details action)
-        if (ViewBag.IsBookmarked != null && ViewBag.IsBookmarked == true)
-        {
-            <span class="btn btn-success disabled" title="You have bookmarked this book.">Bookmarked</span>
+            @* --- Add Cancel Order Button (Conditional) --- *@
+            @* Check if a cancellable OrderItemId was passed from the controller *@
+            @if (ViewBag.CancellableOrderItemId != null)
+            {
+                @* Create a form to submit the cancellation request *@
+                <form asp-controller="Orders" asp-action="CancelOrderItem" method="post" class="d-inline-block"> @* Bootstrap inline block form *@
+                    @* Pass the OrderItemId to the controller action *@
+                    <input type="hidden" name="orderItemId" value="@ViewBag.CancellableOrderItemId" />
+                    @Html.AntiForgeryToken() @* Include the anti-forgery token *@
+                    <button type="submit" class="btn btn-danger" title="Cancel this order item">Cancel Order</button> @* Bootstrap danger button *@
+                </form>
+            }
+            @* --- End Cancel Order Button --- *@
+
         }
         else
         {
-            @* Create a small form for the Bookmark action *@
-            <form asp-controller="Book" asp-action="Bookmark" method="post" style="display:inline;">
-                <input type="hidden" name="bookId" value="@Model?.BookId" />
-                @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                <button type="submit" class="btn btn-outline-primary" title="Bookmark this book">Bookmark</button>
-            </form>
+            @* Optional: Show a disabled button or message for unauthenticated users for Bookmark *@
+            <span class="btn btn-outline-secondary disabled" title="Login to bookmark books">Bookmark</span> @* Bootstrap outline secondary button (disabled) *@
         }
-    }
-    else
-    {
-        @* Optional: Show a disabled button or message for unauthenticated users *@
-        <span class="btn btn-outline-secondary disabled" title="Login to bookmark books">Bookmark</span>
-    }
+    </div>
 </div>

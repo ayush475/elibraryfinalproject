@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authorization; // Required for [Authorize] attribute
 using System.Security.Claims; // Required to access user claims
 using Microsoft.AspNetCore.Authentication.Cookies; // Needed for SignOutAsync
 using Microsoft.AspNetCore.Authentication; // Needed for SignOutAsync
+using System.Diagnostics; // Required for Debug.WriteLine
 
 namespace FinalProject.Controllers
 {
@@ -39,10 +40,6 @@ namespace FinalProject.Controllers
                 return NotFound();
             }
 
-            // The InvalidCastException is likely occurring here when EF Core reads data from the database
-            // and tries to map a NULL value from the 'ClaimCode' column to a non-nullable property
-            // in your Order model.
-            // FIX: Ensure the 'ClaimCode' property in your Order model is nullable (e.g., 'public string? ClaimCode { get; set; }').
             var order = await _context.Orders
                 .Include(o => o.Member)
                 .Include(o => o.OrderItems) // Include OrderItems to show items in the order
@@ -399,6 +396,142 @@ namespace FinalProject.Controllers
             // Or return Json(new { success = true, message = "Item added to order." });
         }
         // --- End AddItemToOrder Action ---
+
+
+        // --- Action to Cancel a Specific Order Item ---
+        [HttpPost] // Use POST as this action modifies data
+        [Authorize] // Only authenticated users can cancel items
+        [ValidateAntiForgeryToken] // Protects against Cross-Site Request Forgery
+        public async Task<IActionResult> CancelOrderItem(int orderItemId)
+        {
+            Debug.WriteLine($"CancelOrderItem action called with orderItemId: {orderItemId}"); // Debugging line
+
+            // Determine the return URL - likely the page the request came from (Book Details page)
+            var returnUrl = Request.Headers["Referer"].ToString();
+            if (string.IsNullOrEmpty(returnUrl) || !Url.IsLocalUrl(returnUrl))
+            {
+                // Fallback URL if Referer is missing or not local
+                returnUrl = Url.Action(nameof(Index), "Book");
+            }
+             Debug.WriteLine($"Return URL: {returnUrl}"); // Debugging line
+
+            // Get the authenticated user's MemberId
+            var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(memberIdString) || !int.TryParse(memberIdString, out int memberId))
+            {
+                Debug.WriteLine("Authentication failed or MemberId claim missing/invalid."); // Debugging line
+                TempData["Message"] = "Authentication failed. Please log in again.";
+                // Optionally redirect to login if authentication fails
+                // return RedirectToAction("Login", "Account"); // Adjust controller/action as needed
+                return Redirect(returnUrl); // Or just redirect back with the message
+            }
+             Debug.WriteLine($"Logged-in MemberId: {memberId}"); // Debugging line
+
+
+            // Find the OrderItem, including its parent Order to check ownership and status
+            var orderItem = await _context.OrderItems
+                .Include(oi => oi.Order) // Include the parent Order to check MemberId and Status
+                .FirstOrDefaultAsync(oi => oi.OrderItemId == orderItemId);
+
+            Debug.WriteLine($"Attempting to find OrderItem with ID: {orderItemId}"); // Debugging line
+            if (orderItem == null)
+            {
+                Debug.WriteLine($"OrderItem with ID {orderItemId} not found."); // Debugging line
+                TempData["Message"] = "Error: Order item not found.";
+                return Redirect(returnUrl);
+            }
+             Debug.WriteLine($"OrderItem found. OrderItem ID: {orderItem.OrderItemId}, Parent Order ID: {orderItem.OrderId}"); // Debugging line
+
+
+            // --- Validation Checks ---
+            // Ensure the order item belongs to the logged-in user
+            if (orderItem.Order.MemberId != memberId)
+            {
+                Debug.WriteLine($"Unauthorized attempt: Order belongs to MemberId {orderItem.Order.MemberId}, logged-in MemberId is {memberId}"); // Debugging line
+                TempData["Message"] = "Error: You do not have permission to cancel this item.";
+                // Log this attempt for security reasons
+                // _logger.LogWarning($"Unauthorized attempt to cancel OrderItem {orderItemId} by MemberId {memberId}");
+                return Redirect(returnUrl);
+            }
+             Debug.WriteLine("Ownership check passed."); // Debugging line
+
+
+            // Define which statuses are cancellable. Adjust these based on your business logic.
+            var cancellableStatuses = new[] { "Pending", "Placed" };
+             Debug.WriteLine($"Cancellable statuses: {string.Join(", ", cancellableStatuses)}"); // Debugging line
+
+
+            // Check if the order is in a cancellable status
+            if (!cancellableStatuses.Contains(orderItem.Order.OrderStatus))
+            {
+                Debug.WriteLine($"Order status '{orderItem.Order.OrderStatus}' is not cancellable."); // Debugging line
+                TempData["Message"] = $"Error: Order item is not cancellable (Status: {orderItem.Order.OrderStatus}).";
+                return Redirect(returnUrl);
+            }
+             Debug.WriteLine($"Order status '{orderItem.Order.OrderStatus}' is cancellable. Proceeding with cancellation."); // Debugging line
+            // --- End Validation Checks ---
+
+
+            // --- Perform Cancellation ---
+            try
+            {
+                 Debug.WriteLine($"Removing OrderItem {orderItem.OrderItemId} from context."); // Debugging line
+                // Remove the order item from the context
+                _context.OrderItems.Remove(orderItem);
+
+                // Recalculate the total for the parent order
+                // Need to fetch the order again to ensure its OrderItems collection is up-to-date after removal
+                // Or manually update the total before saving if removing the item directly impacts the collection
+                // A simpler way after removal is just to update the DateUpdated and potentially the status if this was the last item
+                // Let's recalculate the total from the remaining items
+                 // Ensure the OrderItems collection is loaded for recalculation
+                 await _context.Entry(orderItem.Order).Collection(o => o.OrderItems).LoadAsync();
+
+                 Debug.WriteLine($"Recalculating total for Order {orderItem.OrderId}. Current items count (before save): {orderItem.Order.OrderItems.Count}"); // Debugging line
+
+                 orderItem.Order.TotalAmount = orderItem.Order.OrderItems
+                    .Where(oi => oi.OrderItemId != orderItemId) // Exclude the item being removed from calculation
+                    .Sum(oi => (oi.Quantity * oi.UnitPrice) - oi.Discount);
+
+                 Debug.WriteLine($"New TotalAmount for Order {orderItem.OrderId}: {orderItem.Order.TotalAmount}"); // Debugging line
+
+
+                // If the order has no remaining items, you might change its status to "Cancelled" or "Empty"
+                if (!orderItem.Order.OrderItems.Any(oi => oi.OrderItemId != orderItemId))
+                {
+                    Debug.WriteLine($"Order {orderItem.OrderId} is now empty. Setting status to 'Cancelled'."); // Debugging line
+                    orderItem.Order.OrderStatus = "Cancelled"; // Or another appropriate status
+                    orderItem.Order.TotalAmount = 0; // Ensure total is 0 if order is empty/cancelled
+                }
+
+                orderItem.Order.DateUpdated = DateTime.UtcNow; // Update the order's modification date
+                _context.Orders.Update(orderItem.Order); // Mark the parent order as updated
+                 Debug.WriteLine($"Order {orderItem.OrderId} marked for update."); // Debugging line
+
+
+                // Save the changes (removes the order item and updates the order)
+                 Debug.WriteLine("Saving changes to database..."); // Debugging line
+                await _context.SaveChangesAsync();
+                 Debug.WriteLine("Changes saved successfully."); // Debugging line
+
+
+                TempData["Message"] = "Order item cancelled successfully.";
+                 Debug.WriteLine("TempData message set: 'Order item cancelled successfully.'"); // Debugging line
+            }
+            catch (Exception ex)
+            {
+                // Log the exception for debugging
+                Debug.WriteLine($"Error cancelling OrderItem {orderItemId}: {ex.Message}"); // Debugging line
+                // _logger.LogError(ex, $"Error cancelling OrderItem {orderItemId}");
+                TempData["Message"] = "An error occurred while cancelling the order item.";
+                 Debug.WriteLine("TempData message set: 'An error occurred while cancelling the order item.'"); // Debugging line
+            }
+
+            // Redirect back to the original page
+             Debug.WriteLine($"Redirecting to: {returnUrl}"); // Debugging line
+            return Redirect(returnUrl);
+        }
+        // --- End CancelOrderItem Action ---
 
 
         private bool OrderExists(int id)
