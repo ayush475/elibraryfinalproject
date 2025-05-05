@@ -12,7 +12,7 @@ namespace FinalProject.Models
         [Key]
         public int OrderId { get; set; }
 
-        // Foreign key for the Member who placed the order. Required.
+        // Foreign key for the Member who placed the order. Required at the database level.
         [Required]
         public int MemberId { get; set; }
 
@@ -22,23 +22,23 @@ namespace FinalProject.Models
 
         // Current status of the order (e.g., "Pending", "Processing", "Shipped").
         [StringLength(50)]
-        public string OrderStatus { get; set; } = "Pending";
+        public string OrderStatus { get; set; } = "Pending"; // Default status
 
         // Total amount of the order after discounts. Required.
         [Required]
         [Column(TypeName = "decimal(10, 2)")]
-        [DisplayFormat(DataFormatString = "{0:C}")]
+        [DisplayFormat(DataFormatString = "{0:C}")] // Currency format for display
         public decimal TotalAmount { get; set; }
 
         // Discount percentage applied to the order.
         [Column(TypeName = "decimal(5, 2)")]
-        [DisplayFormat(DataFormatString = "{0:P2}")]
-        public decimal DiscountApplied { get; set; } = 0.00M;
+        [DisplayFormat(DataFormatString = "{0:P2}")] // Percentage format for display
+        public decimal DiscountApplied { get; set; } = 0.00M; // Default discount
 
-        // Claim code associated with the order. Required.
-        [Required]
-        [StringLength(50)]
-        public required string   ClaimCode { get; set; }
+        // Claim code associated with the order. Relaxed to be nullable.
+        // Removed [Required] attribute and made the string nullable using '?'.
+        [StringLength(50)] // Maximum length for the claim code
+        public string? ClaimCode { get; set; } // Nullable string
 
         // Date and time the order was added to the system.
         [DataType(DataType.DateTime)]
@@ -51,10 +51,14 @@ namespace FinalProject.Models
         // Navigation properties
 
         // The Member who placed the order.
-        [ForeignKey("MemberId")]
-        public virtual required Member Member { get; set; }
+        // Made non-required by removing 'required' keyword.
+        // Can be null if the Order is loaded without including the Member.
+        [ForeignKey("MemberId")] // Specifies the foreign key property
+        public virtual Member? Member { get; set; }
 
         // Collection of items included in this order.
-        public virtual  required ICollection<OrderItem> OrderItems { get; set; }
+        // Made non-required by removing 'required' keyword.
+        // Can be null or empty if the Order is loaded without including OrderItems.
+        public virtual ICollection<OrderItem>? OrderItems { get; set; }
     }
 }
