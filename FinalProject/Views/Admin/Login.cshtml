@@ -1,0 +1,51 @@
+@model FinalProject.ViewModels.AdminLoginViewModel
+
+@{
+    ViewData["Title"] = "Admin Login";
+}
+
+<h1>Admin Login</h1>
+
+<h4>Administrator Access</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Login">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @* Username field from AdminLoginViewModel *@
+            <div class="form-group">
+                <label asp-for="Username" class="control-label"></label>
+                <input asp-for="Username" class="form-control" />
+                <span asp-validation-for="Username" class="text-danger"></span>
+            </div>
+
+            @* Password field from AdminLoginViewModel *@
+            <div class="form-group">
+                <label asp-for="Password" class="control-label"></label>
+                <input asp-for="Password" class="form-control" type="password" /> @* Set type="password" for security *@
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            @* Remember Me checkbox from AdminLoginViewModel *@
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="RememberMe" /> @Html.DisplayNameFor(model => model.RememberMe)
+                </label>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Login" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+@* Optional: Link to Admin Registration (if you want to allow self-registration) *@
+@* <div>
+    <p>Don't have an admin account? <a asp-action="Register">Register here</a>.</p>
+</div> *@
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
