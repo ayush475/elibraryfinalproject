@@ -5,20 +5,40 @@ using Microsoft.Extensions.DependencyInjection; // Added for IServiceCollection 
 using Microsoft.Extensions.Hosting; // Added for IHostEnvironment
 using Microsoft.Extensions.Configuration; // Added for IConfiguration
 using Microsoft.Extensions.Logging; // Added for ILogger
+using Microsoft.AspNetCore.Authentication.Cookies; // Needed for CookieAuthenticationDefaults
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews(); // This registers MVC controllers and views
-builder.Services.AddAuthentication("CookieAuth") // "CookieAuth" is the default scheme name
-    .AddCookie("CookieAuth", options =>
-    {
-        options.Cookie.Name = "FinalProject"; // Set a custom cookie name
-        options.LoginPath = "/Members/Login"; // Path to your login page
-        options.AccessDeniedPath = "/Members/AccessDenied"; // Path for access denied
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Cookie expiration time
-        options.SlidingExpiration = true; // Renew cookie on activity
-    });
+
+// --- Configure Authentication Schemes ---
+builder.Services.AddAuthentication(options =>
+{
+    // Set a default scheme. This is often the most common login type.
+    // You might need to adjust the DefaultScheme and DefaultChallengeScheme
+    // depending on which login page should be the primary one.
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme; // Default to "CookieAuth" for members
+    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+})
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options => // Configuration for the Member scheme ("CookieAuth")
+{
+    options.Cookie.Name = "FinalProject.Member"; // Set a custom cookie name for Members
+    options.LoginPath = "/Member/Login"; // Path to your member login page
+    options.AccessDeniedPath = "/Member/AccessDenied"; // Path for member access denied
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(30); // Member cookie expiration time
+    options.SlidingExpiration = true; // Renew member cookie on activity
+})
+.AddCookie("AdminCookieAuth", options => // Configuration for the Admin scheme
+{
+    options.Cookie.Name = "FinalProject.Admin"; // Set a custom cookie name for Admins (different from member cookie)
+    options.LoginPath = "/Admin/Login"; // Path to your admin login page
+    options.AccessDeniedPath = "/Admin/AccessDenied"; // Path for admin access denied
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(60); // Admin cookie expiration time (can be different)
+    options.SlidingExpiration = true; // Renew admin cookie on activity
+});
+// --- End Configure Authentication Schemes ---
+
 
 // Add Authorization services
 builder.Services.AddAuthorization();
@@ -80,7 +100,10 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// Authentication middleware should come before Authorization middleware
+app.UseAuthentication(); // Add authentication middleware
 app.UseAuthorization(); // Add authorization middleware if you implement security
+
 
 // Configure endpoint routing
 app.MapControllerRoute(

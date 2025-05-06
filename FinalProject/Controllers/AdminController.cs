@@ -16,8 +16,9 @@ using BCrypt.Net; // Required for password hashing
 
 namespace FinalProject.Controllers
 {
-    // Note: You might want to apply [Authorize(Roles = "Admin")] to restrict access
-    // to certain actions (like Index, Details, Create, Edit, Delete) to logged-in admins only.
+    // Apply Authorize attribute to the entire controller to require authentication by default
+    // Actions that should be publicly accessible will use [AllowAnonymous]
+    [Authorize(AuthenticationSchemes = AdminAuthScheme, Roles = "Admin")] // Require Admin role for most actions in this controller
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -39,6 +40,7 @@ namespace FinalProject.Controllers
         /// </summary>
         /// <returns>The AdminRegister view.</returns>
         [HttpGet]
+        [AllowAnonymous] // Allow anonymous access to the registration page
         public IActionResult Register()
         {
             // Note: In a real application, you would likely want to restrict access
@@ -64,6 +66,7 @@ namespace FinalProject.Controllers
         /// <returns>Redirects to Admin/Login on success, otherwise returns the Register view with validation errors.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AllowAnonymous] // Allow anonymous access to the registration post
         public async Task<IActionResult> Register(AdminRegisterViewModel model) // Using AdminRegisterViewModel
         {
             // Check if the model state is valid based on data annotations.
@@ -113,6 +116,7 @@ namespace FinalProject.Controllers
         /// <param name="returnUrl">The URL to return to after successful login.</param>
         /// <returns>The AdminLogin view.</returns>
         [HttpGet]
+        [AllowAnonymous] // Allow anonymous access to the login page
         public IActionResult Login(string? returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
@@ -134,6 +138,7 @@ namespace FinalProject.Controllers
         /// <returns>Redirects to the returnUrl or Admin/Index on success, otherwise returns the Login view with errors.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AllowAnonymous] // Allow anonymous access to the login post
         public async Task<IActionResult> Login(AdminLoginViewModel model, string? returnUrl = null) // Using AdminLoginViewModel
         {
             ViewData["ReturnUrl"] = returnUrl;
@@ -213,7 +218,8 @@ namespace FinalProject.Controllers
         /// <returns>Redirects to the Admin Login page.</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        // Consider adding [Authorize(AuthenticationSchemes = AdminAuthScheme)] if you want only logged-in admins to be able to logout
+        // This action requires authentication to prevent logging out someone who isn't logged in
+        // Since the controller has [Authorize], this action is protected by default.
         public async Task<IActionResult> Logout()
         {
             // Sign out the admin using the admin specific scheme
@@ -224,10 +230,11 @@ namespace FinalProject.Controllers
         }
 
 
-        // --- Standard CRUD Actions (Consider adding [Authorize] to these) ---
+        // --- Standard CRUD Actions (Now protected by [Authorize] on the controller) ---
 
         // GET: Admin
-        // [Authorize(AuthenticationSchemes = AdminAuthScheme, Roles = "Admin")] // Example of how to protect this action
+        // This action is now protected by the [Authorize] attribute on the controller level.
+        // Only authenticated admins with the "Admin" role can access this.
         public async Task<IActionResult> Index()
         {
             return View(await _context.Admins.ToListAsync());
@@ -235,7 +242,7 @@ namespace FinalProject.Controllers
 
 
         // GET: Admin/Details/5
-        // [Authorize(AuthenticationSchemes = AdminAuthScheme, Roles = "Admin")] // Example of how to protect this action
+        // This action is now protected by the [Authorize] attribute on the controller level.
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -259,7 +266,7 @@ namespace FinalProject.Controllers
         /// </summary>
         /// <returns>The Create view with a new AdminRegisterViewModel.</returns>
         [HttpGet]
-        // [Authorize(AuthenticationSchemes = AdminAuthScheme, Roles = "Admin")] // Example of how to protect this action
+        // This action is now protected by the [Authorize] attribute on the controller level.
         public IActionResult Create()
         {
             // Pass an empty AdminRegisterViewModel to the view, initializing required properties
@@ -279,7 +286,7 @@ namespace FinalProject.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        // [Authorize(AuthenticationSchemes = AdminAuthScheme, Roles = "Admin")] // Example of how to protect this action
+        // This action is now protected by the [Authorize] attribute on the controller level.
         public async Task<IActionResult> Create(AdminRegisterViewModel model) // Accept AdminRegisterViewModel
         {
             if (ModelState.IsValid)
@@ -316,7 +323,7 @@ namespace FinalProject.Controllers
         }
 
         // GET: Admin/Edit/5
-        // [Authorize(AuthenticationSchemes = AdminAuthScheme, Roles = "Admin")] // Example of how to protect this action
+        // This action is now protected by the [Authorize] attribute on the controller level.
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -340,7 +347,7 @@ namespace FinalProject.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        // [Authorize(AuthenticationSchemes = AdminAuthScheme, Roles = "Admin")] // Example of how to protect this action
+        // This action is now protected by the [Authorize] attribute on the controller level.
         public async Task<IActionResult> Edit(int id, [Bind("AdminId,Username,Email,FirstName,LastName,DateAdded")] Admin admin) // Removed PasswordHash, LastLogin, DateUpdated from Bind
         {
             if (id != admin.AdminId)
@@ -393,13 +400,12 @@ namespace FinalProject.Controllers
             }
 
             // If TryUpdateModelAsync fails or ModelState is invalid
-            // Manually set DateUpdated back to the current time if needed
             adminToUpdate.DateUpdated = DateTime.Now;
             return View(adminToUpdate); // Return the view with the retrieved admin object
         }
 
         // GET: Admin/Delete/5
-        // [Authorize(AuthenticationSchemes = AdminAuthScheme, Roles = "Admin")] // Example of how to protect this action
+        // This action is now protected by the [Authorize] attribute on the controller level.
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -420,7 +426,7 @@ namespace FinalProject.Controllers
         // POST: Admin/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        // [Authorize(AuthenticationSchemes = AdminAuthScheme, Roles = "Admin")] // Example of how to protect this action
+        // This action is now protected by the [Authorize] attribute on the controller level.
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var admin = await _context.Admins.FindAsync(id);
@@ -439,10 +445,11 @@ namespace FinalProject.Controllers
         }
 
         // Consider adding an AccessDenied action and view later for admins
-        // [HttpGet]
-        // public IActionResult AccessDenied()
-        // {
-        //     return View();
-        // }
+        [HttpGet]
+        [AllowAnonymous] // Allow anonymous access to the Access Denied page
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
     }
 }
