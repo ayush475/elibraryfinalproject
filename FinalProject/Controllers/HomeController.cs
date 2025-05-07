@@ -1,15 +1,14 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using FinalProject.Models;
-using FinalProject.Data; // Required to access ApplicationDbContext
-using Microsoft.EntityFrameworkCore; // Required for Entity Framework Core methods like FirstOrDefaultAsync
-
+using FinalProject.Data; 
+using Microsoft.EntityFrameworkCore; 
 namespace FinalProject.Controllers;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private readonly ApplicationDbContext _context; // Add a field for the database context
+    private readonly ApplicationDbContext _context; // for application db context and database access
 
     // Modify the constructor to inject ApplicationDbContext
     public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)

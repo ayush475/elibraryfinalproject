@@ -1,18 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims; // Required for Claims
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication; // Required for Authentication
 using Microsoft.AspNetCore.Authentication.Cookies; // Required for Cookie Authentication
-using Microsoft.AspNetCore.Authorization; // Required for [Authorize]
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using FinalProject.Data; // Using your specified DbContext namespace
+using FinalProject.Data; 
 using FinalProject.Models;
-using FinalProject.ViewModels; // Assuming ViewModels are here
-using BCrypt.Net; // Required for password hashing
+using FinalProject.ViewModels; 
 
 namespace FinalProject.Controllers
 {
@@ -149,7 +142,7 @@ namespace FinalProject.Controllers
 
                     // Sign in the user using cookie authentication
                     await HttpContext.SignInAsync(
-                        "CookieAuth",
+                        CookieAuthenticationDefaults.AuthenticationScheme,
                         new ClaimsPrincipal(claimsIdentity),
                         authProperties);
 

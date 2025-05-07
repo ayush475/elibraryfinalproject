@@ -1,18 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using FinalProject.Data; // Make sure this namespace matches your DbContext location
+using FinalProject.Data; 
 using FinalProject.Models;
-using Microsoft.AspNetCore.Authorization; // Needed for the [Authorize] attribute
-using System.Security.Claims; // Needed to access user claims
-using Microsoft.AspNetCore.Http; // Needed for accessing Request.Headers.Referer
-using Microsoft.AspNetCore.Authentication; // Needed for signing out
-using Microsoft.AspNetCore.Authentication.Cookies; // Needed for CookieAuthenticationDefaults.AuthenticationScheme
-using System.Diagnostics; // Required for Debug.WriteLine
+using Microsoft.AspNetCore.Authorization; 
+using System.Security.Claims; 
+using Microsoft.AspNetCore.Authentication; 
+using Microsoft.AspNetCore.Authentication.Cookies; 
+using System.Diagnostics; 
 
 namespace FinalProject.Controllers
 {
@@ -28,200 +23,298 @@ namespace FinalProject.Controllers
         // GET: Book
         // Modified Index action to include search, pagination, ordering, and filtering by Genre and Author
         // Now also fetches bookmarked book IDs for authenticated users.
-        public async Task<IActionResult> Index(string searchString, int? pageNumber, int? genreId, int? authorId)
+         public async Task<IActionResult> Index(string searchString, int? pageNumber, int? genreId, int? authorId)
         {
-            // Define the number of items per page
-            int pageSize = 10; // You can adjust this value
+            int pageSize = 10; // Items per page
 
-            // Start with the base query including related entities
-            var books = _context.Books
+            // 1. Build the base query with eager loading.
+            var baseQuery = _context.Books
                 .Include(b => b.Author)
                 .Include(b => b.Genre)
                 .Include(b => b.Publisher)
-                .AsQueryable(); // Use AsQueryable() to build the query before executing
+                .AsQueryable(); // Use AsQueryable() to build the query
 
-            // Apply search filter if a search string is provided
-            if (!string.IsNullOrEmpty(searchString))
-            {
-                // Filter books by Title, Author's FirstName, or Author's LastName
-                // Add null checks for Author before accessing its properties (Fixes CS8602 warning)
-                books = books.Where(b => b.Title.Contains(searchString)
-                                       || (b.Author != null && b.Author.FirstName != null && b.Author.FirstName.Contains(searchString))
-                                       || (b.Author != null && b.Author.LastName != null && b.Author.LastName.Contains(searchString))
-                                       || (b.Isbn != null && b.Isbn.Contains(searchString))); // Also search by ISBN
-            }
+            // 2. Apply filters and ordering using a helper method.
+            var filteredAndOrderedQuery = ApplyFilteringAndOrdering(baseQuery, searchString, genreId, authorId);
 
-            // Apply Genre filter if a genreId is provided
-            if (genreId.HasValue && genreId.Value > 0) // Check if genreId has a value and is not the "All" option (assuming 0 or null for All)
-            {
-                books = books.Where(b => b.GenreId == genreId.Value);
-            }
+            // 3. Get total item count for pagination (executes a COUNT query).
+            var totalItems = await filteredAndOrderedQuery.CountAsync();
 
-            // Apply Author filter if an authorId is provided
-            if (authorId.HasValue && authorId.Value > 0) // Check if authorId has a value and is not the "All" option
-            {
-                books = books.Where(b => b.AuthorId == authorId.Value);
-            }
-
-            // Add ordering - Order by DateAdded in descending order to show latest first
-            // You could also order by PublicationDate if that's more appropriate for "latest"
-            books = books.OrderByDescending(b => b.DateAdded);
-
-            // Get the total number of items after filtering and ordering (needed for pagination)
-            var totalItems = await books.CountAsync();
-
-            // Calculate the total number of pages
+            // 4. Calculate pagination details.
             var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-
-            // Determine the current page number (default to 1 if not provided or invalid)
             int currentPage = (pageNumber ?? 1);
-            if (currentPage < 1)
-            {
-                currentPage = 1;
-            }
-            else if (totalPages > 0 && currentPage > totalPages) // Prevent going past the last page if there are books
-            {
-                 currentPage = totalPages;
-            }
-            else if (totalPages == 0) // Handle case where there are no books matching filters/search
-            {
-                 currentPage = 1;
-            }
+            // Ensure current page is within valid bounds
+             if (currentPage < 1) { currentPage = 1; }
+             else if (totalPages > 0 && currentPage > totalPages) { currentPage = totalPages; }
+             else if (totalPages == 0) { currentPage = 1; }
 
-            // Apply pagination using Skip and Take
-            var paginatedBooks = await books
+
+            // 5. Apply pagination (Skip/Take) and execute the main query.
+            var paginatedBooks = await filteredAndOrderedQuery
                 .Skip((currentPage - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
+                .ToListAsync(); // Executes the main SELECT query
 
-            // --- Fetch Bookmarked Book IDs for Authenticated User ---
-            // Use null-conditional operator for safer access to User.Identity
-            if (User?.Identity?.IsAuthenticated == true)
-            {
-                // Get the MemberId (integer primary key) from the claims
-                var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // 6. Fetch bookmarked book IDs for the current user using a helper method.
+            var bookmarkedBookIds = await GetBookmarkedBookIdsAsync(User);
 
-                if (!string.IsNullOrEmpty(memberIdString) && int.TryParse(memberIdString, out int memberId))
-                {
-                    // Get the IDs of books bookmarked by this member
-                    var bookmarkedBookIds = await _context.Bookmarks
-                        .Where(b => b.MemberId == memberId) // Use the integer MemberId
-                        .Select(b => b.BookId)
-                        .ToListAsync();
-
-                    // Pass the list of bookmarked book IDs to the view
-                    ViewBag.BookmarkedBookIds = bookmarkedBookIds;
-                }
-            }
-            // --- End Fetch Bookmarked Book IDs ---
+            // 7. Populate dropdown lists for filters.
+            // Create SelectList objects needed for the view's dropdown helpers.
+             var genreList = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name", genreId);
+             // Note: The creation of anonymous type for Author FullName remains here as it's specific to the SelectList creation logic.
+             var authorList = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName).Select(a => new { a.AuthorId, FullName = $"{a.FirstName ?? ""} {a.LastName ?? ""}".Trim() }), "AuthorId", "FullName", authorId);
 
 
-            // Pass pagination, search, and filter information to the view using ViewBag
-            ViewBag.CurrentPage = currentPage;
-            ViewBag.TotalPages = totalPages;
-            ViewBag.PageSize = pageSize;
-            ViewBag.SearchString = searchString; // Pass the search string back to the view
-            ViewBag.SelectedGenreId = genreId; // Pass the selected genre ID back
-            ViewBag.SelectedAuthorId = authorId; // Pass the selected author ID back
+            // 8. Set up ViewBag data for the view using a helper method.
+            SetupIndexViewData(searchString, genreId, authorId, currentPage, totalPages, pageSize, bookmarkedBookIds, genreList, authorList);
 
-            // Populate dropdown lists for Genre and Author for the view
-            // Add a default "All" option with value 0 or null
-            ViewBag.Genres = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name", genreId);
-            // Add null checks for Author properties when creating SelectList (Fixes CS8602 warning)
-            ViewBag.Authors = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName).Select(a => new { a.AuthorId, FullName = $"{a.FirstName ?? ""} {a.LastName ?? ""}".Trim() }), "AuthorId", "FullName", authorId);
-
-
-            // Return the paginated, filtered, and ordered list of books to the view
+            // 9. Return the view with the paginated list of books.
             return View(paginatedBooks);
         }
 
-        // GET: Book/Details/5
-          public async Task<IActionResult> Details(int? id)
+        
+
+        // --- Helper Methods for Index Action ---
+
+        /// <summary>
+        /// Applies search, genre, and author filters, and default ordering to an IQueryable of Books.
+        /// </summary>
+        /// <param name="baseQuery">The starting IQueryable of Books.</param>
+        /// <param name="searchString">The search term.</param>
+        /// <param name="genreId">Optional Genre ID filter.</param>
+        /// <param name="authorId">Optional Author ID filter.</param>
+        /// <returns>The modified IQueryable of Books.</returns>
+        private IQueryable<Book> ApplyFilteringAndOrdering(IQueryable<Book> baseQuery, string searchString, int? genreId, int? authorId)
         {
-            Debug.WriteLine($"BookController.Details action called for Book ID: {id}"); // Debugging line
+            var query = baseQuery;
 
-            if (id == null)
+            // Apply search filter
+            if (!string.IsNullOrEmpty(searchString))
             {
-                Debug.WriteLine("Book ID is null. Returning NotFound."); // Debugging line
-                return NotFound();
+                query = query.Where(b => b.Title.Contains(searchString)
+                                       || (b.Author != null && b.Author.FirstName != null && b.Author.FirstName.Contains(searchString))
+                                       || (b.Author != null && b.Author.LastName != null && b.Author.LastName.Contains(searchString))
+                                       || (b.Isbn != null && b.Isbn.Contains(searchString)));
             }
 
-            var book = await _context.Books
-                .Include(b => b.Author)
-                .Include(b => b.Genre)
-                .Include(b => b.Publisher)
-                .FirstOrDefaultAsync(m => m.BookId == id);
-
-            if (book == null)
+            // Apply Genre filter
+            if (genreId.HasValue && genreId.Value > 0)
             {
-                Debug.WriteLine($"Book with ID {id} not found. Returning NotFound."); // Debugging line
-                return NotFound();
+                query = query.Where(b => b.GenreId == genreId.Value);
             }
-            Debug.WriteLine($"Book found: {book.Title} (ID: {book.BookId})"); // Debugging line
 
-
-            // --- Check if the logged-in user has a cancellable order item for this book ---
-            Debug.WriteLine($"Checking if user is authenticated: {User.Identity.IsAuthenticated}"); // Debugging line
-            if (User.Identity.IsAuthenticated)
+            // Apply Author filter
+            if (authorId.HasValue && authorId.Value > 0)
             {
-                var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                 Debug.WriteLine($"MemberId claim string: {memberIdString}"); // Debugging line
+                query = query.Where(b => b.AuthorId == authorId.Value);
+            }
 
-                if (int.TryParse(memberIdString, out int memberId))
+            // Add ordering - Order by DateAdded in descending order
+            query = query.OrderByDescending(b => b.DateAdded);
+
+            return query;
+        }
+
+        /// <summary>
+        /// Fetches the IDs of books bookmarked by the current authenticated user.
+        /// </summary>
+        /// <param name="user">The current user principal (ClaimsPrincipal).</param>
+        /// <returns>A list of bookmarked Book IDs, or an empty list if not authenticated or an error occurs.</returns>
+        private async Task<List<int>> GetBookmarkedBookIdsAsync(ClaimsPrincipal user)
+        {
+            var bookmarkedBookIds = new List<int>();
+
+            if (user?.Identity?.IsAuthenticated == true)
+            {
+                var memberIdString = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (!string.IsNullOrEmpty(memberIdString) && int.TryParse(memberIdString, out int memberId))
                 {
-                     Debug.WriteLine($"Successfully parsed MemberId: {memberId}"); // Debugging line
-                    // Define cancellable order statuses (must match those in OrdersController.CancelOrderItem)
-                    var cancellableStatuses = new[] { "Pending", "Placed" };
-                     Debug.WriteLine($"Cancellable statuses: {string.Join(", ", cancellableStatuses)}"); // Debugging line
-
-
-                    // Find a cancellable order item for this book and user
-                    var cancellableOrderItem = await _context.OrderItems
-                        .Include(oi => oi.Order) // Include the parent Order to check status and member
-                        .Where(oi => oi.BookId == id && // Match the current book
-                                     oi.Order.MemberId == memberId && // Match the logged-in user
-                                     cancellableStatuses.Contains(oi.Order.OrderStatus)) // Match cancellable statuses
-                        .Select(oi => new { oi.OrderItemId }) // Select only the ID
-                        .FirstOrDefaultAsync();
-
-                     Debug.WriteLine($"Query for cancellable order item executed."); // Debugging line
-
-                    // If a cancellable order item is found, pass its ID to the view
-                    if (cancellableOrderItem != null)
-                    {
-                         Debug.WriteLine($"Cancellable OrderItem found! ID: {cancellableOrderItem.OrderItemId}"); // Debugging line
-                        ViewBag.CancellableOrderItemId = cancellableOrderItem.OrderItemId;
-                    }
-                    else
-                    {
-                         Debug.WriteLine("No cancellable OrderItem found for this user and book."); // Debugging line
-                        ViewBag.CancellableOrderItemId = null; // Explicitly set to null if not found
-                    }
-
-                 // --- Check if the book is bookmarked by the current user ---
-                 // Ensure memberId is available before checking bookmarks
-                 var isBookmarked = await _context.Bookmarks
-                     .AnyAsync(b => b.MemberId == memberId && b.BookId == id);
-                 ViewBag.IsBookmarked = isBookmarked;
-                 Debug.WriteLine($"Bookmarked status for MemberId {memberId} and Book ID {id}: {isBookmarked}"); // Debugging line
-
+                    bookmarkedBookIds = await _context.Bookmarks
+                        .Where(b => b.MemberId == memberId)
+                        .Select(b => b.BookId)
+                        .ToListAsync();
                 }
-                else
-                {
-                     Debug.WriteLine("Failed to parse MemberId claim."); // Debugging line
-                }
+                // Optional: Log if MemberId claim is missing or invalid despite authentication
+                 // else { Debug.WriteLine("Authenticated user has missing or invalid MemberId claim."); }
+            }
+             // Optional: Log if user is not authenticated when trying to get bookmarks
+             // else { Debug.WriteLine("User is not authenticated. Skipping bookmark fetch."); }
+
+
+            return bookmarkedBookIds;
+        }
+
+        /// <summary>
+        /// Sets up ViewBag properties with data needed by the Index view.
+        /// </summary>
+        private void SetupIndexViewData(string searchString, int? genreId, int? authorId, int currentPage, int totalPages, int pageSize, List<int> bookmarkedBookIds, SelectList genreList, SelectList authorList)
+        {
+            ViewBag.CurrentPage = currentPage;
+            ViewBag.TotalPages = totalPages;
+            ViewBag.PageSize = pageSize;
+            ViewBag.SearchString = searchString;
+            ViewBag.SelectedGenreId = genreId;
+            ViewBag.SelectedAuthorId = authorId;
+            ViewBag.BookmarkedBookIds = bookmarkedBookIds; // Pass the fetched bookmarked IDs
+
+            ViewBag.Genres = genreList; // Pass the prepared SelectList for genres
+            ViewBag.Authors = authorList; // Pass the prepared SelectList for authors
+        }
+
+
+        // --- End Helper Methods for Index Action ---
+        // GET: Book/Details/5
+        // GET: Book/Details/5
+// Refactored Details action using a helper method for user-specific checks.
+public async Task<IActionResult> Details(int? id)
+{
+    // Debugging line to trace when the action is called.
+    Debug.WriteLine($"BookController.Details action called for Book ID: {id}");
+
+    // 1. Check if ID is Provided:
+    // If no ID is provided, return a 404 Not Found.
+    if (id == null)
+    {
+        Debug.WriteLine("Book ID is null. Returning NotFound.");
+        return NotFound();
+    }
+
+    // 2. Fetch the Book from the Database:
+    // Query the database for the book with the specified ID.
+    // .Include() is used for Eager Loading related entities (Author, Genre, Publisher)
+    // in the same database query.
+    // .FirstOrDefaultAsync() finds the first book matching the ID or returns null.
+    var book = await _context.Books
+        .Include(b => b.Author)
+        .Include(b => b.Genre)
+        .Include(b => b.Publisher)
+        .FirstOrDefaultAsync(m => m.BookId == id);
+
+    // 3. Check if the Book was Found:
+    // If no book was found with the given ID, return a 404 Not Found.
+    if (book == null)
+    {
+        Debug.WriteLine($"Book with ID {id} not found. Returning NotFound.");
+        return NotFound();
+    }
+    // Debugging line to confirm the book was found.
+    Debug.WriteLine($"Book found: {book.Title} (ID: {book.BookId})");
+
+    // --- Get and Set User-Specific View Data using Helper ---
+    // 4. Call the Helper Method:
+    // This line calls the new private helper method.
+    // It passes the book's ID, the current user object (User), and the controller's ViewBag.
+    // The helper method will perform the user-specific checks (order items, bookmarks)
+    // and directly populate the ViewBag properties needed by the view.
+    await GetAndSetUserSpecificBookViewDataAsync(book.BookId, User, ViewBag);
+    // --- End Get and Set User-Specific View Data ---
+
+    // 5. Return the View:
+    // Render the Details.cshtml view, passing the retrieved book object as the model.
+    // The view will use the book model and the data set in ViewBag by the helper.
+    return View(book);
+}
+
+// --- Helper Methods for Details Action ---
+
+/// <summary>
+/// Performs user-specific checks (cancellable order item, bookmark status) for a book
+/// and sets relevant ViewBag properties for the Details view.
+/// </summary>
+/// <param name="bookId">The ID of the book being viewed.</param>
+/// <param name="user">The current user principal (ClaimsPrincipal).</param>
+/// <param name="viewBag">The ViewBag object to populate.</param>
+private async Task GetAndSetUserSpecificBookViewDataAsync(int bookId, ClaimsPrincipal user, dynamic viewBag)
+{
+    // Debugging line to trace helper execution.
+    Debug.WriteLine($"Checking user-specific data for Book ID: {bookId}");
+
+    // 1. Set Default ViewBag Values:
+    // Initialize ViewBag properties to default values (null/false).
+    // This ensures these properties exist in the ViewBag even if the user isn't authenticated
+    // or the checks don't find any relevant data.
+    viewBag.CancellableOrderItemId = null;
+    viewBag.IsBookmarked = false;
+
+    // 2. Check if User is Authenticated:
+    // Proceed with user-specific checks only if the user is logged in.
+    if (user?.Identity?.IsAuthenticated == true)
+    {
+        // 3. Get and Parse Member ID from Claims:
+        // Retrieve the user's unique identifier (MemberId) from their authentication claims.
+        var memberIdString = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        Debug.WriteLine($"MemberId claim string: {memberIdString}");
+
+        // Safely attempt to parse the claim value into an integer MemberId.
+        if (int.TryParse(memberIdString, out int memberId))
+        {
+            Debug.WriteLine($"Successfully parsed MemberId: {memberId}");
+
+            // --- Check for Cancellable Order Item ---
+            // 4. Define Cancellable Order Statuses:
+            // An array listing the order statuses that allow cancellation.
+            var cancellableStatuses = new[] { "Pending", "Placed" };
+            Debug.WriteLine($"Cancellable statuses: {string.Join(", ", cancellableStatuses)}");
+
+            // 5. Query for Cancellable Order Item:
+            // Search the OrderItems for one that matches:
+            // - The current book (using the passed bookId).
+            // - The logged-in user (by checking the parent Order's MemberId).
+            // - A cancellable OrderStatus (by checking the parent Order's status).
+            // .Include(oi => oi.Order) is needed to access Order properties.
+            // .Select(oi => new { oi.OrderItemId }) projects to just the ID for efficiency.
+            // .FirstOrDefaultAsync() gets the first match or null.
+            var cancellableOrderItem = await _context.OrderItems
+                .Include(oi => oi.Order)
+                .Where(oi => oi.BookId == bookId &&
+                             oi.Order.MemberId == memberId &&
+                             cancellableStatuses.Contains(oi.Order.OrderStatus))
+                .Select(oi => new { oi.OrderItemId })
+                .FirstOrDefaultAsync();
+
+            Debug.WriteLine($"Query for cancellable order item executed.");
+
+            // 6. Set ViewBag for Cancellable Order Item:
+            // If a cancellable item was found, set the ViewBag property with its ID.
+            if (cancellableOrderItem != null)
+            {
+                Debug.WriteLine($"Cancellable OrderItem found! ID: {cancellableOrderItem.OrderItemId}");
+                viewBag.CancellableOrderItemId = cancellableOrderItem.OrderItemId;
             }
             else
             {
-                 Debug.WriteLine("User is not authenticated. Skipping order item and bookmark checks."); // Debugging line
-                 ViewBag.CancellableOrderItemId = null; // Ensure ViewBag is null if not authenticated
-                 ViewBag.IsBookmarked = false; // Ensure ViewBag is false if not authenticated
+                Debug.WriteLine("No cancellable OrderItem found for this user and book.");
             }
-            // --- End Check for Cancellable Order Item and Bookmark ---
 
+            // --- Check if the book is bookmarked ---
+            // 7. Check if the Book is Bookmarked:
+            // Efficiently check if a Bookmark exists for this user and book.
+            // .AnyAsync() returns true if at least one matching record is found, false otherwise.
+            var isBookmarked = await _context.Bookmarks
+                .AnyAsync(b => b.MemberId == memberId && b.BookId == bookId); // Use the passed bookId
 
-            return View(book);
+            // 8. Set ViewBag for Bookmark Status:
+            // Set the ViewBag property to true or false based on whether a bookmark exists.
+            viewBag.IsBookmarked = isBookmarked;
+            Debug.WriteLine($"Bookmarked status for MemberId {memberId} and Book ID {bookId}: {isBookmarked}");
         }
+        else
+        {
+            Debug.WriteLine("Failed to parse MemberId claim for authenticated user.");
+             // This could indicate an issue with the authentication process or claims setup.
+        }
+    }
+    else
+    {
+         Debug.WriteLine("User is not authenticated. Skipping user-specific checks.");
+         // Default ViewBag values (set at the start) remain if not authenticated.
+    }
+    // The helper method finishes here. It doesn't return a value (Task).
+    // Its purpose is to modify the ViewBag object passed to it.
+}
+
+// --- End Helper Methods for Details Action ---
 
         // GET: Book/Create
         public IActionResult Create()
@@ -527,10 +620,10 @@ namespace FinalProject.Controllers
             // Save changes to the database.
             await _context.SaveChangesAsync();
 
-            // Redirect back to the origin page.
             return Redirect(returnUrl);
         }
-        // --- End AddToCart Action ---
+        
+      
 
     }
 }

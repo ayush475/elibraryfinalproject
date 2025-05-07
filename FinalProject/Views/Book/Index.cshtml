@@ -11,187 +11,231 @@
     var bookmarkedBookIds = ViewBag.BookmarkedBookIds as List<int>; // Retrieve bookmarked IDs
 
     // Define a placeholder image URL for books without covers
-    var placeholderImageUrl = "https://placehold.co/128x192/e0e0e0/333333?text=No+Cover";
+    var placeholderImageUrl = "https://placehold.co/128x192/e9ecef/495057?text=No+Cover"; // Slightly darker placeholder text
+
+    // Add Font Awesome for icons (assuming it's not already in your layout)
+    // If you already have Font Awesome included in your main layout, you can remove this line.
 }
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Custom styles for card hover effect */
+        .card {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px); /* Slightly lift the card on hover */
+            box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important; /* Larger shadow on hover */
+        }
+        /* Style for the price to ensure it's always at the bottom */
+        .card-body {
+            display: flex;
+            flex-direction: column;
+        }
+        .card-text.price {
+            margin-top: auto; /* Pushes the price to the bottom */
+        }
+        /* Adjust button group spacing on small screens */
+        .btn-group.flex-wrap .btn,
+        .btn-group.flex-wrap form {
+             margin-bottom: 0.25rem; /* Add a small gap below buttons when they wrap */
+        }
+         .btn-group.flex-wrap .btn:last-child,
+         .btn-group.flex-wrap form:last-child {
+              margin-bottom: 0; /* No gap for the last item */
+         }
 
-<h1>Book List</h1>
+    </style>
+</head>
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Create New</a>
-</p>
 
-@* Add the search and filter form *@
-<form asp-controller="Book" asp-action="Index" method="get">
-    <div class="row mb-3">
-        <div class="col-md-4">
-            <label for="searchString" class="form-label">Find by title, author, or ISBN:</label>
-            <input type="text" name="searchString" id="searchString" value="@searchString" class="form-control" />
+@* Add a container for better centering and padding *@
+<div class="container py-4">
+
+    <h1 class="mb-4 text-center text-secondary">Book List</h1> @* Secondary color for heading *@
+
+    <p class="text-center mb-4"> @* Added bottom margin *@
+        <a asp-action="Create" class="btn btn-success btn-lg shadow">
+            <i class="fas fa-plus-circle me-2"></i> Create New Book @* Icon added *@
+        </a>
+    </p>
+
+    @* Add the search and filter form with improved layout and colors *@
+    <form asp-controller="Book" asp-action="Index" method="get" class="mb-4 p-4 bg-white rounded shadow-lg border border-primary"> @* White background, larger padding, larger shadow, primary border *@
+        <div class="row g-4 align-items-end"> @* Use g-4 for larger consistent spacing and align-items-end for button alignment *@
+            <div class="col-md-4">
+                <label for="searchString" class="form-label fw-bold text-primary">Find by title, author, or ISBN:</label> @* Primary color for label *@
+                <input type="text" name="searchString" id="searchString" value="@searchString" class="form-control form-control-lg border-secondary" placeholder="Search..." /> @* Larger input, placeholder, secondary border *@
+            </div>
+            <div class="col-md-3">
+                <label for="genreId" class="form-label fw-bold text-primary">Genre:</label> @* Primary color for label *@
+                <select name="genreId" id="genreId" asp-items="@ViewBag.Genres" class="form-select form-select-lg border-secondary"> @* Larger select, secondary border *@
+                    <option value="">-- All Genres --</option> @* Add "All" option *@
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="authorId" class="form-label fw-bold text-primary">Author:</label> @* Primary color for label *@
+                <select name="authorId" id="authorId" asp-items="@ViewBag.Authors" class="form-select form-select-lg border-secondary"> @* Larger select, secondary border *@
+                     <option value="">-- All Authors --</option> @* Add "All" option *@
+                </select>
+            </div>
+            <div class="col-md-2 d-grid gap-3"> @* Use d-grid and gap-3 for stackable buttons on small screens, larger gap *@
+                 <button type="submit" class="btn btn-primary btn-lg shadow-sm"><i class="fas fa-search me-2"></i> Filter/Search</button> @* Larger button, icon added *@
+                 <a asp-action="Index" class="btn btn-outline-secondary btn-lg shadow-sm"><i class="fas fa-sync-alt me-2"></i> Clear</a> @* Changed to outline-secondary, larger button, icon added *@
+            </div>
         </div>
-        <div class="col-md-3">
-            <label for="genreId" class="form-label">Genre:</label>
-            <select name="genreId" id="genreId" asp-items="@ViewBag.Genres" class="form-select">
-                <option value="">-- All Genres --</option> @* Add "All" option *@
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label for="authorId" class="form-label">Author:</label>
-            <select name="authorId" id="authorId" asp-items="@ViewBag.Authors" class="form-select">
-                 <option value="">-- All Authors --</option> @* Add "All" option *@
-            </select>
-        </div>
-        <div class="col-md-2 d-flex align-items-end">
-             <button type="submit" class="btn btn-primary me-2">Filter/Search</button>
-             <a asp-action="Index" class="btn btn-secondary">Clear</a> @* Changed "Back to Full List" to "Clear" *@
-        </div>
-    </div>
-</form>
+    </form>
 
-@* Display TempData message if it exists *@
-@if (TempData["Message"] != null)
-{
-    <div class="alert alert-info alert-dismissible fade show" role="alert">
-        @TempData["Message"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-
-@* Display books in a card layout *@
-<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-    @foreach (var item in Model)
+    @* Display TempData message with improved styling *@
+    @if (TempData["Message"] != null)
     {
-        <div class="col">
-            <div class="card h-100 shadow-sm">
-                <img src="@(string.IsNullOrEmpty(item.CoverImageUrl) ? placeholderImageUrl : item.CoverImageUrl)"
-                     class="card-img-top" alt="Book Cover"
-                     style="height: 192px; object-fit: cover;"> @* Fixed height for consistent card size *@
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">@Html.DisplayFor(modelItem => item.Title)</h5>
-                    <p class="card-text text-muted small mb-1">
-                        by @(item.Author != null ? $"{item.Author.FirstName} {item.Author.LastName}" : "Unknown Author")
-                    </p>
-                     <p class="card-text text-muted small mb-1">
-                        Genre: @(item.Genre != null ? item.Genre.Name : "Unknown Genre")
-                    </p>
-                    <p class="card-text fw-bold mt-auto">@Html.DisplayFor(modelItem => item.ListPrice)</p> @* Push price to bottom *@
-                </div>
-                 <div class="card-footer bg-transparent border-top-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                         <div class="btn-group">
-                            <a asp-action="Details" asp-route-id="@item.BookId" class="btn btn-sm btn-outline-secondary">Details</a>
+        <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert"> @* Added shadow *@
+            @TempData["Message"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
-                            @* Display Bookmark button or Bookmarked status *@
-                            @if (User.Identity.IsAuthenticated)
-                            {
-                                // Check if the current book's ID is in the list of bookmarked IDs
-                                if (bookmarkedBookIds != null && bookmarkedBookIds.Contains(item.BookId))
+
+    @* Display books in a card layout with enhanced styling *@
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4"> @* Use g-4 for larger gap between cards *@
+        @foreach (var item in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-lg border-0 rounded-3"> @* Larger shadow, no border, rounded corners *@
+                    <img src="@(string.IsNullOrEmpty(item.CoverImageUrl) ? placeholderImageUrl : item.CoverImageUrl)"
+                         class="card-img-top rounded-top" alt="Book Cover" @* Rounded top corners for image *@
+                         style="height: 280px; object-fit: cover;"> @* Increased fixed height for better visual *@
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title text-primary mb-1">@Html.DisplayFor(modelItem => item.Title)</h5> @* Primary color for title *@
+                        <p class="card-text text-muted small mb-1">
+                            by <span class="fw-semibold">@(item.Author != null ? $"{item.Author.FirstName} {item.Author.LastName}" : "Unknown Author")</span> @* Author name bolded *@
+                        </p>
+                         <p class="card-text text-muted small mb-2"> @* Increased bottom margin *@
+                            Genre: <span class="fw-semibold">@(item.Genre != null ? item.Genre.Name : "Unknown Genre")</span> @* Genre name bolded *@
+                        </p>
+                        <p class="card-text fw-bold text-success fs-5 price">@Html.DisplayFor(modelItem => item.ListPrice)</p> @* Green color and larger font for price, push price to bottom, added price class for custom style *@
+                    </div>
+                     <div class="card-footer bg-light border-top rounded-bottom py-3"> @* Light background, rounded bottom for footer, added vertical padding *@
+                        <div class="d-flex justify-content-between align-items-center">
+                             <div class="btn-group flex-wrap" role="group" aria-label="Book Actions"> @* Use flex-wrap for buttons on small screens *@
+                                <a asp-action="Details" asp-route-id="@item.BookId" class="btn btn-sm btn-outline-secondary" title="View book details"><i class="fas fa-info-circle"></i> Details</a> @* Icon added *@
+
+                                @* Display Bookmark button or Bookmarked status *@
+                                @if (User.Identity.IsAuthenticated)
                                 {
-                                    <span class="btn btn-sm btn-success disabled" title="You have bookmarked this book.">Bookmarked</span>
+                                    // Check if the current book's ID is in the list of bookmarked IDs
+                                    if (bookmarkedBookIds != null && bookmarkedBookIds.Contains(item.BookId))
+                                    {
+                                        <span class="btn btn-sm btn-success disabled" title="You have bookmarked this book."><i class="fas fa-bookmark"></i> Bookmarked</span> @* Icon added *@
+                                    }
+                                    else
+                                    {
+                                        @* Create a small form for the Bookmark action *@
+                                        <form asp-controller="Book" asp-action="Bookmark" method="post" style="display:inline;">
+                                            <input type="hidden" name="bookId" value="@item.BookId" />
+                                            @Html.AntiForgeryToken() @* Include the anti-forgery token *@
+                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Bookmark this book"><i class="far fa-bookmark"></i> Bookmark</button> @* Icon added (outline version) *@
+                                        </form>
+                                    }
+
+                                    @* --- Add to Cart Button (Calls AddToCart in BookController) --- *@
+                                    @* Form targets BookController and AddToCart action as per your provided code *@
+                                    <form asp-controller="Book" asp-action="AddToCart" method="post" style="display:inline;">
+                                        <input type="hidden" name="bookId" value="@item.BookId" />
+                                        @* Optional: Add a quantity input if needed, default is 1 in the controller *@
+                                        @* <input type="number" name="quantity" value="1" min="1" style="width: 50px;" /> *@
+                                        @Html.AntiForgeryToken() @* Include the anti-forgery token *@
+                                        <button type="submit" class="btn btn-sm btn-primary" title="Add this book to your shopping cart"><i class="fas fa-shopping-cart"></i> Add to Cart</button> @* Icon added *@
+                                    </form>
+                                    @* --- End Add to Cart Button --- *@
+
+                                    @* --- Add to Order Button (Now calls AddSingleItemOrder in OrdersController) --- *@
+                                    @* Form targets OrdersController and the new AddSingleItemOrder action *@
+                                    <form asp-controller="Orders" asp-action="AddSingleItemOrder" method="post" style="display:inline;">
+                                        <input type="hidden" name="bookId" value="@item.BookId" />
+                                        @* Optional: Add a quantity input if needed, default is 1 in the controller *@
+                                        @* <input type="number" name="quantity" value="1" min="1" style="width: 50px;" /> *@
+                                        @Html.AntiForgeryToken() @* Include the anti-forgery token *@
+                                        <button type="submit" class="btn btn-sm btn-success" title="Place an order for this book immediately"><i class="fas fa-truck"></i> Add to Order</button> @* Icon added *@
+                                    </form>
+                                    @* --- End Add to Order Button --- *@
+
                                 }
                                 else
                                 {
-                                    @* Create a small form for the Bookmark action *@
-                                    <form asp-controller="Book" asp-action="Bookmark" method="post" style="display:inline;">
-                                        <input type="hidden" name="bookId" value="@item.BookId" />
-                                        @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Bookmark this book">Bookmark</button>
-                                    </form>
+                                    @* Show disabled buttons for unauthenticated users *@
+                                    <span class="btn btn-sm btn-outline-secondary disabled" title="Login to bookmark books"><i class="far fa-bookmark"></i> Bookmark</span> @* Icon added *@
+                                    <span class="btn btn-sm btn-outline-secondary disabled" title="Login to add to cart"><i class="fas fa-shopping-cart"></i> Add to Cart</span> @* Icon added *@
+                                    <span class="btn btn-sm btn-outline-secondary disabled" title="Login to add to order"><i class="fas fa-truck"></i> Add to Order</span> @* Icon added *@
                                 }
-
-                                @* --- Add to Cart Button (Calls AddToCart in BookController) --- *@
-                                @* Form targets BookController and AddToCart action as per your provided code *@
-                                <form asp-controller="Book" asp-action="AddToCart" method="post" style="display:inline;">
-                                    <input type="hidden" name="bookId" value="@item.BookId" />
-                                    @* Optional: Add a quantity input if needed, default is 1 in the controller *@
-                                    @* <input type="number" name="quantity" value="1" min="1" style="width: 50px;" /> *@
-                                    @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                                    <button type="submit" class="btn btn-sm btn-primary" title="Add this book to your shopping cart">Add to Cart</button>
-                                </form>
-                                @* --- End Add to Cart Button --- *@
-
-                                @* --- Add to Order Button (Now calls AddSingleItemOrder in OrdersController) --- *@
-                                @* Form targets OrdersController and the new AddSingleItemOrder action *@
-                                <form asp-controller="Orders" asp-action="AddSingleItemOrder" method="post" style="display:inline;">
-                                    <input type="hidden" name="bookId" value="@item.BookId" />
-                                    @* Optional: Add a quantity input if needed, default is 1 in the controller *@
-                                    @* <input type="number" name="quantity" value="1" min="1" style="width: 50px;" /> *@
-                                    @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                                    <button type="submit" class="btn btn-sm btn-success" title="Place an order for this book immediately">Add to Order</button>
-                                </form>
-                                @* --- End Add to Order Button --- *@
-
-                            }
-                            else
-                            {
-                                @* Optional: Show disabled buttons or messages for unauthenticated users *@
-                                <span class="btn btn-sm btn-outline-secondary disabled" title="Login to bookmark books">Bookmark</span>
-                                <span class="btn btn-sm btn-outline-secondary disabled" title="Login to add to cart">Add to Cart</span>
-                                <span class="btn btn-sm btn-outline-secondary disabled" title="Login to add to order">Add to Order</span>
-                            }
-                         </div>
-                         <small class="text-muted">Added: @item.DateAdded.ToString("yyyy-MM-dd")</small>
+                             </div>
+                             <small class="text-muted"><i class="fas fa-calendar-alt me-1"></i> Added: @item.DateAdded.ToString("yyyy-MM-dd")</small> @* Icon added *@
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        }
+    </div>
+
+    @* Add Pagination Links with improved styling and centering *@
+    @{
+        // Define route values for pagination links, preserving the current search string and filter IDs
+        var prevDisabled = (currentPage <= 1) ? "disabled" : "";
+        var nextDisabled = (currentPage >= totalPages) ? "disabled" : "";
     }
-</div>
 
-@* Add Pagination Links *@
-@{
-    // Define route values for pagination links, preserving the current search string and filter IDs
-    var prevDisabled = (currentPage <= 1) ? "disabled" : "";
-    var nextDisabled = (currentPage >= totalPages) ? "disabled" : "";
-}
-
-@if (totalPages > 1) // Only show pagination if there's more than one page
-{
-    <nav aria-label="Page navigation example" class="mt-4">
-        <ul class="pagination justify-content-center">
-            <li class="page-item @prevDisabled">
-                 <a asp-action="Index"
-                   asp-route-pageNumber="@(currentPage - 1)"
-                   asp-route-searchString="@searchString"
-                   asp-route-genreId="@selectedGenreId"
-                   asp-route-authorId="@selectedAuthorId"
-                   class="page-link">
-                    Previous
-                </a>
-            </li>
-
-            @* Add page number links *@
-             @for (var i = 1; i <= totalPages; i++)
-            {
-                <li class="page-item @(i == currentPage ? "active" : "")">
-                    <a asp-action="Index"
-                       asp-route-pageNumber="@i"
+    @if (totalPages > 1) // Only show pagination if there's more than one page
+    {
+        <nav aria-label="Page navigation example" class="mt-5"> @* Increased top margin *@
+            <ul class="pagination justify-content-center">
+                <li class="page-item @prevDisabled">
+                     <a asp-action="Index"
+                       asp-route-pageNumber="@(currentPage - 1)"
                        asp-route-searchString="@searchString"
                        asp-route-genreId="@selectedGenreId"
                        asp-route-authorId="@selectedAuthorId"
-                       class="page-link">
-                        @i
+                       class="page-link"
+                       aria-label="Previous"> @* Added aria-label *@
+                        <span aria-hidden="true">&laquo;</span> Previous @* Added arrow and text *@
                     </a>
                 </li>
-            }
+
+                @* Add page number links *@
+                 @for (var i = 1; i <= totalPages; i++)
+                {
+                    <li class="page-item @(i == currentPage ? "active" : "")">
+                        <a asp-action="Index"
+                           asp-route-pageNumber="@i"
+                           asp-route-searchString="@searchString"
+                           asp-route-genreId="@selectedGenreId"
+                           asp-route-authorId="@selectedAuthorId"
+                           class="page-link">
+                            @i
+                        </a>
+                    </li>
+                }
 
 
-            <li class="page-item @nextDisabled">
-                <a asp-action="Index"
-                   asp-route-pageNumber="@(currentPage + 1)"
-                   asp-route-searchString="@searchString"
-                   asp-route-genreId="@selectedGenreId"
-                   asp-route-authorId="@selectedAuthorId"
-                   class="page-link">
-                    Next
-                </a>
-            </li>
-        </ul>
-    </nav>
+                <li class="page-item @nextDisabled">
+                    <a asp-action="Index"
+                       asp-route-pageNumber="@(currentPage + 1)"
+                       asp-route-searchString="@searchString"
+                       asp-route-genreId="@selectedGenreId"
+                       asp-route-authorId="@selectedAuthorId"
+                       class="page-link"
+                       aria-label="Next"> @* Added aria-label *@
+                        Next <span aria-hidden="true">&raquo;</span> @* Added text and arrow *@
+                    </a>
+                </li>
+            </ul>
+        </nav>
 
-    <div class="text-center mt-2">
-        Page @currentPage of @totalPages
-    </div>
-}
+        <div class="text-center mt-3 text-muted"> @* Added margin-top and muted text *@
+            Page @currentPage of @totalPages
+        </div>
+    }
+
+</div> @* Close the container div *@
 
 @* Add Delete link separately or remove if not needed on this view *@
 @* The Delete link was previously in the table row, now you might want a dedicated delete page or a modal *@
