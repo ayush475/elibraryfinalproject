@@ -2,13 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FinalProject.Data;
 using FinalProject.Models;
-using Microsoft.AspNetCore.Authorization; // Required for [Authorize]
+using Microsoft.AspNetCore.Authorization; // Required for [Authorize] and [AllowAnonymous]
 
 namespace FinalProject.Controllers
 {
     // Apply Authorize attribute to the entire controller to require authentication
     // Only users authenticated with the "AdminCookieAuth" scheme and having the "Admin" role
-    // can access actions within this controller.
+    // can access actions within this controller, *unless* an action is marked with [AllowAnonymous].
     [Authorize(AuthenticationSchemes = AdminController.AdminAuthScheme, Roles = "Admin")]
     public class AnnouncementController : Controller
     {
@@ -19,7 +19,41 @@ namespace FinalProject.Controllers
             _context = context;
         }
 
-        // --- Standard CRUD Actions (Now protected by [Authorize] on the controller) ---
+        // --- Public Actions (No Authorization Required) ---
+
+        // GET: Announcement/ViewAnnouncement/5
+        /// <summary>
+        /// Displays a specific announcement. This action is publicly accessible.
+        /// </summary>
+        /// <param name="id">The ID of the announcement to view.</param>
+        /// <returns>The ViewAnnouncement view with the specified announcement.</returns>
+        [HttpGet]
+        [AllowAnonymous] // Explicitly allow anonymous access to this specific action
+        public async Task<IActionResult> ViewAnnouncement(int? id)
+        {
+            if (id == null)
+            {
+                // Handle case where no ID is provided, maybe redirect to a list of public announcements
+                // or return a NotFound result. For now, returning NotFound.
+                return NotFound();
+            }
+
+            // Retrieve the announcement by ID.
+            // You might want to add a check here for IsActive and StartTime/EndTime
+            // if you only want to display currently active announcements publicly.
+            var announcement = await _context.Announcements
+                .FirstOrDefaultAsync(m => m.AnnouncementId == id);
+
+            if (announcement == null)
+            {
+                return NotFound(); // Announcement not found
+            }
+
+            // Return the ViewAnnouncement view with the announcement data
+            return View(announcement);
+        }
+
+        // --- Standard CRUD Actions (Protected by [Authorize] on the controller) ---
 
         // GET: Announcement
         // This action is now protected by the [Authorize] attribute on the controller level.

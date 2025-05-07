@@ -1,4 +1,4 @@
-﻿@model List<FinalProject.Models.Book> 
+﻿@model List<FinalProject.Models.Book>
 
 @{
     ViewData["Title"] = "Home - E-Library"; // More descriptive and branded title
@@ -8,12 +8,25 @@
     var searchString = ViewBag.SearchString;
     // pageSize is not strictly needed in the view for this implementation, but can be retrieved if desired
     // var pageSize = ViewBag.PageSize;
+
+    // Retrieve the Announcement model if available
+    var announcement = ViewData["Announcement"] as FinalProject.Models.Announcement;
 }
 
 @* Ensure your _Layout.cshtml includes Bootstrap CSS/JS (Bootstrap 5 recommended) *@
 @* You might also need to include Font Awesome or similar for icons if you use them *@
 
 <div class="container mt-4"> @* Use a container for standard padding and centering *@
+
+    @* Announcement Section - Display if an announcement is available *@
+    @if (announcement != null)
+    {
+        <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+            <h4 class="alert-heading">@announcement.Title</h4>
+            <p>@announcement.Message</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
     @* Welcoming Hero Section - Enhanced Styling *@
     <div class="p-5 mb-4 bg-light rounded-3 shadow-sm"> @* Increased padding, added shadow *@

@@ -28,6 +28,25 @@ namespace FinalProject.Controllers
         // Optionally add [Authorize] here if only logged-in users should see their orders
         public async Task<IActionResult> Index()
         {
+            // If you want to show only the logged-in user's orders:
+            // if (User.Identity.IsAuthenticated)
+            // {
+            //     var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            //     if (int.TryParse(memberIdString, out int memberId))
+            //     {
+            //         var memberOrders = await _context.Orders
+            //             .Include(o => o.Member)
+            //             .Where(o => o.MemberId == memberId)
+            //             .ToListAsync();
+            //         return View(memberOrders);
+            //     }
+            // }
+            // // Fallback for non-authenticated or if MemberId is missing (maybe show nothing or a message)
+            // // Or if this Index is for Admins, keep the original logic
+            // var applicationDbContext = _context.Orders.Include(o => o.Member);
+            // return View(await applicationDbContext.ToListAsync());
+
+            // Keeping the original logic for now, assuming this Index might be for admins or show all
             var applicationDbContext = _context.Orders.Include(o => o.Member);
             return View(await applicationDbContext.ToListAsync());
         }
@@ -51,6 +70,20 @@ namespace FinalProject.Controllers
                 return NotFound();
             }
 
+            // Optional: Add authorization check to ensure logged-in user owns this order
+            // if (User.Identity.IsAuthenticated)
+            // {
+            //     var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            //     if (int.TryParse(memberIdString, out int memberId))
+            //     {
+            //         if (order.MemberId != memberId)
+            //         {
+            //             return Forbid(); // Or challenge, or redirect to an access denied page
+            //         }
+            //     }
+            // }
+
+
             return View(order);
         }
 
@@ -70,19 +103,38 @@ namespace FinalProject.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize] // Only authorized users can post to create
-        public async Task<IActionResult> Create([Bind("OrderId,MemberId,OrderDate,OrderStatus,TotalAmount,DiscountApplied,ClaimCode,DateAdded,DateUpdated")] Order order)
+        public async Task<IActionResult> Create([Bind("OrderId,OrderDate,OrderStatus,TotalAmount,DiscountApplied,ClaimCode,DateAdded,DateUpdated")] Order order)
         {
             // In a real application, you would likely get the MemberId from the authenticated user's claims
-            // Example: var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            // Then find the corresponding Member in your database and assign the MemberId to the order.
+            // and assign it to the order. The Bind attribute is adjusted to exclude MemberId
+            // since it should come from the authenticated user, not the form.
+
+            // Get the authenticated user's MemberId
+            var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(memberIdString) || !int.TryParse(memberIdString, out int memberId))
+            {
+                // Authentication failed or MemberId claim missing/invalid
+                TempData["Message"] = "Authentication failed. Please log in again.";
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return RedirectToAction("Login", "Member");
+            }
+            order.MemberId = memberId; // Assign the logged-in member's ID
+
+            // Set DateAdded and DateUpdated
+            order.DateAdded = DateTime.UtcNow;
+            order.DateUpdated = DateTime.UtcNow;
+
+            // Note: Discount and TotalAmount calculation should ideally happen based on OrderItems
+            // added *after* the order is created, or in a separate checkout process.
+            // This Create action as is, doesn't handle OrderItems.
 
             if (ModelState.IsValid)
             {
                 _context.Add(order);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Details), new { id = order.OrderId }); // Redirect to details of the created order
             }
-            // ViewData["MemberId"] = new SelectList(_context.Members, "MemberId", "MemberId", order.MemberId); // Might not be needed
+            // If model state is invalid, return the view with the order model
             return View(order);
         }
 
@@ -101,8 +153,31 @@ namespace FinalProject.Controllers
                 return NotFound();
             }
             // Ensure the logged-in user is authorized to edit this specific order
-            // Example: if (order.MemberId != GetCurrentMemberId()) { return Forbid(); }
-            ViewData["MemberId"] = new SelectList(_context.Members, "MemberId", "MemberId", order.MemberId);
+             if (User.Identity.IsAuthenticated)
+             {
+                 var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                 if (int.TryParse(memberIdString, out int memberId))
+                 {
+                     if (order.MemberId != memberId)
+                     {
+                         return Forbid(); // Prevent editing orders that don't belong to the user
+                     }
+                 }
+                 else
+                 {
+                     // Authenticated but MemberId claim missing/invalid - treat as unauthorized
+                     return Forbid();
+                 }
+             }
+             else
+             {
+                 // Not authenticated, but action requires [Authorize] - this case should ideally
+                 // be handled by the [Authorize] attribute itself redirecting to login.
+                 // Including this check defensively.
+                 return Unauthorized();
+             }
+
+            // ViewData["MemberId"] = new SelectList(_context.Members, "MemberId", "MemberId", order.MemberId); // Not needed if MemberId is fixed by user
             return View(order);
         }
 
@@ -112,21 +187,52 @@ namespace FinalProject.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize] // Only authorized users can post to edit
-        public async Task<IActionResult> Edit(int id, [Bind("OrderId,MemberId,OrderDate,OrderStatus,TotalAmount,DiscountApplied,ClaimCode,DateAdded,DateUpdated")] Order order)
+        public async Task<IActionResult> Edit(int id, [Bind("OrderId,OrderDate,OrderStatus,TotalAmount,DiscountApplied,ClaimCode,DateAdded,DateUpdated")] Order order)
         {
             if (id != order.OrderId)
             {
                 return NotFound();
             }
 
+            // Retrieve the existing order to check ownership and populate MemberId
+            var existingOrder = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.OrderId == id);
+            if (existingOrder == null)
+            {
+                return NotFound();
+            }
+
             // Ensure the logged-in user is authorized to edit this specific order
-            // Example: var existingOrder = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.OrderId == id);
-            // if (existingOrder == null || existingOrder.MemberId != GetCurrentMemberId()) { return Forbid(); }
+            if (User.Identity.IsAuthenticated)
+            {
+                var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(memberIdString, out int memberId))
+                {
+                    if (existingOrder.MemberId != memberId)
+                    {
+                        return Forbid(); // Prevent editing orders that don't belong to the user
+                    }
+                    // Assign the correct MemberId from the existing order to the bound model
+                    order.MemberId = existingOrder.MemberId;
+                }
+                else
+                {
+                    // Authenticated but MemberId claim missing/invalid - treat as unauthorized
+                    return Forbid();
+                }
+            }
+            else
+            {
+                 // Not authenticated, but action requires [Authorize]
+                 return Unauthorized();
+            }
+
 
             if (ModelState.IsValid)
             {
                 try
                 {
+                    // Set DateUpdated
+                    order.DateUpdated = DateTime.UtcNow;
                     _context.Update(order);
                     await _context.SaveChangesAsync();
                 }
@@ -141,9 +247,9 @@ namespace FinalProject.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Details), new { id = order.OrderId }); // Redirect to details after edit
             }
-            ViewData["MemberId"] = new SelectList(_context.Members, "MemberId", "MemberId", order.MemberId);
+            // ViewData["MemberId"] = new SelectList(_context.Members, "MemberId", "MemberId", order.MemberId); // Not needed
             return View(order);
         }
 
@@ -164,7 +270,27 @@ namespace FinalProject.Controllers
                 return NotFound();
             }
             // Ensure the logged-in user is authorized to delete this specific order
-            // Example: if (order.MemberId != GetCurrentMemberId()) { return Forbid(); }
+             if (User.Identity.IsAuthenticated)
+             {
+                 var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                 if (int.TryParse(memberIdString, out int memberId))
+                 {
+                     if (order.MemberId != memberId)
+                     {
+                         return Forbid(); // Prevent deleting orders that don't belong to the user
+                     }
+                 }
+                 else
+                 {
+                     // Authenticated but MemberId claim missing/invalid - treat as unauthorized
+                     return Forbid();
+                 }
+             }
+             else
+             {
+                 // Not authenticated, but action requires [Authorize]
+                 return Unauthorized();
+             }
 
             return View(order);
         }
@@ -175,18 +301,38 @@ namespace FinalProject.Controllers
         [Authorize] // Only authorized users can post to delete
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            // Ensure the logged-in user is authorized to delete this specific order
-            // Example: var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == id && o.MemberId == GetCurrentMemberId());
             var order = await _context.Orders.FindAsync(id);
 
             if (order != null)
             {
                  // Add a check here to ensure the logged-in user owns the order before deleting
-                 // Example: if (order.MemberId != GetCurrentMemberId()) { return Forbid(); }
+                 if (User.Identity.IsAuthenticated)
+                 {
+                     var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                     if (int.TryParse(memberIdString, out int memberId))
+                     {
+                         if (order.MemberId != memberId)
+                         {
+                              return Forbid(); // Prevent deleting orders that don't belong to the user
+                         }
+                     }
+                     else
+                     {
+                         // Authenticated but MemberId claim missing/invalid - treat as unauthorized
+                         return Forbid();
+                     }
+                 }
+                 else
+                 {
+                     // Not authenticated, but action requires [Authorize]
+                     return Unauthorized();
+                 }
+
                 _context.Orders.Remove(order);
+                await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -238,6 +384,12 @@ namespace FinalProject.Controllers
                 quantity = 1;
             }
 
+            // --- Calculate Member Discount ---
+            decimal discountPercentage = await CalculateMemberDiscount(memberId);
+            Debug.WriteLine($"Member ID {memberId} qualifies for {discountPercentage * 100}% discount.");
+            // --- End Calculate Member Discount ---
+
+
             // --- Create a NEW Order for this item ---
             var newOrder = new Order
             {
@@ -245,7 +397,6 @@ namespace FinalProject.Controllers
                 Member = member, // Assign the fetched Member entity
                 OrderDate = DateTime.UtcNow, // Use UTC for consistency
                 OrderStatus = "Placed", // Set status to indicate a direct order (e.g., "Placed", "Completed")
-                DiscountApplied = 0, // No order-level discount applied initially
                 ClaimCode = null, // No claim code initially
                 DateAdded = DateTime.UtcNow,
                 DateUpdated = DateTime.UtcNow,
@@ -256,7 +407,7 @@ namespace FinalProject.Controllers
             var newOrderItem = new OrderItem
             {
                 // OrderId is set implicitly when adding to the Order's collection and saving
-                Order = newOrder, // FIX: Assign the new Order object to the navigation property
+                Order = newOrder, // Assign the new Order object to the navigation property
                 BookId = book.BookId,
                 Book = book, // Assign the fetched Book entity
                 Quantity = quantity,
@@ -267,8 +418,13 @@ namespace FinalProject.Controllers
             // Add the OrderItem to the new Order's collection
             newOrder.OrderItems.Add(newOrderItem);
 
-            // Calculate the TotalAmount for the new order (based on the single item)
-            newOrder.TotalAmount = (newOrderItem.Quantity * newOrderItem.UnitPrice) - newOrderItem.Discount;
+            // Calculate the TotalAmount for the new order (based on the single item) BEFORE member discount
+            decimal subtotal = (newOrderItem.Quantity * newOrderItem.UnitPrice) - newOrderItem.Discount;
+            newOrder.TotalAmount = subtotal; // Start with subtotal
+
+            // Apply the member-level discount
+            newOrder.DiscountApplied = newOrder.TotalAmount * discountPercentage;
+            newOrder.TotalAmount -= newOrder.DiscountApplied;
 
             // Add the new Order and its OrderItem to the context
             _context.Orders.Add(newOrder);
@@ -277,7 +433,7 @@ namespace FinalProject.Controllers
             // Save changes to the database (creates the new Order and OrderItem)
             await _context.SaveChangesAsync();
 
-            TempData["Message"] = $"Order placed for {book.Title}.";
+            TempData["Message"] = $"Order placed for {book.Title}. A discount of {newOrder.DiscountApplied:C} was applied."; // Display applied discount
 
             // Redirect to the details page of the newly created order
             return RedirectToAction(nameof(Details), new { id = newOrder.OrderId });
@@ -333,8 +489,8 @@ namespace FinalProject.Controllers
                     Member = member, // Assign the fetched Member entity
                     OrderDate = DateTime.UtcNow, // Use UTC for consistency
                     OrderStatus = "Pending", // Set initial status
-                    TotalAmount = 0,
-                    DiscountApplied = 0,
+                    TotalAmount = 0, // Will be calculated based on items
+                    DiscountApplied = 0, // Will be calculated based on items and member discount
                     ClaimCode = "", // Or generate a default claim code
                     DateAdded = DateTime.UtcNow,
                     DateUpdated = DateTime.UtcNow,
@@ -375,13 +531,25 @@ namespace FinalProject.Controllers
                     Discount = book.SaleDiscount ?? 0 // Use SaleDiscount, handle null
                 };
                 order.OrderItems.Add(newOrderItem); // Add to the order's collection
-                _context.OrderItems.Add(newOrderItem); // Also add to the context for saving
+                // No need to explicitly Add to context if adding to a tracked entity's collection
+                // _context.OrderItems.Add(newOrderItem);
             }
+
+            // --- Calculate Member Discount ---
+            decimal memberDiscountPercentage = await CalculateMemberDiscount(memberId);
+            Debug.WriteLine($"Member ID {memberId} qualifies for {memberDiscountPercentage * 100}% discount for cart.");
+            // --- End Calculate Member Discount ---
+
 
             // 5. Update the Order's TotalAmount and DateUpdated
             // This section updates the Orders table
-            // Recalculate total based on current order items
-            order.TotalAmount = order.OrderItems.Sum(oi => (oi.Quantity * oi.UnitPrice) - oi.Discount);
+            // Recalculate subtotal based on current order items (before member discount)
+            decimal subtotal = order.OrderItems.Sum(oi => (oi.Quantity * oi.UnitPrice) - oi.Discount);
+
+            // Apply the member-level discount to the subtotal
+            order.DiscountApplied = subtotal * memberDiscountPercentage;
+            order.TotalAmount = subtotal - order.DiscountApplied;
+
             order.DateUpdated = DateTime.UtcNow;
 
             _context.Orders.Update(order); // Mark the Order as updated
@@ -390,8 +558,10 @@ namespace FinalProject.Controllers
             await _context.SaveChangesAsync();
 
             // 7. Redirect or return a success response
-            // You might redirect to the order details page, a shopping cart page,
+            // You might redirect to the order details page (cart view), a shopping cart page,
             // or return a JSON success message for AJAX calls.
+            // Redirecting to the order details page which should show the updated cart.
+            TempData["Message"] = $"{book.Title} added to your cart. Member discount applied.";
             return RedirectToAction(nameof(Details), new { id = order.OrderId });
             // Or return Json(new { success = true, message = "Item added to order." });
         }
@@ -457,6 +627,7 @@ namespace FinalProject.Controllers
 
 
             // Define which statuses are cancellable. Adjust these based on your business logic.
+            // Assuming "Pending" (cart) and "Placed" (recent order) are cancellable
             var cancellableStatuses = new[] { "Pending", "Placed" };
              Debug.WriteLine($"Cancellable statuses: {string.Join(", ", cancellableStatuses)}"); // Debugging line
 
@@ -480,28 +651,38 @@ namespace FinalProject.Controllers
                 _context.OrderItems.Remove(orderItem);
 
                 // Recalculate the total for the parent order
-                // Need to fetch the order again to ensure its OrderItems collection is up-to-date after removal
-                // Or manually update the total before saving if removing the item directly impacts the collection
-                // A simpler way after removal is just to update the DateUpdated and potentially the status if this was the last item
-                // Let's recalculate the total from the remaining items
                  // Ensure the OrderItems collection is loaded for recalculation
                  await _context.Entry(orderItem.Order).Collection(o => o.OrderItems).LoadAsync();
 
                  Debug.WriteLine($"Recalculating total for Order {orderItem.OrderId}. Current items count (before save): {orderItem.Order.OrderItems.Count}"); // Debugging line
 
-                 orderItem.Order.TotalAmount = orderItem.Order.OrderItems
+                 // Calculate subtotal from remaining items
+                 decimal subtotal = orderItem.Order.OrderItems
                     .Where(oi => oi.OrderItemId != orderItemId) // Exclude the item being removed from calculation
                     .Sum(oi => (oi.Quantity * oi.UnitPrice) - oi.Discount);
+
+                // --- Recalculate Member Discount for the updated order ---
+                // Fetch the member ID from the order itself
+                int orderMemberId = orderItem.Order.MemberId;
+                decimal memberDiscountPercentage = await CalculateMemberDiscount(orderMemberId);
+                Debug.WriteLine($"Recalculating member discount for Order {orderItem.OrderId} (Member ID {orderMemberId}). Qualifies for {memberDiscountPercentage * 100}% discount.");
+                // --- End Recalculate Member Discount ---
+
+                // Apply the member-level discount to the new subtotal
+                orderItem.Order.DiscountApplied = subtotal * memberDiscountPercentage;
+                orderItem.Order.TotalAmount = subtotal - orderItem.Order.DiscountApplied;
+
 
                  Debug.WriteLine($"New TotalAmount for Order {orderItem.OrderId}: {orderItem.Order.TotalAmount}"); // Debugging line
 
 
-                // If the order has no remaining items, you might change its status to "Cancelled" or "Empty"
+                // If the order has no remaining items, change its status to "Cancelled"
                 if (!orderItem.Order.OrderItems.Any(oi => oi.OrderItemId != orderItemId))
                 {
                     Debug.WriteLine($"Order {orderItem.OrderId} is now empty. Setting status to 'Cancelled'."); // Debugging line
                     orderItem.Order.OrderStatus = "Cancelled"; // Or another appropriate status
                     orderItem.Order.TotalAmount = 0; // Ensure total is 0 if order is empty/cancelled
+                    orderItem.Order.DiscountApplied = 0; // Ensure discount is 0 if order is empty/cancelled
                 }
 
                 orderItem.Order.DateUpdated = DateTime.UtcNow; // Update the order's modification date
@@ -532,6 +713,44 @@ namespace FinalProject.Controllers
             return Redirect(returnUrl);
         }
         // --- End CancelOrderItem Action ---
+
+
+        // --- Helper method to calculate member discount based on purchase history ---
+        /// <summary>
+        /// Calculates the discount percentage for a member based on the total quantity of books
+        /// purchased in completed orders.
+        /// </summary>
+        /// <param name="memberId">The ID of the member.</param>
+        /// <returns>The discount percentage (e.g., 0.05 for 5%, 0.10 for 10%).</returns>
+        private async Task<decimal> CalculateMemberDiscount(int memberId)
+        {
+            // Define completed order statuses - adjust this based on your OrderStatus values
+            var completedStatuses = new[] { "Completed", "Shipped", "Delivered" }; // Example statuses
+
+            // Query all order items from completed orders for this member
+            var purchasedItems = await _context.OrderItems
+                .Include(oi => oi.Order) // Include the parent Order to check status
+                .Where(oi => oi.Order.MemberId == memberId && completedStatuses.Contains(oi.Order.OrderStatus))
+                .ToListAsync();
+
+            // Sum the quantities of all purchased items
+            int totalPurchasedBooks = purchasedItems.Sum(oi => oi.Quantity);
+
+            // Determine discount percentage based on total purchased books
+            decimal discountPercentage = 0.0m;
+            if (totalPurchasedBooks >= 10)
+            {
+                discountPercentage = 0.10m; // 10% discount
+            }
+            else if (totalPurchasedBooks >= 5)
+            {
+                discountPercentage = 0.05m; // 5% discount
+            }
+            // Else, discountPercentage remains 0.0m
+
+            return discountPercentage;
+        }
+        // --- End Helper method ---
 
 
         private bool OrderExists(int id)
