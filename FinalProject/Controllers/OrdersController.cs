@@ -109,87 +109,142 @@ namespace FinalProject.Controllers // Adjust namespace as needed
             return View(await applicationDbContext.ToListAsync());
         }
         //stepone ko barema
-          public async Task<IActionResult> OrderStepOne()
+        public async Task<IActionResult> OrderStepOne()
+    {
+        // --- Step 1: Get the current user's ID from claims ---
+        var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+        // Basic check if user is authenticated and ID is available
+        // [Authorize] should handle most cases, but this adds robustness.
+        if (memberIdClaim == null || !int.TryParse(memberIdClaim.Value, out int memberId))
         {
-            // --- Step 1: Get the current user's ID from claims ---
-            var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-
-            // Basic check if user is authenticated and ID is available
-            // [Authorize] should handle most cases, but this adds robustness.
-            if (memberIdClaim == null || !int.TryParse(memberIdClaim.Value, out int memberId))
-            {
-                // If MemberId is missing or invalid, sign out and redirect to login
-                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                 // Assuming "Login" action is in "Account" controller
-                 return RedirectToAction("Login", "Account");
-            }
-
-            // --- Step 2: Re-fetch the shopping cart items for the current user from the database ---
-            // This is crucial for security and data integrity - do NOT trust client-side data.
-            var cartItems = await _context.ShoppingCartItems
-                .Where(item => item.MemberId == memberId) // Filter by the current user's ID
-                .Include(item => item.Book) // Eagerly load the related Book entity
-                .ThenInclude(book => book.Author) // Further eagerly load the related Author for each Book
-                .ToListAsync(); // Execute the query and get results as a list
-
-             // --- Step 3: Handle Empty Cart scenario ---
-             // If the cart is empty at this point, redirect back to the cart page with a message.
-             if (!cartItems.Any())
-             {
-                 // Use TempData to pass a temporary message to the next request
-                 TempData["ErrorMessage"] = "Your shopping cart is empty. Please add items before proceeding to checkout.";
-                 // Redirect back to the shopping cart profile page
-                 return RedirectToAction("Profile", "ShoppingCartItems");
-             }
-
-            // --- Step 4: Prepare data for the view using ViewModel and calculate totals ---
-            // We reuse the ShoppingCartItemViewModel as it contains the necessary display properties.
-            var viewModelList = new List<ShoppingCartItemViewModel>();
-            decimal totalCartPrice = 0m; // Initialize total price
-            int totalCartItems = 0; // Initialize total item count
-
-            foreach (var item in cartItems)
-            {
-                // Populate the ViewModel for each cart item
-                string bookAuthorName = item.Book?.Author?.FullName ?? "Unknown Author";
-                string bookTitle = item.Book?.Title ?? "Unknown Title";
-                // Format price as currency (adjust culture if needed)
-                string bookListPriceDisplay = item.Book?.ListPrice.ToString("C") ?? "$0.00";
-                // Calculate the total price for the current item (Quantity * ListPrice)
-                decimal itemTotalPrice = item.Quantity * (item.Book?.ListPrice ?? 0m);
-                // Format the item total price as currency
-                string totalPriceDisplay = itemTotalPrice.ToString("C");
-                // Format the date added (short date format)
-                string dateAddedDisplay = item.DateAdded.ToString("d");
-
-                 viewModelList.Add(new ShoppingCartItemViewModel
-                {
-                    CartItemId = item.CartItemId, // Include ID if needed, though not for review display
-                    MemberId = item.MemberId,
-                    BookId = item.BookId,
-                    Quantity = item.Quantity,
-                    DateAddedDisplay = dateAddedDisplay, // May or may not display this on review page
-                    BookTitle = bookTitle,
-                    BookAuthorName = bookAuthorName,
-                    BookListPriceDisplay = bookListPriceDisplay,
-                    TotalPriceDisplay = totalPriceDisplay,
-                    // If you add ItemTotalPrice (decimal) to your ViewModel, populate it here:
-                    // ItemTotalPrice = itemTotalPrice
-                });
-
-                // Accumulate the totals server-side
-                totalCartPrice += itemTotalPrice; // Add item total to grand total price
-                totalCartItems += item.Quantity; // Add item quantity to total item count
-            }
-
-            // --- Step 5: Pass data (ViewModel list and totals) to the OrderStepOne view ---
-            // Use ViewData to pass the calculated totals.
-            ViewData["TotalCartPrice"] = totalCartPrice.ToString("C"); // Pass formatted total price
-            ViewData["TotalCartItems"] = totalCartItems; // Pass total item count
-
-            // Return the OrderStepOne view, passing the list of ViewModels as the model.
-            return View(viewModelList);
+            // If MemberId is missing or invalid, sign out and redirect to login
+             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+             // Assuming "Login" action is in "Account" controller
+             return RedirectToAction("Login", "Account");
         }
+
+        // --- Step 2: Re-fetch the shopping cart items for the current user from the database ---
+        // This is crucial for security and data integrity - do NOT trust client-side data.
+        var cartItems = await _context.ShoppingCartItems
+            .Where(item => item.MemberId == memberId) // Filter by the current user's ID
+            .Include(item => item.Book) // Eagerly load the related Book entity
+            .ThenInclude(book => book.Author) // Further eagerly load the related Author for each Book
+            .ToListAsync(); // Execute the query and get results as a list
+
+         // --- Step 3: Handle Empty Cart scenario ---
+         // If the cart is empty at this point, redirect back to the cart page with a message.
+         if (!cartItems.Any())
+         {
+             // Use TempData to pass a temporary message to the next request
+             TempData["ErrorMessage"] = "Your shopping cart is empty. Please add items before proceeding to checkout.";
+             // Redirect back to the shopping cart profile page
+             return RedirectToAction("Profile", "ShoppingCartItems");
+         }
+
+        // --- Step 4: Prepare data for the view using ViewModel and calculate totals ---
+        // We reuse the ShoppingCartItemViewModel as it contains the necessary display properties.
+        var viewModelList = new List<ShoppingCartItemViewModel>();
+        decimal initialTotalCartPrice = 0m; // Initialize total price BEFORE discounts
+        int totalCartItems = 0; // Initialize total item count
+
+        foreach (var item in cartItems)
+        {
+            // Populate the ViewModel for each cart item
+            string bookAuthorName = item.Book?.Author?.FullName ?? "Unknown Author";
+            string bookTitle = item.Book?.Title ?? "Unknown Title";
+            // Format price as currency (adjust culture if needed)
+            string bookListPriceDisplay = item.Book?.ListPrice.ToString("C") ?? "$0.00";
+            // Calculate the total price for the current item (Quantity * ListPrice)
+            decimal itemTotalPrice = item.Quantity * (item.Book?.ListPrice ?? 0m);
+            // Format the item total price as currency
+            string totalPriceDisplay = itemTotalPrice.ToString("C");
+            // Format the date added (short date format)
+            string dateAddedDisplay = item.DateAdded.ToString("d");
+
+             viewModelList.Add(new ShoppingCartItemViewModel
+            {
+                CartItemId = item.CartItemId, // Include ID if needed, though not for review display
+                MemberId = item.MemberId,
+                BookId = item.BookId,
+                Quantity = item.Quantity,
+                DateAddedDisplay = dateAddedDisplay, // May or may not display this on review page
+                BookTitle = bookTitle,
+                BookAuthorName = bookAuthorName,
+                BookListPriceDisplay = bookListPriceDisplay,
+                TotalPriceDisplay = totalPriceDisplay,
+                // If you add ItemTotalPrice (decimal) to your ViewModel, populate it here:
+                // ItemTotalPrice = itemTotalPrice
+            });
+
+            // Accumulate the totals server-side (initial total before discounts)
+            initialTotalCartPrice += itemTotalPrice; // Add item total to grand total price
+            totalCartItems += item.Quantity; // Add item quantity to total item count
+        }
+
+        // --- Step 5: Apply Discounts ---
+
+        decimal bulkDiscountPercentage = 0m;
+        // Bulk Discount: 5% for 5 or more items
+        if (totalCartItems >= 5)
+        {
+            bulkDiscountPercentage = 0.05m; // 5%
+        }
+
+        decimal loyaltyDiscountPercentage = 0m;
+        // Loyalty Discount: 10% for every 10 successful orders
+        // Assumption: A "successful order" is one that is NOT in "Pending" status.
+        var successfulOrdersCount = await _context.Orders
+            .Where(o => o.MemberId == memberId && o.OrderStatus != "Pending")
+            .CountAsync();
+
+        if (successfulOrdersCount > 0)
+        {
+            int loyaltyDiscountBatches = successfulOrdersCount / 10; // Integer division gives full batches of 10
+            loyaltyDiscountPercentage = loyaltyDiscountBatches * 0.10m; // 10% per batch
+        }
+
+        // Total stackable discount (additive)
+        decimal totalDiscountPercentage = bulkDiscountPercentage + loyaltyDiscountPercentage;
+
+        // Ensure total discount doesn't exceed 100% (though unlikely with these rules)
+        if (totalDiscountPercentage > 1.0m)
+        {
+            totalDiscountPercentage = 1.0m; // Cap discount at 100%
+        }
+
+        decimal totalDiscountAmount = initialTotalCartPrice * totalDiscountPercentage;
+
+        // Calculate individual discount amounts for display in the view
+        decimal bulkDiscountAmount = initialTotalCartPrice * bulkDiscountPercentage;
+        decimal loyaltyDiscountAmount = initialTotalCartPrice * loyaltyDiscountPercentage;
+
+
+        decimal finalTotalCartPrice = initialTotalCartPrice - totalDiscountAmount;
+
+        // Ensure final price doesn't go below zero
+         if (finalTotalCartPrice < 0m)
+        {
+            finalTotalCartPrice = 0m;
+        }
+
+
+        // --- Step 6: Pass data (ViewModel list, totals, and discounts) to the OrderStepOne view ---
+        // Use ViewData to pass the calculated totals and discount information.
+        ViewData["InitialTotalCartPrice"] = initialTotalCartPrice.ToString("C"); // Pass original total price
+        ViewData["TotalCartItems"] = totalCartItems; // Pass total item count
+        ViewData["BulkDiscountPercentage"] = bulkDiscountPercentage.ToString("P0"); // Pass formatted bulk discount %
+        ViewData["LoyaltyDiscountPercentage"] = loyaltyDiscountPercentage.ToString("P0"); // Pass formatted loyalty discount %
+        ViewData["TotalDiscountPercentage"] = totalDiscountPercentage.ToString("P0"); // Pass formatted total discount %
+        ViewData["TotalDiscountAmount"] = totalDiscountAmount.ToString("C"); // Pass formatted total discount amount
+        ViewData["BulkDiscountAmount"] = bulkDiscountAmount.ToString("C"); // Pass formatted bulk discount amount
+        ViewData["LoyaltyDiscountAmount"] = loyaltyDiscountAmount.ToString("C"); // Pass formatted loyalty discount amount
+        ViewData["FinalTotalCartPrice"] = finalTotalCartPrice.ToString("C"); // Pass formatted final total price
+
+
+        // Return the OrderStepOne view, passing the list of ViewModels as the model.
+        return View(viewModelList);
+    }
 
 
         // GET: Orders/Details/5
