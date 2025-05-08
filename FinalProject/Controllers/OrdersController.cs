@@ -506,37 +506,91 @@ namespace FinalProject.Controllers // Adjust namespace as needed
         public async Task<IActionResult> AddItemToOrder(int bookId, int quantity = 1)
         {
             // 1. Get the MemberId of the currently logged-in user
-            // Assuming your authentication setup adds the MemberId as a claim (e.g., ClaimTypes.NameIdentifier)
-            var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (memberIdClaim == null || !int.TryParse(memberIdClaim.Value, out int memberId))
+            var (memberId, authError) = GetMemberIdFromClaims();
+            if (authError != null)
             {
-                // User is authenticated but MemberId claim is missing or invalid
-                // This indicates an issue with the authentication setup or user data
-                return Unauthorized("Could not identify the logged-in member.");
+                return authError;
             }
 
-            // 2. Find the user's current active order or create one if none exists
-            // An "active" order might be one with a specific status, e.g., "Pending" or "Cart"
-            var order = await _context.Orders
-                .Include(o => o.OrderItems) // Include OrderItems to check if the book is already in the cart
-                .FirstOrDefaultAsync(o => o.MemberId == memberId && o.OrderStatus == "Pending"); // Assuming "Pending" is the status for an active cart
-
-            // 3. Find the book to be added
-            var book = await _context.Books.FindAsync(bookId);
+            // 2. Find the book to be added
+            var book = await FindBookByIdAsync(bookId);
             if (book == null)
             {
                 return NotFound($"Book with ID {bookId} not found.");
             }
+
+            // 3. Find or create the user's current active order (Pending status)
+            var order = await FindOrCreatePendingOrderAsync(memberId);
+
+            // 4. Add or update the order item for the book within the order
+            AddOrUpdateOrderItem(order, book, quantity);
+
+            // 5. Calculate and apply member discount and update order totals
+            // Assuming CalculateMemberDiscount is a separate helper or service method
+            decimal memberDiscountPercentage = await CalculateMemberDiscountAsync(memberId);
+            UpdateOrderTotals(order, memberDiscountPercentage);
+
+            // 6. Save all changes to the database (Order and OrderItems)
+            await _context.SaveChangesAsync();
+
+            // 7. Redirect to the order details page (cart view)
+            TempData["Message"] = $"{book.Title} added to your cart. Member discount applied.";
+            return RedirectToAction(nameof(Details), new { id = order.OrderId });
+        }
+
+        /// <summary>
+        /// Extracts the MemberId from the current user's claims.
+        /// </summary>
+        /// <returns>A tuple containing the member ID and an IActionResult if authentication fails.</returns>
+        private (int memberId, IActionResult? errorResult) GetMemberIdFromClaims()
+        {
+            var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (memberIdClaim == null)
+            {
+                return (0, Unauthorized("Could not identify the logged-in member."));
+            }
+
+            if (!int.TryParse(memberIdClaim.Value, out int memberId))
+            {
+                return (0, Unauthorized("Invalid member identifier format."));
+            }
+
+            return (memberId, null);
+        }
+
+        /// <summary>
+        /// Finds a book by its ID asynchronously.
+        /// </summary>
+        /// <param name="bookId">The ID of the book.</param>
+        /// <returns>The Book entity or null if not found.</returns>
+        private async Task<Book?> FindBookByIdAsync(int bookId)
+        {
+             return await _context.Books.FindAsync(bookId);
+        }
+
+        /// <summary>
+        /// Finds an existing pending order for the member or creates a new one asynchronously.
+        /// Includes OrderItems for checking existing items.
+        /// </summary>
+        /// <param name="memberId">The ID of the member.</param>
+        /// <returns>The existing or newly created Order entity.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the Member entity cannot be found for the authenticated user.</exception>
+        private async Task<Order> FindOrCreatePendingOrderAsync(int memberId)
+        {
+            // Find the user's current active order with status "Pending" (acting as the cart)
+            var order = await _context.Orders
+                .Include(o => o.OrderItems) // Include OrderItems to check existing items efficiently
+                .FirstOrDefaultAsync(o => o.MemberId == memberId && o.OrderStatus == "Pending");
 
             if (order == null)
             {
                 // No active order found, create a new one
                 // Fetch the Member entity to satisfy the required navigation property
                 var member = await _context.Members.FindAsync(memberId);
-                if (member == null)
+                 if (member == null)
                 {
-                    // This should not happen if MemberId is from authenticated user, but good to check
-                    return Unauthorized("Could not find the member associated with the logged-in user.");
+                    // This is a critical error if MemberId is from an authenticated user claim
+                    throw new InvalidOperationException("Member entity not found for authenticated user.");
                 }
 
                 order = new Order
@@ -544,63 +598,82 @@ namespace FinalProject.Controllers // Adjust namespace as needed
                     MemberId = memberId,
                     Member = member, // Assign the fetched Member entity
                     OrderDate = DateTime.UtcNow, // Use UTC for consistency
-                    OrderStatus = "Pending", // Set initial status
+                    OrderStatus = "Pending", // Set initial status for a new cart
                     TotalAmount = 0, // Will be calculated based on items
                     DiscountApplied = 0, // Will be calculated based on items and member discount
-                    ClaimCode = "", // Or generate a default claim code
+                    ClaimCode = null, // Or generate a default claim code if needed
                     DateAdded = DateTime.UtcNow,
                     DateUpdated = DateTime.UtcNow,
-                    OrderItems = new List<OrderItem>() // Initialize the collection
+                    OrderItems = new List<OrderItem>() // Initialize the collection for new items
                 };
-                _context.Orders.Add(order);
-                // No need to SaveChangesAsync here, it will be saved with the OrderItem
+                _context.Orders.Add(order); // Add the new order to the context
+                // No need to SaveChangesAsync here, it will be saved with the OrderItem changes
             }
 
+            return order;
+        }
+
+        /// <summary>
+        /// Adds a new OrderItem to the order or updates the quantity if the book already exists.
+        /// Modifies the Order entity's OrderItems collection directly.
+        /// </summary>
+        /// <param name="order">The Order entity to add/update the item in.</param>
+        /// <param name="book">The Book entity to add/update.</param>
+        /// <param name="quantity">The quantity to add (defaults to 1).</param>
+        private void AddOrUpdateOrderItem(Order order, Book book, int quantity)
+        {
             // Ensure quantity is at least 1
             if (quantity < 1)
             {
                 quantity = 1;
             }
 
-            // 4. Check if the book is already in the order
-            var existingOrderItem = order.OrderItems.FirstOrDefault(oi => oi.BookId == bookId);
+            // Check if the book is already in the order's items
+            var existingOrderItem = order.OrderItems.FirstOrDefault(oi => oi.BookId == book.BookId);
 
             if (existingOrderItem != null)
             {
-                // Book is already in the cart, update the quantity
+                // Book is already in the cart, update the quantity and price details
                 existingOrderItem.Quantity += quantity;
                 existingOrderItem.Discount = book.SaleDiscount ?? 0; // Use SaleDiscount, handle null
                 existingOrderItem.UnitPrice = book.ListPrice; // Use ListPrice
-                _context.OrderItems.Update(existingOrderItem); // Mark the OrderItem as updated
+                // EF Core tracks changes to entities already attached to the context,
+                // so explicit _context.OrderItems.Update() is often not needed here.
             }
             else
             {
                 // Book is not in the cart, add a new OrderItem
                 var newOrderItem = new OrderItem
                 {
+                    // OrderId and Order navigation property will be set automatically by EF Core
+                    // when adding to the Order.OrderItems collection of a tracked entity (the 'order').
+                    // Explicitly setting them here is also fine for clarity.
                     OrderId = order.OrderId,
-                    Order = order, // Assign the fetched Order entity
-                    BookId = bookId,
-                    Book = book, // Assign the fetched Book entity
+                    Order = order,
+                    BookId = book.BookId,
+                    Book = book,
                     Quantity = quantity,
-                    UnitPrice = book.ListPrice, // Use ListPrice
-                    Discount = book.SaleDiscount ?? 0 // Use SaleDiscount, handle null
+                    UnitPrice = book.ListPrice, // Use ListPrice at the time of adding to cart
+                    Discount = book.SaleDiscount ?? 0 // Use SaleDiscount at the time of adding
                 };
                 order.OrderItems.Add(newOrderItem); // Add to the order's collection
-                // No need to explicitly Add to context if adding to a tracked entity's collection
-                // _context.OrderItems.Add(newOrderItem);
+                // EF Core tracks changes when adding to a tracked entity's collection,
+                // so explicit _context.OrderItems.Add() is often not needed here.
             }
+        }
 
-            // --- Calculate Member Discount ---
-            decimal memberDiscountPercentage = await CalculateMemberDiscount(memberId);
-            Debug.WriteLine($"Member ID {memberId} qualifies for {memberDiscountPercentage * 100}% discount for cart.");
-            // --- End Calculate Member Discount ---
-
-
-            // 5. Update the Order's TotalAmount and DateUpdated
-            // This section updates the Orders table
-            // Recalculate subtotal based on current order items (before member discount)
-            decimal subtotal = order.OrderItems.Sum(oi => (oi.Quantity * oi.UnitPrice) - oi.Discount);
+        /// <summary>
+        /// Calculates the subtotal based on current order items, applies the member discount,
+        /// and updates the order's total amount and date updated.
+        /// Modifies the Order entity in place.
+        /// </summary>
+        /// <param name="order">The Order entity to update totals for.</param>
+        /// <param name="memberDiscountPercentage">The percentage discount applicable to the member (e.g., 0.10 for 10%).</param>
+        private void UpdateOrderTotals(Order order, decimal memberDiscountPercentage)
+        {
+             // Recalculate subtotal based on current order items
+             // Item total = Quantity * UnitPrice * (1 - ItemDiscount)
+            decimal subtotal = order.OrderItems.Sum(oi => oi.Quantity * oi.UnitPrice * (1 - oi.Discount));
 
             // Apply the member-level discount to the subtotal
             order.DiscountApplied = subtotal * memberDiscountPercentage;
@@ -608,20 +681,60 @@ namespace FinalProject.Controllers // Adjust namespace as needed
 
             order.DateUpdated = DateTime.UtcNow;
 
-            _context.Orders.Update(order); // Mark the Order as updated
-
-            // 6. Save all changes (Order and OrderItems)
-            await _context.SaveChangesAsync();
-
-            // 7. Redirect or return a success response
-            // You might redirect to the order details page (cart view), a shopping cart page,
-            // or return a JSON success message for AJAX calls.
-            // Redirecting to the order details page which should show the updated cart.
-            TempData["Message"] = $"{book.Title} added to your cart. Member discount applied.";
-            return RedirectToAction(nameof(Details), new { id = order.OrderId });
-            // Or return Json(new { success = true, message = "Item added to order." });
+            // EF Core tracks changes to entities already attached to the context,
+            // so explicit _context.Orders.Update() is often not needed here.
         }
-        // --- End AddItemToOrder Action ---
+
+
+        // Assuming this helper method exists elsewhere in your controller or a service
+        /// <summary>
+        /// Calculates the member-specific discount percentage asynchronously.
+        /// This is a placeholder implementation.
+        /// </summary>
+        /// <param name="memberId">The ID of the member.</param>
+        /// <returns>The discount percentage (e.g., 0.10 for 10%).</returns>
+        private async Task<decimal> CalculateMemberDiscountAsync(int memberId)
+        {
+            // Placeholder implementation - replace with your actual logic
+            // e.g., fetch member tier from database and return corresponding discount
+            var member = await _context.Members.FindAsync(memberId);
+            if (member != null)
+            {
+                // Example: Members with ID > 10 get 10% discount
+                return member.MemberId > 10 ? 0.10M : 0.00M;
+            }
+            return 0.00M; // No discount if member not found
+        }
+
+
+        // You would also need a Details action to view the order/cart
+        /// <summary>
+        /// Displays the details of a specific order (cart).
+        /// Includes OrderItems and their associated Books.
+        /// </summary>
+        /// <param name="id">The ID of the order to display.</param>
+        /// <returns>The View for the order details or a NotFound/Unauthorized result.</returns>
+        public async Task<IActionResult> Details(int id)
+        {
+            var order = await _context.Orders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Book) // Include Book details for each item
+                .FirstOrDefaultAsync(m => m.OrderId == id);
+
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            // Optional: Check if the logged-in user owns this order for security
+            var (memberId, authError) = GetMemberIdFromClaims();
+            if (authError != null || order.MemberId != memberId)
+            {
+                 return Unauthorized("You are not authorized to view this order.");
+            }
+
+            return View(order); // Return the order to a view
+        } // --- End AddItemToOrder Action ---
 
 
         // --- Action to Cancel a Specific Order Item ---
