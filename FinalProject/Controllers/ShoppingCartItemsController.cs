@@ -2,21 +2,21 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.EntityFrameworkCore; // Added for Include and ToListAsync
-using FinalProject.Data; // Assuming your DbContext is here
-using FinalProject.ViewModels; // Assuming your ViewModels are here
-using Microsoft.AspNetCore.Authorization; // Added for [Authorize]
-using Microsoft.AspNetCore.Mvc.Rendering; // Added for SelectList
-using FinalProject.Models; // Added for ShoppingCartItem model
+using Microsoft.EntityFrameworkCore;
+using FinalProject.Data;
+using FinalProject.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using FinalProject.Models;
 
-namespace FinalProject.Controllers // Adjust namespace as needed
+namespace FinalProject.Controllers
 {
-    [Authorize] // Ensure only authenticated users can access this controller's actions
-    public class ShoppingCartItemsController : Controller // New controller for shopping cart items
+    [Authorize]
+    public class ShoppingCartItemsController : Controller
     {
-        private readonly ApplicationDbContext _context; // Replace ApplicationDbContext
+        private readonly ApplicationDbContext _context;
 
-        public ShoppingCartItemsController(ApplicationDbContext context) // Replace ApplicationDbContext
+        public ShoppingCartItemsController(ApplicationDbContext context)
         {
             _context = context;
         }
@@ -25,45 +25,42 @@ namespace FinalProject.Controllers // Adjust namespace as needed
         // Accessible via /ShoppingCartItems/Profile
         public async Task<IActionResult> Profile()
         {
-            // Get the MemberId from the authenticated user's claims
             var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
 
-            // Since the controller is [Authorize], memberIdClaim should not be null,
-            // but we keep the check as a safeguard.
             if (memberIdClaim == null)
             {
-                // Log this unexpected scenario
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return RedirectToAction("Login", "Account"); // Assuming Login is in AccountController
+                // Assuming Login is in AccountController
+                return RedirectToAction("Login", "Account");
             }
 
-            // Parse the MemberId from the claim
             if (!int.TryParse(memberIdClaim.Value, out int memberId))
             {
-                // Handle cases where the claim value is not a valid integer
-                // Log this error and potentially log the user out or show an error page
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return RedirectToAction("Login", "Account"); // Assuming Login is in AccountController
+                // Assuming Login is in AccountController
+                return RedirectToAction("Login", "Account");
             }
 
-            // Retrieve the shopping cart items for the member
             var cartItems = await _context.ShoppingCartItems
                 .Where(item => item.MemberId == memberId)
-                .Include(item => item.Book) // Include the Book
-                .ThenInclude(book => book.Author) // Include the Author related to the Book
+                .Include(item => item.Book)
+                .ThenInclude(book => book.Author)
                 .ToListAsync();
 
-            // Map the ShoppingCartItem models to ShoppingCartItemViewModels
-            var viewModelList = new List<ShoppingCartItemViewModel>(); // Create a list of ViewModels
+            var viewModelList = new List<ShoppingCartItemViewModel>();
+
+            // Calculate the total price for the entire cart here if needed for the summary
+            // decimal totalCartPrice = 0m;
 
             foreach (var item in cartItems)
             {
-                // Use the FullName property from the Author model, handling nulls for Book and Author
                 string bookAuthorName = item.Book?.Author?.FullName ?? "Unknown Author";
                 string bookTitle = item.Book?.Title ?? "Unknown Title";
+                // Ensure currency formatting uses the correct culture if needed
                 string bookListPriceDisplay = item.Book?.ListPrice.ToString("C") ?? "$0.00";
-                string totalPriceDisplay = (item.Quantity * (item.Book?.ListPrice ?? 0m)).ToString("C");
-                string dateAddedDisplay = item.DateAdded.ToString("d"); // Example formatting
+                decimal itemTotalPrice = item.Quantity * (item.Book?.ListPrice ?? 0m);
+                string totalPriceDisplay = itemTotalPrice.ToString("C");
+                string dateAddedDisplay = item.DateAdded.ToString("d");
 
                 viewModelList.Add(new ShoppingCartItemViewModel
                 {
@@ -73,19 +70,63 @@ namespace FinalProject.Controllers // Adjust namespace as needed
                     Quantity = item.Quantity,
                     DateAddedDisplay = dateAddedDisplay,
                     BookTitle = bookTitle,
-                    BookAuthorName = bookAuthorName, // Now assigned using the FullName property
+                    BookAuthorName = bookAuthorName,
                     BookListPriceDisplay = bookListPriceDisplay,
                     TotalPriceDisplay = totalPriceDisplay
+                    // You might add a numeric property for the total price here too for easier summation
+                    // ItemTotalPrice = itemTotalPrice // Add this to your ViewModel
                 });
+
+                // totalCartPrice += itemTotalPrice; // Sum up for the total
             }
 
-            // Pass the list of ViewModels to the view
+            // If you calculate totalCartPrice, you might pass it to the view, perhaps in a parent ViewModel
+            // or set it in ViewData.
+            // ViewData["TotalCartPrice"] = totalCartPrice.ToString("C"); // Example using ViewData
+
             return View(viewModelList);
         }
 
+        // POST: ShoppingCartItems/Remove/5
+        // This action handles removing an item from the cart
+        [HttpPost] // Use POST for removal
+        [ValidateAntiForgeryToken] // Add anti-forgery token for security
+        public async Task<IActionResult> Remove(int id) // 'id' is the CartItemId
+        {
+            // Get the MemberId from the authenticated user's claims
+            var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (memberIdClaim == null || !int.TryParse(memberIdClaim.Value, out int memberId))
+            {
+                // User not logged in or invalid MemberId claim
+                // Log the issue or redirect to login
+                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                 return RedirectToAction("Login", "Account"); // Assuming Login is in AccountController
+            }
+
+            // Find the cart item by ID
+            var shoppingCartItem = await _context.ShoppingCartItems.FindAsync(id);
+
+            // Check if the item exists and belongs to the current user
+            if (shoppingCartItem == null || shoppingCartItem.MemberId != memberId)
+            {
+                // Item not found or does not belong to the user
+                // Return Not Found or an Unauthorized result
+                return NotFound(); // Or return Unauthorized() if you want to be explicit
+            }
+
+            // Remove the item from the context
+            _context.ShoppingCartItems.Remove(shoppingCartItem);
+
+            // Save the changes to the database
+            await _context.SaveChangesAsync();
+
+            // Redirect back to the shopping cart profile page
+            return RedirectToAction(nameof(Profile));
+        }
+
+
         // GET: ShoppingCartItems
-        // Note: This Index action might not be needed for a typical user-facing site,
-        // but is included if you need an admin view or similar.
         public async Task<IActionResult> Index()
         {
             var applicationDbContext = _context.ShoppingCartItems.Include(s => s.Book).Include(s => s.Member);
@@ -121,8 +162,6 @@ namespace FinalProject.Controllers // Adjust namespace as needed
         }
 
         // POST: ShoppingCartItems/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("CartItemId,MemberId,BookId,Quantity,DateAdded")] ShoppingCartItem shoppingCartItem)
@@ -157,8 +196,6 @@ namespace FinalProject.Controllers // Adjust namespace as needed
         }
 
         // POST: ShoppingCartItems/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("CartItemId,MemberId,BookId,Quantity,DateAdded")] ShoppingCartItem shoppingCartItem)
@@ -193,51 +230,64 @@ namespace FinalProject.Controllers // Adjust namespace as needed
             return View(shoppingCartItem);
         }
 
-        // GET: ShoppingCartItems/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
 
-            var shoppingCartItem = await _context.ShoppingCartItems
-                .Include(s => s.Book)
-                .Include(s => s.Member)
-                .FirstOrDefaultAsync(m => m.CartItemId == id);
-            if (shoppingCartItem == null)
-            {
-                return NotFound();
-            }
+        // Note: The Delete action below is for a confirmation page (GET) and actual deletion (POST).
+        // The new 'Remove' action above is a common pattern for direct deletion from a list/cart view.
+        // You can keep both if needed for different scenarios, but for the cart view, 'Remove' is more direct.
 
-            return View(shoppingCartItem);
-        }
+        // GET: ShoppingCartItems/Delete/5 (Confirmation page, likely not needed for a simple cart removal)
+        // public async Task<IActionResult> Delete(int? id)
+        // {
+        //     if (id == null)
+        //     {
+        //         return NotFound();
+        //     }
 
-        // POST: ShoppingCartItems/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var shoppingCartItem = await _context.ShoppingCartItems.FindAsync(id);
-            if (shoppingCartItem != null)
-            {
-                _context.ShoppingCartItems.Remove(shoppingCartItem);
-            }
+        //     var shoppingCartItem = await _context.ShoppingCartItems
+        //         .Include(s => s.Book)
+        //         .Include(s => s.Member)
+        //         .FirstOrDefaultAsync(m => m.CartItemId == id);
+        //     if (shoppingCartItem == null)
+        //     {
+        //         return NotFound();
+        //     }
 
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
+        //     return View(shoppingCartItem);
+        // }
+
+        // POST: ShoppingCartItems/Delete/5 (Actual deletion, often paired with the GET Delete)
+        // [HttpPost, ActionName("Delete")]
+        // [ValidateAntiForgeryToken]
+        // public async Task<IActionResult> DeleteConfirmed(int id)
+        // {
+        //     var shoppingCartItem = await _context.ShoppingCartItems.FindAsync(id);
+        //     if (shoppingCartItem != null)
+        //     {
+        //         // Optional: Add check to ensure the item belongs to the current user here too
+        //         // if (shoppingCartItem.MemberId != GetCurrentMemberId()) { return Unauthorized(); }
+        //         _context.ShoppingCartItems.Remove(shoppingCartItem);
+        //         await _context.SaveChangesAsync();
+        //     }
+        //     // Redirect to the cart view (Profile) or Index, depending on where you want the user to go
+        //     return RedirectToAction(nameof(Profile));
+        // }
+
 
         private bool ShoppingCartItemExists(int id)
         {
             return _context.ShoppingCartItems.Any(e => e.CartItemId == id);
         }
 
-        // Assuming you have a Login action in an AccountController
-        // private IActionResult Login()
+        // Helper method to get the current member's ID - useful if you need it in multiple places
+        // private int GetCurrentMemberId()
         // {
-        //     // Redirect to your login page
-        //     return RedirectToAction("Login", "Account");
+        //     var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        //     if (memberIdClaim != null && int.TryParse(memberIdClaim.Value, out int memberId))
+        //     {
+        //         return memberId;
+        //     }
+        //     // Handle cases where the member ID is not available (e.g., throw exception, return -1)
+        //     throw new InvalidOperationException("Member ID not found in claims.");
         // }
     }
 }

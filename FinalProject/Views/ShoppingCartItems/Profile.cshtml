@@ -15,6 +15,7 @@
             {
                 <div class="alert alert-info text-center" role="alert"> @* Centered alert text *@
                     Your shopping cart is empty.
+                    @* TODO: Replace '#' with the actual URL for your "Continue Shopping" page *@
                     <p class="mt-2 mb-0"><a href="#" class="alert-link">Continue Shopping</a></p> @* Added a link to continue shopping *@
                 </div>
             }
@@ -42,7 +43,7 @@
                                 <th class="text-nowrap"> @* Prevent wrapping for date *@
                                     @Html.DisplayNameFor(model => model.First().DateAddedDisplay)
                                 </th>
-                                <th style="width: 100px;">Actions</th> @* Column for actions *@
+                                <th style="width: 120px;">Actions</th> @* Column for actions, slightly wider for button *@
                             </tr>
                         </thead>
                         <tbody>
@@ -68,9 +69,15 @@
                                         @Html.DisplayFor(modelItem => item.DateAddedDisplay)
                                     </td>
                                     <td>
-                                        @* Example Bootstrap button for remove action: *@
-                                        @* You'll need to replace "#" with your actual remove action URL and pass the item ID *@
-                                        <a href="#" class="btn btn-danger btn-sm">Remove</a>
+                                        @* --- START: Updated Remove Action Form --- *@
+                                        @* Use a form to send a POST request to the Remove action *@
+                                        <form asp-action="Remove" asp-route-id="@item.CartItemId" method="post">
+                                            @* Add the anti-forgery token for security *@
+                                            @Html.AntiForgeryToken()
+                                            @* The button inside the form submits the form *@
+                                            <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                        </form>
+                                        @* --- END: Updated Remove Action Form --- *@
                                     </td>
                                 </tr>
                             }
@@ -90,13 +97,13 @@
                                     </li>
                                     <li class="list-group-item d-flex justify-content-between align-items-center font-weight-bold">
                                         Grand Total
-                                        @* You'll need to calculate the grand total here. Assuming TotalPriceDisplay is a string like "$X.XX" or you have a separate numeric property for the total. If you have a numeric property (e.g., `decimal TotalCartPrice`), use that and format it. Otherwise, you might need to calculate it in the controller or add a property to the ViewModel. For now, let's assume you have a `TotalCartPriceDisplay` string property or similar. *@
-                                        @* Example using a placeholder: *@@* Replace with your actual total property *@
+                                        @* TODO: Calculate and display the actual Grand Total here. *@
+                                        @* You might need to add a property to your ViewModel or calculate it in the controller and pass it via ViewData/ViewModel. *@
                                         <span class="text-success">$$$ Total Here $$$</span> @* Placeholder for Grand Total *@
                                     </li>
                                 </ul>
                                 <div class="mt-3 text-right"> @* Aligned button to the right *@
-                                    @* Replace "#" with your actual checkout action URL *@
+                                    @* TODO: Replace '#' with the actual URL for your Checkout page *@
                                     <a href="#" class="btn btn-success btn-lg">Proceed to Checkout</a> @* Prominent checkout button *@
                                 </div>
                             </div>
