@@ -1,17 +1,19 @@
-using System.Security.Claims; // Required for Claims
-using Microsoft.AspNetCore.Authentication; // Required for Authentication
-using Microsoft.AspNetCore.Authentication.Cookies; // Required for Cookie Authentication
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization; // Needed for [Authorize]
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using FinalProject.Data; 
+using FinalProject.Data;
 using FinalProject.Models;
-using FinalProject.ViewModels; 
+using FinalProject.ViewModels;
+using BCrypt.Net; // Ensure you have this library installed
 
 namespace FinalProject.Controllers
 {
-    public class MemberController : Controller // Using MemberController as per your code
+    public class MemberController : Controller
     {
-        private readonly ApplicationDbContext _context; // Using your specified DbContext
+        private readonly ApplicationDbContext _context;
 
         public MemberController(ApplicationDbContext context)
         {
@@ -188,6 +190,57 @@ namespace FinalProject.Controllers
 
             // Redirect to the Home page
             return RedirectToAction("Index", "Home");
+        }
+
+        // GET: Member/Profile
+        /// <summary>
+        /// Displays the profile page for the currently logged-in member.
+        /// Requires authentication.
+        /// </summary>
+        /// <returns>The Profile view with member data, or redirects to login if not authenticated.</returns>
+        [HttpGet]
+        [Authorize] // Ensures only authenticated users can access this action
+        public async Task<IActionResult> Profile()
+        {
+            // Get the MemberId from the authenticated user's claims
+            var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (memberIdClaim == null)
+            {
+                // This should ideally not happen with [Authorize], but as a safeguard
+                // Redirect to login or an error page
+                return RedirectToAction(nameof(Login));
+            }
+
+            // Parse the MemberId from the claim
+            if (!int.TryParse(memberIdClaim.Value, out int memberId))
+            {
+                // Handle cases where the claim value is not a valid integer
+                // Log this error and potentially log the user out or show an error page
+                // For now, redirect to login
+                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return RedirectToAction(nameof(Login));
+            }
+
+            // Retrieve the member from the database
+            var member = await _context.Members
+                .Include(m => m.Orders) // Include related data if you want to display it
+                .Include(m => m.Reviews) // Include related data if you want to display it
+                .FirstOrDefaultAsync(m => m.MemberId == memberId);
+
+            if (member == null)
+            {
+                // Member not found in the database (should not happen if claim is valid)
+                // Log this error and potentially log the user out or show an error page
+                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return RedirectToAction(nameof(Login));
+            }
+
+            // Map the Member model to the ProfileViewModel
+            var viewModel = ProfileViewModel.FromMember(member);
+
+            // Pass the ViewModel to the view
+            return View(viewModel);
         }
 
 

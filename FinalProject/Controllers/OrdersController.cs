@@ -1,27 +1,83 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using FinalProject.Data;
-using FinalProject.Models;
-using Microsoft.AspNetCore.Authorization; // Required for [Authorize] attribute
-using System.Security.Claims; // Required to access user claims
-using Microsoft.AspNetCore.Authentication.Cookies; // Needed for SignOutAsync
-using Microsoft.AspNetCore.Authentication; // Needed for SignOutAsync
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore; // Added for Include and ToListAsync
+using FinalProject.Data; // Assuming your DbContext is here
+using FinalProject.ViewModels; // Assuming your ViewModels are here
+using System.Linq; // Added for LINQ
+using System.Threading.Tasks; // Added for async/await
+using Microsoft.AspNetCore.Authorization; // Added for [Authorize]
+using System.Collections.Generic; // Added for List
+using Microsoft.AspNetCore.Mvc.Rendering; // Added for SelectList
+using FinalProject.Models; // Added for ShoppingCartItem model
 using System.Diagnostics; // Required for Debug.WriteLine
 
-namespace FinalProject.Controllers
-{
-    public class OrdersController : Controller
-    {
-        private readonly ApplicationDbContext _context;
 
-        public OrdersController(ApplicationDbContext context)
+namespace FinalProject.Controllers // Adjust namespace as needed
+{
+    [Authorize] // Ensure only authenticated users can access this controller's actions
+    public class OrdersController : Controller // Renamed from OrderController to OrdersController based on user's provided code
+    {
+        private readonly ApplicationDbContext _context; // Replace ApplicationDbContext
+
+        public OrdersController(ApplicationDbContext context) // Replace ApplicationDbContext
         {
             _context = context;
+        }
+
+        // Action to display the authenticated user's orders
+        // Accessible via /Order/Profile
+        public async Task<IActionResult> Profile()
+        {
+            // Get the MemberId from the authenticated user's claims
+            var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+            // Since the controller is [Authorize], memberIdClaim should not be null,
+            // but we keep the check as a safeguard.
+            if (memberIdClaim == null)
+            {
+                // Log this unexpected scenario
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return RedirectToAction("Login", "Account"); // Assuming Login is in AccountController
+            }
+
+            // Parse the MemberId from the claim
+            if (!int.TryParse(memberIdClaim.Value, out int memberId))
+            {
+                // Handle cases where the claim value is not a valid integer
+                // Log this error and potentially log the user out or show an error page
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return RedirectToAction("Login", "Account"); // Assuming Login is in AccountController
+            }
+
+            // Retrieve the orders for the member
+            var orders = await _context.Orders
+                .Where(order => order.MemberId == memberId)
+                .Include(order => order.OrderItems) // Include OrderItems to get the count
+                .OrderByDescending(order => order.OrderDate) // Optional: Order by date
+                .ToListAsync();
+
+            // Map the Order models to OrderViewModels
+            var viewModelList = new List<OrderViewModel>(); // Create a list of ViewModels
+
+            foreach (var order in orders)
+            {
+                viewModelList.Add(new OrderViewModel
+                {
+                    OrderId = order.OrderId,
+                    MemberId = order.MemberId,
+                    OrderDateDisplay = order.OrderDate.ToString("g"), // Example formatting (general date/time)
+                    OrderStatus = order.OrderStatus,
+                    TotalAmountDisplay = order.TotalAmount.ToString("C"), // Currency formatting
+                    DiscountAppliedDisplay = order.DiscountApplied.ToString("P2"), // Percentage formatting
+                    ClaimCode = order.ClaimCode, // ClaimCode is nullable in the model and ViewModel
+                    ItemCount = order.OrderItems?.Count ?? 0 // Count items, handling null OrderItems collection
+                });
+            }
+
+            // Pass the list of ViewModels to the view
+            return View(viewModelList);
         }
 
         // GET: Orders
@@ -673,84 +729,47 @@ namespace FinalProject.Controllers
                 orderItem.Order.TotalAmount = subtotal - orderItem.Order.DiscountApplied;
 
 
-                 Debug.WriteLine($"New TotalAmount for Order {orderItem.OrderId}: {orderItem.Order.TotalAmount}"); // Debugging line
+                 Debug.WriteLine($"New TotalAmount for Order {orderItem.Order.TotalAmount} for Order {orderItem.OrderId}"); // Debugging line
 
 
-                // If the order has no remaining items, change its status to "Cancelled"
-                if (!orderItem.Order.OrderItems.Any(oi => oi.OrderItemId != orderItemId))
+                // If the order has no remaining items, change its status to "Cancelled" or "Empty"
+                if (orderItem.Order.OrderItems.Count == 0)
                 {
-                    Debug.WriteLine($"Order {orderItem.OrderId} is now empty. Setting status to 'Cancelled'."); // Debugging line
-                    orderItem.Order.OrderStatus = "Cancelled"; // Or another appropriate status
-                    orderItem.Order.TotalAmount = 0; // Ensure total is 0 if order is empty/cancelled
-                    orderItem.Order.DiscountApplied = 0; // Ensure discount is 0 if order is empty/cancelled
+                    Debug.WriteLine($"Order {orderItem.OrderId} now has 0 items. Changing status."); // Debugging line
+                    orderItem.Order.OrderStatus = "Cancelled"; // Or "Empty", depending on your desired status
+                    orderItem.Order.TotalAmount = 0; // Ensure total is 0
+                    orderItem.Order.DiscountApplied = 0; // Ensure discount is 0
+                     _context.Orders.Update(orderItem.Order); // Mark the Order as updated
+                } else {
+                     _context.Orders.Update(orderItem.Order); // Mark the Order as updated if items remain
                 }
 
-                orderItem.Order.DateUpdated = DateTime.UtcNow; // Update the order's modification date
-                _context.Orders.Update(orderItem.Order); // Mark the parent order as updated
-                 Debug.WriteLine($"Order {orderItem.OrderId} marked for update."); // Debugging line
 
-
-                // Save the changes (removes the order item and updates the order)
-                 Debug.WriteLine("Saving changes to database..."); // Debugging line
+                // Save changes to the database (removes the OrderItem and updates the Order)
+                 Debug.WriteLine("Saving changes to database."); // Debugging line
                 await _context.SaveChangesAsync();
                  Debug.WriteLine("Changes saved successfully."); // Debugging line
 
 
                 TempData["Message"] = "Order item cancelled successfully.";
-                 Debug.WriteLine("TempData message set: 'Order item cancelled successfully.'"); // Debugging line
             }
             catch (Exception ex)
             {
-                // Log the exception for debugging
-                Debug.WriteLine($"Error cancelling OrderItem {orderItemId}: {ex.Message}"); // Debugging line
-                // _logger.LogError(ex, $"Error cancelling OrderItem {orderItemId}");
-                TempData["Message"] = "An error occurred while cancelling the order item.";
-                 Debug.WriteLine("TempData message set: 'An error occurred while cancelling the order item.'"); // Debugging line
+                // Log the exception
+                Debug.WriteLine($"Error cancelling order item {orderItemId}: {ex.Message}"); // Debugging line
+                // _logger.LogError(ex, $"Error cancelling order item {orderItemId}");
+                TempData["Message"] = "Error cancelling order item. Please try again.";
+                // Consider more specific error handling based on exception type
             }
+            // --- End Perform Cancellation ---
 
-            // Redirect back to the original page
-             Debug.WriteLine($"Redirecting to: {returnUrl}"); // Debugging line
+
+            // Redirect back to the page the request came from
             return Redirect(returnUrl);
+            // Alternatively, redirect to the order details page or user's order history
+            // return RedirectToAction(nameof(Details), new { id = orderItem.OrderId });
         }
         // --- End CancelOrderItem Action ---
-
-
-        // --- Helper method to calculate member discount based on purchase history ---
-        /// <summary>
-        /// Calculates the discount percentage for a member based on the total quantity of books
-        /// purchased in completed orders.
-        /// </summary>
-        /// <param name="memberId">The ID of the member.</param>
-        /// <returns>The discount percentage (e.g., 0.05 for 5%, 0.10 for 10%).</returns>
-        private async Task<decimal> CalculateMemberDiscount(int memberId)
-        {
-            // Define completed order statuses - adjust this based on your OrderStatus values
-            var completedStatuses = new[] { "Completed", "Shipped", "Delivered" }; // Example statuses
-
-            // Query all order items from completed orders for this member
-            var purchasedItems = await _context.OrderItems
-                .Include(oi => oi.Order) // Include the parent Order to check status
-                .Where(oi => oi.Order.MemberId == memberId && completedStatuses.Contains(oi.Order.OrderStatus))
-                .ToListAsync();
-
-            // Sum the quantities of all purchased items
-            int totalPurchasedBooks = purchasedItems.Sum(oi => oi.Quantity);
-
-            // Determine discount percentage based on total purchased books
-            decimal discountPercentage = 0.0m;
-            if (totalPurchasedBooks >= 10)
-            {
-                discountPercentage = 0.10m; // 10% discount
-            }
-            else if (totalPurchasedBooks >= 5)
-            {
-                discountPercentage = 0.05m; // 5% discount
-            }
-            // Else, discountPercentage remains 0.0m
-
-            return discountPercentage;
-        }
-        // --- End Helper method ---
 
 
         private bool OrderExists(int id)
@@ -758,19 +777,25 @@ namespace FinalProject.Controllers
             return _context.Orders.Any(e => e.OrderId == id);
         }
 
-        // Helper method to get the current logged-in member's ID from claims
-        // You might move this to a base controller or a helper class
-        private int GetCurrentMemberId()
+        // Placeholder for member discount calculation logic
+        // You would implement this based on your business rules (e.g., membership level, purchase history)
+        private Task<decimal> CalculateMemberDiscount(int memberId)
         {
-            var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (memberIdClaim != null && int.TryParse(memberIdClaim.Value, out int memberId))
+            // Example: Fetch member and apply a discount based on a property
+            var member = _context.Members.Find(memberId);
+            if (member != null)
             {
-                return memberId;
+                // Assuming Member model has a StackableDiscount property (from your ProfileViewModel)
+                return Task.FromResult(member.StackableDiscount / 100m); // Convert percentage (e.g., 5.00) to decimal (e.g., 0.05)
             }
-            // Handle the case where the MemberId claim is not found or invalid
-            // This should ideally not happen if [Authorize] is used correctly,
-            // but returning 0 or throwing an exception might be appropriate depending on your error handling strategy.
-            throw new InvalidOperationException("Could not retrieve MemberId from authenticated user.");
+            return Task.FromResult(0m); // No discount if member not found
         }
+
+        // Assuming you have a Login action in an AccountController
+        // private IActionResult Login()
+        // {
+        //     // Redirect to your login page
+        //     return RedirectToAction("Login", "Account");
+        // }
     }
 }

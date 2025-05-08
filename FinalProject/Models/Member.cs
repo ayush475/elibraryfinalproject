@@ -1,10 +1,10 @@
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization; 
 
 namespace FinalProject.Models
 {
-    // Represents a library member.
     // NOTE: [Required] attributes are commented out for testing flexibility.
     //       Restore them for production to ensure data integrity.
     public class Member

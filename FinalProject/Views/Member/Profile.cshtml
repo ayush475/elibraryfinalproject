@@ -1,0 +1,81 @@
+@model FinalProject.ViewModels.ProfileViewModel
+
+@{
+    ViewData["Title"] = "Member Profile";
+}
+
+@* Link to Bootstrap CSS *@
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+<div class="container mt-4">
+    <h1 class="mb-4">Member Profile</h1>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="text-muted">Full Name:</p>
+                    <p>@Model.FullName</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="text-muted">Email:</p>
+                    <p>@Model.Email</p>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <p class="text-muted">Membership ID:</p>
+                    <p>@Model.MembershipId</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="text-muted">Registration Date:</p>
+                    <p>@Model.RegistrationDate.ToShortDateString()</p>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <p class="text-muted">Last Login:</p>
+                    <p>@(Model.LastLogin.HasValue ? Model.LastLogin.Value.ToString() : "Never")</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="text-muted">Total Orders:</p>
+                    <p>@Model.OrderCount</p>
+                </div>
+            </div>
+             <div class="row mt-3">
+                <div class="col-md-6">
+                    <p class="text-muted">Stackable Discount:</p>
+                    <p>@Model.StackableDiscount.ToString("P")</p> @* Format as percentage *@
+                </div>
+                 @* Add more profile details here as needed *@
+            </div>
+
+
+            @* Optional: Add sections for recent orders, reviews, etc. *@
+            @* Example for recent orders (if you added RecentOrders to ViewModel): *@
+            @*
+            @if (Model.RecentOrders != null && Model.RecentOrders.Any())
+            {
+                <h2 class="mt-4 mb-3">Recent Orders</h2>
+                <ul class="list-group">
+                    @foreach (var order in Model.RecentOrders)
+                    {
+                        <li class="list-group-item">Order #@order.OrderId - @order.OrderDate.ToShortDateString()</li>
+                    }
+                </ul>
+            }
+            *@
+
+            <div class="mt-4">
+                @* Example links for editing profile or changing password *@
+                @* <a asp-action="Edit" asp-route-id="@Model.MemberId" class="btn btn-primary mr-2">Edit Profile</a> *@
+                @* <a asp-action="ChangePassword" class="btn btn-secondary">Change Password</a> *@
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Optional: Link to Bootstrap JS if needed for components like dropdowns, modals, etc. *@
+@* <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script> *@
+@* <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script> *@
+@* <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> *@

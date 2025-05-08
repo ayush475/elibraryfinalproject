@@ -1,0 +1,69 @@
+@model List<FinalProject.ViewModels.ShoppingCartItemViewModel>
+
+@{
+    ViewData["Title"] = "My Shopping Cart";
+}
+
+<h1>My Shopping Cart</h1>
+
+@if (Model == null || !Model.Any())
+{
+    <p>Your shopping cart is empty.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.First().BookTitle)
+                </th>
+                 <th>
+                    @Html.DisplayNameFor(model => model.First().BookAuthorName)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.First().Quantity)
+                </th>
+                 <th>
+                    @Html.DisplayNameFor(model => model.First().BookListPriceDisplay)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.First().TotalPriceDisplay)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.First().DateAddedDisplay)
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.BookTitle)
+                    </td>
+                     <td>
+                        @Html.DisplayFor(modelItem => item.BookAuthorName)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Quantity)
+                    </td>
+                     <td>
+                        @Html.DisplayFor(modelItem => item.BookListPriceDisplay)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.TotalPriceDisplay)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.DateAddedDisplay)
+                    </td>
+                    <td>
+                        @* Add actions here, e.g., Remove from Cart *@
+                        @* <a asp-action="Remove" asp-route-id="@item.CartItemId">Remove</a> *@
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

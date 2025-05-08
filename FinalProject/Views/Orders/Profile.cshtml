@@ -1,0 +1,77 @@
+@model List<FinalProject.ViewModels.OrderViewModel>
+
+@{
+    ViewData["Title"] = "My Orders";
+}
+
+<h1>My Orders</h1>
+
+@if (Model == null || !Model.Any())
+{
+    <p>You have not placed any orders yet.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.First().OrderId)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.First().OrderDateDisplay)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.First().OrderStatus)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.First().ItemCount)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.First().TotalAmountDisplay)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.First().DiscountAppliedDisplay)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.First().ClaimCode)
+                </th>
+                <th></th> @* Column for actions like "Details" *@
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.OrderId)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.OrderDateDisplay)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.OrderStatus)
+                    </td>
+                     <td>
+                        @Html.DisplayFor(modelItem => item.ItemCount)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.TotalAmountDisplay)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.DiscountAppliedDisplay)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.ClaimCode)
+                    </td>
+                    <td>
+                        @* Link to view order details *@
+                        <a asp-action="Details" asp-controller="Orders" asp-route-id="@item.OrderId">Details</a>
+                        @* You could add other actions here, like "Cancel" if applicable *@
+                        @* <a asp-action="Cancel" asp-controller="Orders" asp-route-id="@item.OrderId">Cancel</a> *@
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

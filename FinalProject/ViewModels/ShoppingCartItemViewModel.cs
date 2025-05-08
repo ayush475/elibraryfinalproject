@@ -1,4 +1,3 @@
-
 namespace FinalProject.ViewModels
 {
     // ViewModel for displaying Shopping Cart Item information.
