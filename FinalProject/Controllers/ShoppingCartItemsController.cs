@@ -23,7 +23,7 @@ namespace FinalProject.Controllers
 
         // Action to display the authenticated user's shopping cart items
         // Accessible via /ShoppingCartItems/Profile
-        public async Task<IActionResult> Profile()
+       public async Task<IActionResult> Profile()
         {
             var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
 
@@ -41,6 +41,7 @@ namespace FinalProject.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
+            // Retrieve the shopping cart items for the member
             var cartItems = await _context.ShoppingCartItems
                 .Where(item => item.MemberId == memberId)
                 .Include(item => item.Book)
@@ -49,8 +50,11 @@ namespace FinalProject.Controllers
 
             var viewModelList = new List<ShoppingCartItemViewModel>();
 
-            // Calculate the total price for the entire cart here if needed for the summary
-            // decimal totalCartPrice = 0m;
+            // --- START: Calculate total items and total price ---
+            decimal totalCartPrice = 0m;
+            int totalCartItems = 0;
+            // --- END: Calculate total items and total price ---
+
 
             foreach (var item in cartItems)
             {
@@ -77,12 +81,17 @@ namespace FinalProject.Controllers
                     // ItemTotalPrice = itemTotalPrice // Add this to your ViewModel
                 });
 
-                // totalCartPrice += itemTotalPrice; // Sum up for the total
+                // --- START: Accumulate totals ---
+                totalCartPrice += itemTotalPrice; // Sum up for the total price
+                totalCartItems += item.Quantity; // Sum up for the total quantity
+                // --- END: Accumulate totals ---
             }
 
-            // If you calculate totalCartPrice, you might pass it to the view, perhaps in a parent ViewModel
-            // or set it in ViewData.
-            // ViewData["TotalCartPrice"] = totalCartPrice.ToString("C"); // Example using ViewData
+            // --- START: Pass totals to the view using ViewData ---
+            ViewData["TotalCartPrice"] = totalCartPrice.ToString("C"); // Pass the total price, formatted as currency
+            ViewData["TotalCartItems"] = totalCartItems; // Pass the total number of items
+            // --- END: Pass totals to the view using ViewData ---
+
 
             return View(viewModelList);
         }
