@@ -254,7 +254,54 @@ namespace FinalProject.Controllers // Adjust namespace as needed
         // Return the OrderStepOne view, passing the list of ViewModels as the model.
         return View(viewModelList);
     }
-            // POST: Orders/PlaceOrder
+        //I am writing claim code helper function in here
+          /// <summary>
+        /// Generates a unique alphanumeric claim code that does not currently exist in the Orders table.
+        /// </summary>
+        /// <returns>A unique claim code string.</returns>
+        private async Task<string> GenerateUniqueClaimCodeAsync()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; // Character set for the code
+            const int codeLength = 8; // Desired length of the claim code
+            const int maxAttempts = 10; // Maximum attempts to generate a unique code
+
+            Random random = new Random(); // Use System.Random for general randomness
+            // For higher security/cryptographic randomness, consider System.Security.Cryptography.RandomNumberGenerator
+
+            string claimCode;
+            int attempts = 0;
+
+            do
+            {
+                // Generate a random string
+                claimCode = new string(Enumerable.Repeat(chars, codeLength)
+                    .Select(s => s[random.Next(s.Length)])
+                    .ToArray());
+
+                // Check if the generated code already exists in the database
+                // Use AnyAsync for efficient checking
+                bool codeExists = await _context.Orders.AnyAsync(o => o.ClaimCode == claimCode);
+
+                if (!codeExists)
+                {
+                    // Code is unique, return it
+                    return claimCode;
+                }
+
+                attempts++;
+                // Optional: Add a small delay to avoid hammering the database on collisions
+                // await Task.Delay(50);
+
+            } while (attempts < maxAttempts); // Loop until unique code is found or max attempts reached
+
+            // If after max attempts a unique code is not found, handle this error.
+            // This is highly unlikely with a reasonable code length and character set.
+            // You might log an error, throw an exception, or return a specific error code.
+            Debug.WriteLine($"Failed to generate a unique claim code after {maxAttempts} attempts.");
+            throw new InvalidOperationException("Could not generate a unique claim code.");
+        }
+        // --- End Helper method to generate a unique claim code ---
+
         // This method handles the "Place Order" button submission from the OrderStepOne view.
         // It creates a new Order, new OrderItems, and clears the shopping cart.
         // POST: Orders/PlaceOrder
@@ -325,7 +372,10 @@ public async Task<IActionResult> PlaceOrder()
     using (var transaction = await _context.Database.BeginTransactionAsync())
     {
         try
-        {
+        {   // --- Generate a unique claim code ---
+            string uniqueClaimCode = await GenerateUniqueClaimCodeAsync();
+            Debug.WriteLine($"Generated unique claim code: {uniqueClaimCode}");
+            // --- End Generate unique claim code ---
             // Create the main Order object
             // This will result in an INSERT into the 'Orders' table.
             var order = new Order
@@ -335,7 +385,7 @@ public async Task<IActionResult> PlaceOrder()
                 OrderStatus = "Pending", // Initial status, can be updated later (e.g., "Processing", "Shipped")
                 TotalAmount = finalTotalCartPrice, // The final calculated price after all discounts
                 DiscountApplied = totalDiscountPercentage, // Store the total discount percentage applied
-                ClaimCode = null, // Can be set if a claim code is used
+                ClaimCode = uniqueClaimCode, // Can be set if a claim code is used
                 DateAdded = DateTime.UtcNow,
                 DateUpdated = DateTime.UtcNow,
                 OrderItems = new List<OrderItem>() // Initialize the collection for order items
@@ -865,7 +915,10 @@ private string BuildOrderConfirmationEmailBody(Order order, List<ShoppingCartIte
     // Format the date for better readability in the email
     bodyBuilder.AppendLine($"<p><strong>Order Date:</strong> {order.OrderDate.ToLocalTime().ToString("g")}</p>"); // Display in local time
     bodyBuilder.AppendLine("<hr>"); // Add a horizontal rule for separation
-
+    if (!string.IsNullOrEmpty(order.ClaimCode))
+    {
+        bodyBuilder.AppendLine($"<p><strong>Claim Code:</strong> {order.ClaimCode}</p>");
+    }
     // Add a section for the order summary
     bodyBuilder.AppendLine("<h2>Order Summary</h2>");
 
