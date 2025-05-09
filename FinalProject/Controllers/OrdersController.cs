@@ -351,13 +351,13 @@ public async Task<IActionResult> PlaceOrder()
     }
 
     // Recalculate Bulk Discount
-    decimal bulkDiscountPercentage = (totalCartItems >= 5) ? 0.05m : 0m; // 5% for 5 or more items
+    decimal bulkDiscountPercentage = CalculateBulkDiscount(totalCartItems);// 5% for 5 or more items
 
     // Recalculate Loyalty Discount (based on member's past non-pending orders)
     var successfulOrdersCount = await _context.Orders
         .Where(o => o.MemberId == memberId && o.OrderStatus != "Pending")
         .CountAsync();
-    decimal loyaltyDiscountPercentage = (successfulOrdersCount / 10) * 0.10m; // 10% for every 10 successful orders
+    decimal loyaltyDiscountPercentage = await CalculateLoyaltyDiscountAsync(memberId); // 10% for every 10 successful orders
 
     // Calculate Total Discount
     decimal totalDiscountPercentage = bulkDiscountPercentage + loyaltyDiscountPercentage;
@@ -1264,6 +1264,63 @@ private string BuildOrderConfirmationEmailBody(Order order, List<ShoppingCartIte
             // EF Core tracks changes to entities already attached to the context,
             // so explicit _context.Orders.Update() is often not needed here.
         }
+        /// <summary>
+        /// Calculates the bulk discount percentage based on the number of items in the current cart.
+        /// </summary>
+        /// <param name="currentCartItemCount">The total number of items in the member's current cart.</param>
+        /// <returns>The bulk discount percentage (e.g., 0.05 for 5%).</returns>
+        private decimal CalculateBulkDiscount(int currentCartItemCount)
+        {
+            decimal bulkDiscountPercentage = 0m;
+            // Apply 5% discount if there are MORE THAN 5 items in the CURRENT order/cart.
+            if (currentCartItemCount > 5)
+            {
+                bulkDiscountPercentage = 0.05m; // 5% discount
+                Debug.WriteLine($"Bulk Discount Applied: 5% for {currentCartItemCount} items in current cart.");
+            }
+            return bulkDiscountPercentage;
+        }
+        /// <summary>
+        /// Calculates the loyalty discount percentage based on the total number of items
+        /// in past successful orders for a member.
+        /// NOTE: This is a simplified implementation. For the full "next order" and "reset" logic,
+        /// you would need to add fields to your Member model (e.g., OrdersSinceLastLoyaltyDiscount)
+        /// and update that state when an order is placed and the discount is applied.
+        /// </summary>
+        /// <param name="memberId">The ID of the member.</param>
+        /// <returns>The loyalty discount percentage (e.g., 0.10 for 10%).</returns>
+        private async Task<decimal> CalculateLoyaltyDiscountAsync(int memberId)
+        {
+            decimal loyaltyDiscountPercentage = 0m;
+
+            // Fetch the total count of items from past successful orders for this member
+            var totalSuccessfulOrderItems = await _context.OrderItems
+                .Include(oi => oi.Order) // Include the parent Order to check its status
+                // Filter by member and orders that are NOT "Pending" (assuming non-pending means successful/completed)
+                .Where(oi => oi.Order.MemberId == memberId && oi.Order.OrderStatus != "Pending")
+                .SumAsync(oi => oi.Quantity); // Sum the quantities of items in those orders
+
+            Debug.WriteLine($"Total successful order items for Member ID {memberId}: {totalSuccessfulOrderItems}");
+
+            // Apply 10% if total successful order items is exactly 10, 20, 30, etc.
+            // This uses the total successful item count. For a true "next order" and "reset",
+            // you'd need a separate counter or state in the Member model that resets after discount application.
+            if (totalSuccessfulOrderItems > 0 && totalSuccessfulOrderItems % 10 == 0)
+            {
+                loyaltyDiscountPercentage = 0.10M; // 10% discount
+                Debug.WriteLine($"Loyalty Discount Applied: 10% for {totalSuccessfulOrderItems} successful items.");
+            }
+
+             // If you had other member-specific discounts (e.g., from StackableDiscount),
+             // you would add them here. This helper could return the sum of applicable discounts.
+             // var member = await _context.Members.FindAsync(memberId);
+             // if (member != null) {
+             //     loyaltyDiscountPercentage += (member.StackableDiscount / 100m); // Example if StackableDiscount is used
+             // }
+
+            return loyaltyDiscountPercentage; // Return the calculated loyalty discount
+        }
+
 
 
         // Assuming this helper method exists elsewhere in your controller or a service
@@ -1280,8 +1337,13 @@ private string BuildOrderConfirmationEmailBody(Order order, List<ShoppingCartIte
             var member = await _context.Members.FindAsync(memberId);
             if (member != null)
             {
-                // Example: Members with ID > 10 get 10% discount
-                return member.MemberId > 10 ? 0.10M : 0.00M;
+                // Apply 10% if successful orders is exactly 10, 20, 30, etc.
+                // This uses the total OrderCount. For a true "next order" and "reset",
+                // you'd need a separate counter or state in the Member model.
+                if (member.OrderCount > 0 && member.OrderCount % 10 == 0)
+                {
+                    return 0.10M; // 10% discount
+                }
             }
             return 0.00M; // No discount if member not found
         }
