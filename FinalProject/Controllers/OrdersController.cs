@@ -12,6 +12,13 @@ using System.Collections.Generic; // Added for List
 using Microsoft.AspNetCore.Mvc.Rendering; // Added for SelectList
 using FinalProject.Models; // Added for ShoppingCartItem model
 using System.Diagnostics; // Required for Debug.WriteLine
+using System.Text;
+using System.Net;
+using System.Net.Mail;
+using System.Text;
+using Microsoft.Extensions.Options;
+using FinalProject.Configuration;
+using FinalProject.Services;
 
 
 namespace FinalProject.Controllers // Adjust namespace as needed
@@ -20,10 +27,13 @@ namespace FinalProject.Controllers // Adjust namespace as needed
     public class OrdersController : Controller // Renamed from OrderController to OrdersController based on user's provided code
     {
         private readonly ApplicationDbContext _context; // Replace ApplicationDbContext
+        private readonly IEmailService _emailService;
 
-        public OrdersController(ApplicationDbContext context) // Replace ApplicationDbContext
+        public OrdersController(ApplicationDbContext context,IEmailService emailService) // Replace ApplicationDbContext
         {
             _context = context;
+            _emailService = emailService;
+
         }
         
         
@@ -357,6 +367,32 @@ public async Task<IActionResult> PlaceOrder()
                 _context.Members.Update(member); // Mark the member entity as modified
                 await _context.SaveChangesAsync(); // Save the changes to the member
             }
+            member = await _context.Members.FindAsync(memberId); // Re-fetch member
+            if (member == null || string.IsNullOrEmpty(member.Email))
+            {
+                TempData["WarningMessage"] = "Order placed, but email could not be sent (member or email missing).";
+                // Log this warning
+            }
+            else
+            {
+                try
+                {
+                    string userEmail = member.Email;
+                    string subject = $"Your Order Confirmation - Order #{order.OrderId}";
+                    // Build the email body
+                    string body = BuildOrderConfirmationEmailBody(order, cartItems, initialTotalCartPrice, totalDiscountPercentage, finalTotalCartPrice);
+
+                    // Call the SendEmailAsync method on the injected email service
+                    await _emailService.SendEmailAsync(userEmail, subject, body);
+
+                    TempData["SuccessMessage"] = $"Order #{order.OrderId} placed successfully and confirmation email sent to {userEmail}.";
+                }
+                catch (Exception emailEx)
+                {
+                    TempData["WarningMessage"] = $"Order #{order.OrderId} placed successfully, but failed to send confirmation email. Please try again or contact support.";
+                    // Log the exception
+                }
+            }
             // --- Step 6: Clear the shopping cart ---
             // This updates the 'ShoppingCartItems' table by removing the processed items.
             _context.ShoppingCartItems.RemoveRange(cartItems);
@@ -510,7 +546,6 @@ public async Task<IActionResult> PlaceOrder()
                     BookTitle = oi.Book?.Title ?? "N/A",
                     Quantity = oi.Quantity,
 
-                    // *** FIX APPLIED HERE ***
                     // - Setting the required 'BookAuthorName' property in the ViewModel
                     // - Assuming your 'Author' model has a property named 'AuthorName'
                     BookAuthorName = oi.Book?.Author?.FullName ?? "N/A", // *** Adjusted property name based on error ***
@@ -815,6 +850,73 @@ public async Task<IActionResult> PlaceOrder()
 
             return RedirectToAction(nameof(Index));
         }
+        //helper function to send email
+        // --- Helper method to build the email body (the bill) ---
+// This method takes the necessary data and formats it into an HTML string
+private string BuildOrderConfirmationEmailBody(Order order, List<ShoppingCartItem> cartItems, decimal initialTotal, decimal totalDiscountPercentage, decimal finalTotal)
+{
+    // Use StringBuilder for efficient string concatenation, especially for longer content
+    StringBuilder bodyBuilder = new StringBuilder();
+
+    // Add the main heading and introductory text
+    bodyBuilder.AppendLine("<h1>Order Confirmation</h1>");
+    bodyBuilder.AppendLine($"<p>Thank you for your order! Your order details are below:</p>");
+    bodyBuilder.AppendLine($"<p><strong>Order ID:</strong> {order.OrderId}</p>");
+    // Format the date for better readability in the email
+    bodyBuilder.AppendLine($"<p><strong>Order Date:</strong> {order.OrderDate.ToLocalTime().ToString("g")}</p>"); // Display in local time
+    bodyBuilder.AppendLine("<hr>"); // Add a horizontal rule for separation
+
+    // Add a section for the order summary
+    bodyBuilder.AppendLine("<h2>Order Summary</h2>");
+
+    // Create an HTML table to display the order items like a bill
+    bodyBuilder.AppendLine("<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse; width: 100%;'>"); // Added style for better table appearance and full width
+    bodyBuilder.AppendLine("<thead><tr><th>Item</th><th>Quantity</th><th>Unit Price</th><th>Line Total</th></tr></thead>"); // Table header row
+    bodyBuilder.AppendLine("<tbody>"); // Start the table body
+
+    // Loop through each item that was in the shopping cart for this order
+    foreach (var item in cartItems)
+    {
+        // Ensure Book is not null before accessing properties (safety check)
+        if (item.Book != null)
+        {
+            // Calculate the total price for this specific item line
+            decimal lineTotal = item.Quantity * item.Book.ListPrice;
+
+            // Add a table row for each item
+            bodyBuilder.AppendLine($"<tr>");
+            bodyBuilder.AppendLine($"<td>{item.Book.Title}</td>"); // Display book title
+            bodyBuilder.AppendLine($"<td>{item.Quantity}</td>"); // Display quantity
+            // Format the unit price as currency
+            bodyBuilder.AppendLine($"<td>{item.Book.ListPrice.ToString("C")}</td>");
+            // Format the line total as currency
+            bodyBuilder.AppendLine($"<td>{lineTotal.ToString("C")}</td>");
+            bodyBuilder.AppendLine($"</tr>");
+        }
+    }
+
+    bodyBuilder.AppendLine("</tbody>"); // End the table body
+    bodyBuilder.AppendLine("</table>"); // End the table
+
+    bodyBuilder.AppendLine("<hr>"); // Add another horizontal rule
+
+    // Add sections for totals and discounts
+    bodyBuilder.AppendLine($"<p><strong>Subtotal:</strong> {initialTotal.ToString("C")}</p>"); // Display the total before discounts
+    // Calculate the actual discount amount for display
+    decimal totalDiscountAmount = initialTotal * totalDiscountPercentage;
+    // Display the total discount applied, showing the percentage and the amount
+    bodyBuilder.AppendLine($"<p><strong>Total Discount Applied ({totalDiscountPercentage:P0}):</strong> -{totalDiscountAmount.ToString("C")}</p>");
+    bodyBuilder.AppendLine($"<p><strong>Final Total:</strong> {finalTotal.ToString("C")}</p>"); // Display the final total after discounts
+
+    bodyBuilder.AppendLine("<hr>"); // Final horizontal rule
+    bodyBuilder.AppendLine("<p>If you have any questions, please contact us.</p>");
+    bodyBuilder.AppendLine("<p>Thank you!</p>");
+
+    // Return the complete HTML string
+    return bodyBuilder.ToString();
+}
+// --- End Helper method to build the email body ---
+
 
 
         // --- Action to Add a Single Item and Create a New Order ---

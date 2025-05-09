@@ -6,12 +6,21 @@ using Microsoft.Extensions.Hosting; // Added for IHostEnvironment
 using Microsoft.Extensions.Configuration; // Added for IConfiguration
 using Microsoft.Extensions.Logging; // Added for ILogger
 using Microsoft.AspNetCore.Authentication.Cookies; // Needed for CookieAuthenticationDefaults
-
+using FinalProject.Configuration;
+using FinalProject.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews(); // This registers MVC controllers and views
-
+// Configure EmailSettings from appsettings.json
+// This is the equivalent of the code you selected from Startup.cs
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+// This tells the dependency injection container:
+// "When someone asks for an IEmailService, give them an instance of EmailService."
+// AddScoped means a new instance will be created for each web request.
+// Other options are AddTransient (new instance every time it's requested)
+// or AddSingleton (single instance for the entire application lifetime).
+builder.Services.AddScoped<IEmailService, EmailService>();
 // --- Configure Authentication Schemes ---
 builder.Services.AddAuthentication(options =>
 {
