@@ -340,6 +340,7 @@ public async Task<IActionResult> PlaceOrder()
                     BookId = cartItem.BookId,
                     Quantity = cartItem.Quantity,
                     Order = order, // Set the Order navigation property
+                    UnitPrice=cartItem.Book.ListPrice,
                     Book = cartItem.Book // Set the Book navigation property
                 };
                 order.OrderItems.Add(orderItem);
@@ -348,7 +349,14 @@ public async Task<IActionResult> PlaceOrder()
             // Add the new Order (which includes its OrderItems) to the DbContext
             _context.Orders.Add(order);
             await _context.SaveChangesAsync(); // Save the Order and its OrderItems to the database
-
+            //member table ni update garau na
+            var member = await _context.Members.FindAsync(memberId);
+            if (member != null)
+            {
+                member.OrderCount++; // Increment the order count
+                _context.Members.Update(member); // Mark the member entity as modified
+                await _context.SaveChangesAsync(); // Save the changes to the member
+            }
             // --- Step 6: Clear the shopping cart ---
             // This updates the 'ShoppingCartItems' table by removing the processed items.
             _context.ShoppingCartItems.RemoveRange(cartItems);
@@ -372,6 +380,155 @@ public async Task<IActionResult> PlaceOrder()
         }
     }
 }
+// GET: /Orders/MyOrders or /myorders (depending on routing)
+        // Displays a list of orders for the logged-in member using ViewModels.
+        public async Task<IActionResult> MyOrders()
+        {
+            // Get the current user's ID
+            var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (memberIdClaim == null || !int.TryParse(memberIdClaim.Value, out int memberId))
+            {
+                // If MemberId is missing or invalid, sign out and redirect to login
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return RedirectToAction("Login", "Account"); // Assuming Login action is in AccountController
+            }
+
+            // Fetch orders for the logged-in member
+            // Include OrderItems and the associated Book and Author for each item
+            var memberOrders = await _context.Orders
+                .Where(o => o.MemberId == memberId)
+                .Include(o => o.OrderItems) // Include the collection of order items
+                    .ThenInclude(oi => oi.Book) // Then include the Book for each order item
+                        .ThenInclude(b => b.Author) // Then include the Author for the Book
+                .OrderByDescending(o => o.OrderDate) // Order by most recent first
+                .ToListAsync();
+
+            // Map the fetched data to the ViewModels
+            var myOrdersViewModel = new MyOrdersViewModel();
+
+            foreach (var order in memberOrders)
+            {
+                var orderViewModel = new OrderViewModel
+                {
+                    OrderId = order.OrderId,
+                    MemberId = order.MemberId, // Mapping MemberId
+                    OrderDateDisplay = order.OrderDate.ToLocalTime().ToString("g"), // Format date for display
+                    OrderStatus = order.OrderStatus,
+                    TotalAmountDisplay = order.TotalAmount.ToString("C"), // Format total amount as currency
+                    DiscountAppliedDisplay = order.DiscountApplied.ToString("P2"), // Format discount as percentage
+                    ClaimCode = order.ClaimCode, // Mapping ClaimCode
+                    ItemCount = order.OrderItems?.Sum(oi => oi.Quantity) ?? 0, // Calculate total item count
+                    // OrderItems collection is not part of this OrderViewModel structure as per your definition
+                    // If you need item details here, you would uncomment the List<OrderItemViewModel> property
+                    // and map the items below.
+                };
+
+                // If you need to populate the OrderItems collection in OrderViewModel, uncomment the property
+                // and the following mapping logic:
+                // if (order.OrderItems != null)
+                // {
+                //     foreach (var item in order.OrderItems)
+                //     {
+                //         var orderItemViewModel = new OrderItemViewModel
+                //         {
+                //             OrderItemId = item.OrderItemId,
+                //             OrderId = item.OrderId,
+                //             BookId = item.BookId,
+                //             BookTitle = item.Book?.Title ?? "N/A",
+                //             BookAuthorName = item.Book?.Author?.Name ?? "N/A",
+                //             Quantity = item.Quantity,
+                //             UnitPriceDisplay = item.UnitPrice.ToString("C"),
+                //             DiscountDisplay = item.Discount.ToString("P2"),
+                //             TotalPriceDisplay = item.TotalPrice.ToString("C")
+                //         };
+                //         orderViewModel.OrderItems.Add(orderItemViewModel);
+                //     }
+                // }
+
+
+                myOrdersViewModel.Orders.Add(orderViewModel);
+            }
+
+            // Pass the MyOrdersViewModel to the view
+            return View(myOrdersViewModel);
+        }
+
+        // GET: /Orders/OrderDetail/{id}
+        // Displays the details of a specific order for the logged-in member using ViewModels.
+        // --- Action to display details of a specific order ---
+        // Accessible via /Orders/OrderDetail/{id}
+       // --- Action to display details of a specific order ---
+        // Accessible via /Orders/OrderDetail/{id}
+        public async Task<IActionResult> OrderDetail(int? id)
+        {
+            // 1. Validate input ID
+            if (id == null)
+            {
+                return NotFound("Order ID is required.");
+            }
+
+            // 2. Get the current user's MemberId from claims
+            var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (memberIdClaim == null || !int.TryParse(memberIdClaim.Value, out int memberId))
+            {
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return RedirectToAction("Login", "Account"); // Assuming Login action is in an AccountController
+            }
+
+            // 3. Fetch the specific order for the logged-in member from the database
+            // Include related entities: OrderItems, and for each OrderItem, its Book and the Book's Author.
+            var order = await _context.Orders
+                .Where(o => o.OrderId == id && o.MemberId == memberId) // Security: Ensure order belongs to the current member
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Book) // OrderItem has a navigation property 'Book'
+                        .ThenInclude(b => b.Author) // Book has a navigation property 'Author'
+                .FirstOrDefaultAsync();
+
+            // 4. Handle cases where the order is not found or doesn't belong to the member
+            if (order == null)
+            {
+                return NotFound($"Order with ID {id} not found or you do not have permission to view it.");
+            }
+
+            // 5. Map the fetched order data to your user-provided OrderViewModel
+            var orderViewModel = new OrderViewModel
+            {
+                OrderId = order.OrderId,
+                MemberId = order.MemberId,
+                OrderDateDisplay = order.OrderDate.ToLocalTime().ToString("g"),
+                OrderStatus = order.OrderStatus,
+                ClaimCode = order.ClaimCode,
+
+                ItemCount = order.OrderItems?.Sum(oi => oi.Quantity) ?? 0,
+
+                // Map each OrderItem entity to the user-provided OrderItemViewModel
+                OrderItems = order.OrderItems?.Select(oi => new OrderItemViewModel
+                {
+                    OrderItemId = oi.OrderItemId,
+                    OrderId = oi.OrderId,
+                    BookId = oi.BookId,
+                    BookTitle = oi.Book?.Title ?? "N/A",
+                    Quantity = oi.Quantity,
+
+                    // *** FIX APPLIED HERE ***
+                    // - Setting the required 'BookAuthorName' property in the ViewModel
+                    // - Assuming your 'Author' model has a property named 'AuthorName'
+                    BookAuthorName = oi.Book?.Author?.FullName ?? "N/A", // *** Adjusted property name based on error ***
+
+                    UnitPriceDisplay = oi.UnitPrice.ToString("C"),
+                    DiscountDisplay = oi.Discount.ToString("P2"),
+                    TotalPriceDisplay = oi.TotalPrice.ToString("C")
+                }).ToList() ?? new List<OrderItemViewModel>(),
+
+                DiscountAppliedDisplay = order.DiscountApplied.ToString("P2"),
+                TotalAmountDisplay = order.TotalAmount.ToString("C")
+            };
+
+            // 6. Pass the populated OrderViewModel to the view
+            return View(orderViewModel);
+        }
+
+     
 
 
         // GET: Orders/Details/5

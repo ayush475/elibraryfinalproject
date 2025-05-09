@@ -43,8 +43,13 @@ namespace FinalProject.ViewModels
         // If you need to display details of each item within the order in this ViewModel,
         // you would add a collection like this (requires an OrderItemViewModel):
         // public List<OrderItemViewModel> OrderItems { get; set; } = new List<OrderItemViewModel>();
+// Collection of items within this order for display.
+        // This property is needed for the OrderDetail action to populate and the view to display items.
+        public List<OrderItemViewModel> OrderItems { get; set; } = new List<OrderItemViewModel>();
 
         // Note: Mapping from the Order model to this ViewModel will typically
         // be done in the controller action that retrieves the orders.
     }
-}
+        // Note: Mapping from the Order model to this ViewModel will typically
+        // be done in the controller action that retrieves the orders.
+    }

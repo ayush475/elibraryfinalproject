@@ -1,0 +1,46 @@
+@model FinalProject.ViewModels.MyOrdersViewModel
+
+@{
+    ViewData["Title"] = "My Orders";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">My Orders</h2>
+
+    @if (Model == null || !Model.Orders.Any())
+    {
+        <div class="alert alert-info text-center" role="alert">
+            You have not placed any orders yet.
+            <p class="mt-2 mb-0"><a href="@Url.Action("Index", "Books")" class="alert-link">Start Shopping!</a></p>
+        </div>
+    }
+    else
+    {
+        @* Loop through each order ViewModel *@
+        @foreach (var order in Model.Orders)
+        {
+            <div class="card mb-4 shadow-sm"> @* Card for each order *@
+                <div class="card-header bg-light"> @* Header for order summary *@
+                    <h5 class="mb-0">
+                        Order #@order.OrderId
+                        <small class="text-muted ml-3">Placed on @order.OrderDateDisplay</small> @* Display formatted date *@
+                        <span class="badge badge-info ml-3">@order.OrderStatus</span> @* Display order status *@
+                        <span class="float-right font-weight-bold">Total: @order.TotalAmountDisplay</span> @* Display formatted total amount *@
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Items:</strong> @order.ItemCount</p>
+                    <p><strong>Discount Applied:</strong> @order.DiscountAppliedDisplay</p>
+                    @if (!string.IsNullOrEmpty(order.ClaimCode))
+                    {
+                        <p><strong>Claim Code:</strong> @order.ClaimCode</p>
+                    }
+
+                    @* Link to view order details (assuming you have an OrderDetail action) *@
+                    <a href="@Url.Action("OrderDetail", "Orders", new { id = order.OrderId })" class="btn btn-sm btn-primary mt-2">View Details</a>
+
+                </div>
+            </div> @* End of card *@
+        }
+    }
+</div>

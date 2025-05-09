@@ -1,0 +1,79 @@
+@model FinalProject.ViewModels.OrderViewModel
+
+@{
+    ViewData["Title"] = $"Order Details - #{Model?.OrderId}";
+}
+
+<div class="container mt-4">
+    @if (Model == null)
+    {
+        <div class="alert alert-danger text-center" role="alert">
+            Order details could not be loaded.
+        </div>
+    }
+    else
+    {
+        <h2 class="mb-4">Order Details #@Model.OrderId</h2>
+
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    Order Summary
+                    <span class="badge badge-info ml-3">@Model.OrderStatus</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Order Date:</strong> @Model.OrderDateDisplay</p>
+                <p><strong>Total Amount:</strong> @Model.TotalAmountDisplay</p>
+                <p><strong>Discount Applied:</strong> @Model.DiscountAppliedDisplay</p>
+                @if (!string.IsNullOrEmpty(Model.ClaimCode))
+                {
+                    <p><strong>Claim Code:</strong> @Model.ClaimCode</p>
+                }
+                 <p><strong>Total Items:</strong> @Model.ItemCount</p>
+            </div>
+        </div>
+
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Items in this Order</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.OrderItems != null && Model.OrderItems.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var item in Model.OrderItems)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    @item.Quantity x @item.BookTitle
+                                    @if (!string.IsNullOrEmpty(item.BookAuthorName))
+                                    {
+                                        <small class="text-muted">by @item.BookAuthorName</small>
+                                    }
+                                     @if (!string.IsNullOrEmpty(item.DiscountDisplay) && item.DiscountDisplay != "0.00%")
+                                    {
+                                         <span class="badge badge-success ml-2">@item.DiscountDisplay Discount</span>
+                                    }
+                                </div>
+                                <span class="font-weight-bold">@item.TotalPriceDisplay</span>
+                            </li>
+                            @* Optional: Add more details about the item if needed *@
+                            @* <li class="list-group-item">
+                                <small>Unit Price: @item.UnitPriceDisplay</small>
+                            </li> *@
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-muted">No items found for this order.</p>
+                }
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="@Url.Action("MyOrders", "Orders")" class="btn btn-secondary">Back to My Orders</a>
+        </div>
+    }
+</div>
