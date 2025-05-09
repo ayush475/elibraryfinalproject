@@ -173,8 +173,7 @@ namespace FinalProject.Controllers // Adjust namespace as needed
                 BookAuthorName = bookAuthorName,
                 BookListPriceDisplay = bookListPriceDisplay,
                 TotalPriceDisplay = totalPriceDisplay,
-                // If you add ItemTotalPrice (decimal) to your ViewModel, populate it here:
-                // ItemTotalPrice = itemTotalPrice
+                
             });
 
             // Accumulate the totals server-side (initial total before discounts)
@@ -245,6 +244,134 @@ namespace FinalProject.Controllers // Adjust namespace as needed
         // Return the OrderStepOne view, passing the list of ViewModels as the model.
         return View(viewModelList);
     }
+            // POST: Orders/PlaceOrder
+        // This method handles the "Place Order" button submission from the OrderStepOne view.
+        // It creates a new Order, new OrderItems, and clears the shopping cart.
+        // POST: Orders/PlaceOrder
+// This method handles the "Place Order" button submission from the OrderStepOne view.
+// It creates a new Order, new OrderItems, and clears the shopping cart.
+[HttpPost]
+[Authorize] // Ensures the user is authenticated
+[ValidateAntiForgeryToken] // Protects against CSRF attacks
+public async Task<IActionResult> PlaceOrder()
+{
+    // --- Step 1: Get the current user's ID ---
+    var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+    if (memberIdClaim == null || !int.TryParse(memberIdClaim.Value, out int memberId))
+    {
+        // If MemberId is missing or invalid, sign out and redirect to login
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return RedirectToAction("Login", "Account"); // Assuming Login action is in AccountController
+    }
+
+    // --- Step 2: Re-fetch shopping cart items (CRUCIAL for security and data integrity) ---
+    // This ensures that the order is based on the current state of the cart from the database.
+    var cartItems = await _context.ShoppingCartItems
+        .Where(item => item.MemberId == memberId)
+        .Include(item => item.Book) // Ensure Book is loaded for PriceAtPurchase and BookId
+        .ToListAsync();
+
+    // --- Step 3: Handle Empty Cart ---
+    if (!cartItems.Any())
+    {
+        TempData["ErrorMessage"] = "Your shopping cart is empty or your session has expired. Please try again.";
+        return RedirectToAction("Profile", "ShoppingCartItems"); // Redirect to cart page (assuming ShoppingCartItemsController has Profile action)
+    }
+
+    // --- Step 4: Re-calculate totals and discounts (Server-side calculation is key for accuracy) ---
+    decimal initialTotalCartPrice = 0m;
+    int totalCartItems = 0;
+    foreach (var item in cartItems)
+    {
+        if (item.Book == null)
+        {
+            // Handle cases where a book might have been removed from the system
+            TempData["ErrorMessage"] = "An item in your cart is no longer available. Please review your cart.";
+            return RedirectToAction("Profile", "ShoppingCartItems");
+        }
+        initialTotalCartPrice += item.Quantity * item.Book.ListPrice;
+        totalCartItems += item.Quantity;
+    }
+
+    // Recalculate Bulk Discount
+    decimal bulkDiscountPercentage = (totalCartItems >= 5) ? 0.05m : 0m; // 5% for 5 or more items
+
+    // Recalculate Loyalty Discount (based on member's past non-pending orders)
+    var successfulOrdersCount = await _context.Orders
+        .Where(o => o.MemberId == memberId && o.OrderStatus != "Pending")
+        .CountAsync();
+    decimal loyaltyDiscountPercentage = (successfulOrdersCount / 10) * 0.10m; // 10% for every 10 successful orders
+
+    // Calculate Total Discount
+    decimal totalDiscountPercentage = bulkDiscountPercentage + loyaltyDiscountPercentage;
+    if (totalDiscountPercentage > 1.0m) totalDiscountPercentage = 1.0m; // Cap discount at 100%
+
+    // Calculate Final Price
+    decimal finalTotalCartPrice = initialTotalCartPrice * (1 - totalDiscountPercentage);
+    if (finalTotalCartPrice < 0m) finalTotalCartPrice = 0m; // Ensure final price is not negative
+
+    // --- Step 5: Create the Order and OrderItems within a Database Transaction ---
+    // Using a transaction ensures that all database operations either complete successfully or none do.
+    using (var transaction = await _context.Database.BeginTransactionAsync())
+    {
+        try
+        {
+            // Create the main Order object
+            // This will result in an INSERT into the 'Orders' table.
+            var order = new Order
+            {
+                MemberId = memberId, // Associates the order with the current member
+                OrderDate = DateTime.UtcNow, // Use UTC for consistency
+                OrderStatus = "Pending", // Initial status, can be updated later (e.g., "Processing", "Shipped")
+                TotalAmount = finalTotalCartPrice, // The final calculated price after all discounts
+                DiscountApplied = totalDiscountPercentage, // Store the total discount percentage applied
+                ClaimCode = null, // Can be set if a claim code is used
+                DateAdded = DateTime.UtcNow,
+                DateUpdated = DateTime.UtcNow,
+                OrderItems = new List<OrderItem>() // Initialize the collection for order items
+            };
+
+            // Create OrderItem records for each item in the shopping cart
+            // This will result in INSERTs into the 'OrderItems' table.
+            foreach (var cartItem in cartItems)
+            {
+                var orderItem = new OrderItem
+                {
+                    BookId = cartItem.BookId,
+                    Quantity = cartItem.Quantity,
+                    Order = order, // Set the Order navigation property
+                    Book = cartItem.Book // Set the Book navigation property
+                };
+                order.OrderItems.Add(orderItem);
+            }
+
+            // Add the new Order (which includes its OrderItems) to the DbContext
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync(); // Save the Order and its OrderItems to the database
+
+            // --- Step 6: Clear the shopping cart ---
+            // This updates the 'ShoppingCartItems' table by removing the processed items.
+            _context.ShoppingCartItems.RemoveRange(cartItems);
+            await _context.SaveChangesAsync(); // Save changes to clear the cart
+
+            // If all operations are successful, commit the transaction
+            await transaction.CommitAsync();
+
+            // --- Step 7: Redirect to an Order Confirmation page ---
+            return Json(new { success = true, message = $"Order #{order.OrderId} placed successfully!", orderId = order.OrderId });
+
+
+        }
+        catch (Exception ex) // Consider logging the specific exception 'ex'
+        {
+            // If any error occurs during the process, roll back the transaction
+            await transaction.RollbackAsync();
+            TempData["ErrorMessage"] = "There was an error placing your order. Please try again or contact support.";
+            // Redirect back to the order review page or an error page
+            return RedirectToAction("OrderStepOne");
+        }
+    }
+}
 
 
         // GET: Orders/Details/5
