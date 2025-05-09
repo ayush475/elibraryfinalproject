@@ -49,6 +49,13 @@ namespace FinalProject.Models
 
         // Number of orders placed by the member.
         public int OrderCount { get; set; } = 0;
+        /// <summary>
+                /// Tracks the total quantity of items in successful orders
+                /// since the last loyalty discount was applied.
+                /// Used to implement the "10 items then reset" loyalty logic.
+                /// </summary>
+                public int TotalSuccessfulItemsSinceLastLoyaltyDiscount { get; set; } = 0;
+        
 
         // Stackable discount percentage applied to the member's orders.
         [Column(TypeName = "decimal(5, 2)")]

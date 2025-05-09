@@ -119,141 +119,123 @@ namespace FinalProject.Controllers // Adjust namespace as needed
             return View(await applicationDbContext.ToListAsync());
         }
         //stepone ko barema
-        public async Task<IActionResult> OrderStepOne()
+       // Assuming this is within your OrdersController.cs
+
+public async Task<IActionResult> OrderStepOne()
+{
+    // --- Step 1: Get the current user's ID from claims ---
+    var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+
+    if (memberIdClaim == null || !int.TryParse(memberIdClaim.Value, out int memberId))
     {
-        // --- Step 1: Get the current user's ID from claims ---
-        var memberIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-
-        // Basic check if user is authenticated and ID is available
-        // [Authorize] should handle most cases, but this adds robustness.
-        if (memberIdClaim == null || !int.TryParse(memberIdClaim.Value, out int memberId))
-        {
-            // If MemberId is missing or invalid, sign out and redirect to login
-             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-             // Assuming "Login" action is in "Account" controller
-             return RedirectToAction("Login", "Account");
-        }
-
-        // --- Step 2: Re-fetch the shopping cart items for the current user from the database ---
-        // This is crucial for security and data integrity - do NOT trust client-side data.
-        var cartItems = await _context.ShoppingCartItems
-            .Where(item => item.MemberId == memberId) // Filter by the current user's ID
-            .Include(item => item.Book) // Eagerly load the related Book entity
-            .ThenInclude(book => book.Author) // Further eagerly load the related Author for each Book
-            .ToListAsync(); // Execute the query and get results as a list
-
-         // --- Step 3: Handle Empty Cart scenario ---
-         // If the cart is empty at this point, redirect back to the cart page with a message.
-         if (!cartItems.Any())
-         {
-             // Use TempData to pass a temporary message to the next request
-             TempData["ErrorMessage"] = "Your shopping cart is empty. Please add items before proceeding to checkout.";
-             // Redirect back to the shopping cart profile page
-             return RedirectToAction("Profile", "ShoppingCartItems");
-         }
-
-        // --- Step 4: Prepare data for the view using ViewModel and calculate totals ---
-        // We reuse the ShoppingCartItemViewModel as it contains the necessary display properties.
-        var viewModelList = new List<ShoppingCartItemViewModel>();
-        decimal initialTotalCartPrice = 0m; // Initialize total price BEFORE discounts
-        int totalCartItems = 0; // Initialize total item count
-
-        foreach (var item in cartItems)
-        {
-            // Populate the ViewModel for each cart item
-            string bookAuthorName = item.Book?.Author?.FullName ?? "Unknown Author";
-            string bookTitle = item.Book?.Title ?? "Unknown Title";
-            // Format price as currency (adjust culture if needed)
-            string bookListPriceDisplay = item.Book?.ListPrice.ToString("C") ?? "$0.00";
-            // Calculate the total price for the current item (Quantity * ListPrice)
-            decimal itemTotalPrice = item.Quantity * (item.Book?.ListPrice ?? 0m);
-            // Format the item total price as currency
-            string totalPriceDisplay = itemTotalPrice.ToString("C");
-            // Format the date added (short date format)
-            string dateAddedDisplay = item.DateAdded.ToString("d");
-
-             viewModelList.Add(new ShoppingCartItemViewModel
-            {
-                CartItemId = item.CartItemId, // Include ID if needed, though not for review display
-                MemberId = item.MemberId,
-                BookId = item.BookId,
-                Quantity = item.Quantity,
-                DateAddedDisplay = dateAddedDisplay, // May or may not display this on review page
-                BookTitle = bookTitle,
-                BookAuthorName = bookAuthorName,
-                BookListPriceDisplay = bookListPriceDisplay,
-                TotalPriceDisplay = totalPriceDisplay,
-                
-            });
-
-            // Accumulate the totals server-side (initial total before discounts)
-            initialTotalCartPrice += itemTotalPrice; // Add item total to grand total price
-            totalCartItems += item.Quantity; // Add item quantity to total item count
-        }
-
-        // --- Step 5: Apply Discounts ---
-
-        decimal bulkDiscountPercentage = 0m;
-        // Bulk Discount: 5% for 5 or more items
-        if (totalCartItems >= 5)
-        {
-            bulkDiscountPercentage = 0.05m; // 5%
-        }
-
-        decimal loyaltyDiscountPercentage = 0m;
-        // Loyalty Discount: 10% for every 10 successful orders
-        // Assumption: A "successful order" is one that is NOT in "Pending" status.
-        var successfulOrdersCount = await _context.Orders
-            .Where(o => o.MemberId == memberId && o.OrderStatus != "Pending")
-            .CountAsync();
-
-        if (successfulOrdersCount > 0)
-        {
-            int loyaltyDiscountBatches = successfulOrdersCount / 10; // Integer division gives full batches of 10
-            loyaltyDiscountPercentage = loyaltyDiscountBatches * 0.10m; // 10% per batch
-        }
-
-        // Total stackable discount (additive)
-        decimal totalDiscountPercentage = bulkDiscountPercentage + loyaltyDiscountPercentage;
-
-        // Ensure total discount doesn't exceed 100% (though unlikely with these rules)
-        if (totalDiscountPercentage > 1.0m)
-        {
-            totalDiscountPercentage = 1.0m; // Cap discount at 100%
-        }
-
-        decimal totalDiscountAmount = initialTotalCartPrice * totalDiscountPercentage;
-
-        // Calculate individual discount amounts for display in the view
-        decimal bulkDiscountAmount = initialTotalCartPrice * bulkDiscountPercentage;
-        decimal loyaltyDiscountAmount = initialTotalCartPrice * loyaltyDiscountPercentage;
-
-
-        decimal finalTotalCartPrice = initialTotalCartPrice - totalDiscountAmount;
-
-        // Ensure final price doesn't go below zero
-         if (finalTotalCartPrice < 0m)
-        {
-            finalTotalCartPrice = 0m;
-        }
-
-
-        // --- Step 6: Pass data (ViewModel list, totals, and discounts) to the OrderStepOne view ---
-        // Use ViewData to pass the calculated totals and discount information.
-        ViewData["InitialTotalCartPrice"] = initialTotalCartPrice.ToString("C"); // Pass original total price
-        ViewData["TotalCartItems"] = totalCartItems; // Pass total item count
-        ViewData["BulkDiscountPercentage"] = bulkDiscountPercentage.ToString("P0"); // Pass formatted bulk discount %
-        ViewData["LoyaltyDiscountPercentage"] = loyaltyDiscountPercentage.ToString("P0"); // Pass formatted loyalty discount %
-        ViewData["TotalDiscountPercentage"] = totalDiscountPercentage.ToString("P0"); // Pass formatted total discount %
-        ViewData["TotalDiscountAmount"] = totalDiscountAmount.ToString("C"); // Pass formatted total discount amount
-        ViewData["BulkDiscountAmount"] = bulkDiscountAmount.ToString("C"); // Pass formatted bulk discount amount
-        ViewData["LoyaltyDiscountAmount"] = loyaltyDiscountAmount.ToString("C"); // Pass formatted loyalty discount amount
-        ViewData["FinalTotalCartPrice"] = finalTotalCartPrice.ToString("C"); // Pass formatted final total price
-
-
-        // Return the OrderStepOne view, passing the list of ViewModels as the model.
-        return View(viewModelList);
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return RedirectToAction("Login", "Account");
     }
+
+    // --- Step 2: Re-fetch the shopping cart items for the current user from the database ---
+    var cartItems = await _context.ShoppingCartItems
+        .Where(item => item.MemberId == memberId)
+        .Include(item => item.Book)
+        .ThenInclude(book => book.Author)
+        .ToListAsync();
+
+    // --- Step 3: Handle Empty Cart scenario ---
+    if (!cartItems.Any())
+    {
+        TempData["ErrorMessage"] = "Your shopping cart is empty. Please add items before proceeding to checkout.";
+        return RedirectToAction("Profile", "ShoppingCartItems");
+    }
+
+    // --- Step 4: Prepare data for the view using ViewModel and calculate totals ---
+    var viewModelList = new List<ShoppingCartItemViewModel>();
+    decimal initialTotalCartPrice = 0m;
+    int totalCartItems = 0;
+
+    foreach (var item in cartItems)
+    {
+        if (item.Book == null) // Check if the book associated with the cart item still exists
+        {
+            // Handle cases where a book might have been removed from the system
+            // Or if Book navigation property wasn't loaded correctly (though Include should handle it)
+            TempData["ErrorMessage"] = $"An item in your cart (Book ID: {item.BookId}) is no longer available or has missing details. Please review your cart.";
+            // It might be better to remove this item from cart or guide user to do so.
+            // For now, redirecting back to cart.
+            return RedirectToAction("Profile", "ShoppingCartItems");
+        }
+
+        string bookAuthorName = item.Book?.Author?.FullName ?? "Unknown Author";
+        string bookTitle = item.Book?.Title ?? "Unknown Title";
+        string bookListPriceDisplay = item.Book?.ListPrice.ToString("C") ?? "$0.00";
+        decimal itemTotalPrice = item.Quantity * (item.Book?.ListPrice ?? 0m);
+        string totalPriceDisplay = itemTotalPrice.ToString("C");
+        string dateAddedDisplay = item.DateAdded.ToString("d");
+
+        viewModelList.Add(new ShoppingCartItemViewModel
+        {
+            CartItemId = item.CartItemId,
+            MemberId = item.MemberId,
+            BookId = item.BookId,
+            Quantity = item.Quantity,
+            DateAddedDisplay = dateAddedDisplay,
+            BookTitle = bookTitle,
+            BookAuthorName = bookAuthorName,
+            BookListPriceDisplay = bookListPriceDisplay,
+            TotalPriceDisplay = totalPriceDisplay,
+        });
+
+        initialTotalCartPrice += itemTotalPrice;
+        totalCartItems += item.Quantity;
+    }
+
+    // --- Step 5: Apply Discounts using the helper methods for consistency ---
+
+    // Calculate Bulk Discount using the same helper method as PlaceOrder
+    // This helper likely checks if totalCartItems > 5 for a 5% discount.
+    decimal bulkDiscountPercentage = CalculateBulkDiscount(totalCartItems);
+
+    // Calculate Loyalty Discount using the same helper method as PlaceOrder
+    // This helper likely checks member.TotalSuccessfulItemsSinceLastLoyaltyDiscount >= 10 for a 10% discount.
+    decimal loyaltyDiscountPercentage = await CalculateLoyaltyDiscountAsync(memberId);
+
+    // Total stackable discount (additive)
+    decimal totalDiscountPercentage = bulkDiscountPercentage + loyaltyDiscountPercentage;
+
+    // Ensure total discount doesn't exceed 100%
+    if (totalDiscountPercentage > 1.0m)
+    {
+        totalDiscountPercentage = 1.0m; // Cap discount at 100%
+    }
+
+    decimal totalDiscountAmount = initialTotalCartPrice * totalDiscountPercentage;
+
+    // Calculate individual discount amounts for display in the view
+    // These are based on the percentages obtained from the consistent helper methods
+    decimal bulkDiscountAmount = initialTotalCartPrice * bulkDiscountPercentage;
+    decimal loyaltyDiscountAmount = initialTotalCartPrice * loyaltyDiscountPercentage;
+
+    decimal finalTotalCartPrice = initialTotalCartPrice - totalDiscountAmount;
+
+    // Ensure final price doesn't go below zero
+    if (finalTotalCartPrice < 0m)
+    {
+        finalTotalCartPrice = 0m;
+    }
+
+    // --- Step 6: Pass data (ViewModel list, totals, and discounts) to the OrderStepOne view ---
+    ViewData["InitialTotalCartPrice"] = initialTotalCartPrice.ToString("C");
+    ViewData["TotalCartItems"] = totalCartItems;
+    ViewData["BulkDiscountPercentage"] = bulkDiscountPercentage.ToString("P0"); // "P0" for percentage with 0 decimal places
+    ViewData["LoyaltyDiscountPercentage"] = loyaltyDiscountPercentage.ToString("P0");
+    ViewData["TotalDiscountPercentage"] = totalDiscountPercentage.ToString("P0");
+    ViewData["TotalDiscountAmount"] = totalDiscountAmount.ToString("C");
+    ViewData["BulkDiscountAmount"] = bulkDiscountAmount.ToString("C");
+    ViewData["LoyaltyDiscountAmount"] = loyaltyDiscountAmount.ToString("C");
+    ViewData["FinalTotalCartPrice"] = finalTotalCartPrice.ToString("C");
+
+    // Return the OrderStepOne view, passing the list of ViewModels as the model.
+    return View(viewModelList);
+}
+
         //I am writing claim code helper function in here
           /// <summary>
         /// Generates a unique alphanumeric claim code that does not currently exist in the Orders table.
@@ -335,7 +317,7 @@ public async Task<IActionResult> PlaceOrder()
         return RedirectToAction("Profile", "ShoppingCartItems"); // Redirect to cart page (assuming ShoppingCartItemsController has Profile action)
     }
 
-    // --- Step 4: Re-calculate totals and discounts (Server-side calculation is key for accuracy) ---
+    // --- Step 4: Calculate totals and discounts (Server-side calculation is key for accuracy) ---
     decimal initialTotalCartPrice = 0m;
     int totalCartItems = 0;
     foreach (var item in cartItems)
@@ -350,17 +332,19 @@ public async Task<IActionResult> PlaceOrder()
         totalCartItems += item.Quantity;
     }
 
-    // Recalculate Bulk Discount
-    decimal bulkDiscountPercentage = CalculateBulkDiscount(totalCartItems);// 5% for 5 or more items
+    // --- Calculate and Apply Discounts ---
 
-    // Recalculate Loyalty Discount (based on member's past non-pending orders)
-    var successfulOrdersCount = await _context.Orders
-        .Where(o => o.MemberId == memberId && o.OrderStatus != "Pending")
-        .CountAsync();
-    decimal loyaltyDiscountPercentage = await CalculateLoyaltyDiscountAsync(memberId); // 10% for every 10 successful orders
+    // Calculate Bulk Discount based on current cart items
+    decimal bulkDiscountPercentage = CalculateBulkDiscount(totalCartItems); // 5% for > 5 items
 
-    // Calculate Total Discount
+    // Calculate Loyalty Discount based on member's past successful order items
+    // This now uses the TotalSuccessfulItemsSinceLastLoyaltyDiscount field from the Member model
+    decimal loyaltyDiscountPercentage = await CalculateLoyaltyDiscountAsync(memberId); 
+
+    // Total stackable discount (additive)
     decimal totalDiscountPercentage = bulkDiscountPercentage + loyaltyDiscountPercentage;
+
+    // Ensure total discount doesn't exceed 100% (though unlikely with these rules)
     if (totalDiscountPercentage > 1.0m) totalDiscountPercentage = 1.0m; // Cap discount at 100%
 
     // Calculate Final Price
@@ -372,10 +356,12 @@ public async Task<IActionResult> PlaceOrder()
     using (var transaction = await _context.Database.BeginTransactionAsync())
     {
         try
-        {   // --- Generate a unique claim code ---
+        {
+            // --- Generate a unique claim code ---
             string uniqueClaimCode = await GenerateUniqueClaimCodeAsync();
             Debug.WriteLine($"Generated unique claim code: {uniqueClaimCode}");
             // --- End Generate unique claim code ---
+
             // Create the main Order object
             // This will result in an INSERT into the 'Orders' table.
             var order = new Order
@@ -385,7 +371,7 @@ public async Task<IActionResult> PlaceOrder()
                 OrderStatus = "Pending", // Initial status, can be updated later (e.g., "Processing", "Shipped")
                 TotalAmount = finalTotalCartPrice, // The final calculated price after all discounts
                 DiscountApplied = totalDiscountPercentage, // Store the total discount percentage applied
-                ClaimCode = uniqueClaimCode, // Can be set if a claim code is used
+                ClaimCode = uniqueClaimCode, // Assign the generated unique claim code here
                 DateAdded = DateTime.UtcNow,
                 DateUpdated = DateTime.UtcNow,
                 OrderItems = new List<OrderItem>() // Initialize the collection for order items
@@ -400,7 +386,7 @@ public async Task<IActionResult> PlaceOrder()
                     BookId = cartItem.BookId,
                     Quantity = cartItem.Quantity,
                     Order = order, // Set the Order navigation property
-                    UnitPrice=cartItem.Book.ListPrice,
+                    UnitPrice = cartItem.Book.ListPrice, // Use the list price at the time of order
                     Book = cartItem.Book // Set the Book navigation property
                 };
                 order.OrderItems.Add(orderItem);
@@ -409,16 +395,46 @@ public async Task<IActionResult> PlaceOrder()
             // Add the new Order (which includes its OrderItems) to the DbContext
             _context.Orders.Add(order);
             await _context.SaveChangesAsync(); // Save the Order and its OrderItems to the database
-            //member table ni update garau na
-            var member = await _context.Members.FindAsync(memberId);
-            if (member != null)
+
+            // --- Update Member Loyalty Tracking AFTER successful order save ---
+            var memberToUpdate = await _context.Members.FindAsync(memberId);
+            if (memberToUpdate != null)
             {
-                member.OrderCount++; // Increment the order count
-                _context.Members.Update(member); // Mark the member entity as modified
+                // If the loyalty discount was applied to THIS order, reset the counter
+                if (loyaltyDiscountPercentage > 0)
+                {
+                    memberToUpdate.TotalSuccessfulItemsSinceLastLoyaltyDiscount %= 10;
+                    Debug.WriteLine($"Member ID {memberId}: Loyalty discount applied, resetting successful items counter.");
+                }
+                else
+                {
+                    // If loyalty discount was NOT applied, add the items from the current order
+                    // Assuming the order status will be updated from "Pending" to a successful status later.
+                    // The loyalty calculation helper filters for orders != "Pending", so items
+                    // from this new order will be counted towards the *next* discount once its status changes.
+                    // For a more immediate update, you could add the items here IF the order status
+                    // is guaranteed to be updated to successful immediately after this transaction.
+                    // For now, sticking to the helper's logic which counts non-pending orders.
+
+                    // Increment the general OrderCount (if still needed for other purposes)
+                    memberToUpdate.OrderCount++;
+                    Debug.WriteLine($"Member ID {memberId}: OrderCount incremented to {memberToUpdate.OrderCount}.");
+
+                    // If you wanted to add items to the counter here immediately upon placing a *successful* order,
+                    // you would do it like this (assuming OrderStatus is changed to non-Pending within this transaction):
+                     memberToUpdate.TotalSuccessfulItemsSinceLastLoyaltyDiscount += totalCartItems;
+                     Debug.WriteLine($"Member ID {memberId}: Added {totalCartItems} items to loyalty counter. New total: {memberToUpdate.TotalSuccessfulItemsSinceLastLoyaltyDiscount}.");
+                }
+
+                _context.Members.Update(memberToUpdate); // Mark the member entity as modified
                 await _context.SaveChangesAsync(); // Save the changes to the member
             }
-            member = await _context.Members.FindAsync(memberId); // Re-fetch member
-            if (member == null || string.IsNullOrEmpty(member.Email))
+            // --- End Update Member Loyalty Tracking ---
+
+
+            // Re-fetch member for email (optional, could use memberToUpdate)
+            var memberForEmail = await _context.Members.FindAsync(memberId);
+            if (memberForEmail == null || string.IsNullOrEmpty(memberForEmail.Email))
             {
                 TempData["WarningMessage"] = "Order placed, but email could not be sent (member or email missing).";
                 // Log this warning
@@ -427,7 +443,7 @@ public async Task<IActionResult> PlaceOrder()
             {
                 try
                 {
-                    string userEmail = member.Email;
+                    string userEmail = memberForEmail.Email;
                     string subject = $"Your Order Confirmation - Order #{order.OrderId}";
                     // Build the email body
                     string body = BuildOrderConfirmationEmailBody(order, cartItems, initialTotalCartPrice, totalDiscountPercentage, finalTotalCartPrice);
@@ -443,6 +459,7 @@ public async Task<IActionResult> PlaceOrder()
                     // Log the exception
                 }
             }
+
             // --- Step 6: Clear the shopping cart ---
             // This updates the 'ShoppingCartItems' table by removing the processed items.
             _context.ShoppingCartItems.RemoveRange(cartItems);
@@ -452,6 +469,8 @@ public async Task<IActionResult> PlaceOrder()
             await transaction.CommitAsync();
 
             // --- Step 7: Redirect to an Order Confirmation page ---
+            // Returning JSON is suitable for AJAX calls. If this is a standard form post,
+            // you might prefer a RedirectToAction to a confirmation page.
             return Json(new { success = true, message = $"Order #{order.OrderId} placed successfully!", orderId = order.OrderId });
 
 
@@ -460,12 +479,14 @@ public async Task<IActionResult> PlaceOrder()
         {
             // If any error occurs during the process, roll back the transaction
             await transaction.RollbackAsync();
+            Debug.WriteLine($"Error placing order: {ex.Message}"); // Log the error
             TempData["ErrorMessage"] = "There was an error placing your order. Please try again or contact support.";
             // Redirect back to the order review page or an error page
             return RedirectToAction("OrderStepOne");
         }
     }
 }
+
 // GET: /Orders/MyOrders or /myorders (depending on routing)
         // Displays a list of orders for the logged-in member using ViewModels.
         public async Task<IActionResult> MyOrders()
@@ -1269,10 +1290,17 @@ private string BuildOrderConfirmationEmailBody(Order order, List<ShoppingCartIte
         /// </summary>
         /// <param name="currentCartItemCount">The total number of items in the member's current cart.</param>
         /// <returns>The bulk discount percentage (e.g., 0.05 for 5%).</returns>
+               /// <summary>
+        /// Calculates the bulk discount percentage based on the number of items in the current cart.
+        /// </summary>
+        /// <param name="currentCartItemCount">The total number of items in the member's current cart.</param>
+        /// <returns>The bulk discount percentage (e.g., 0.05 for 5%).</returns>
         private decimal CalculateBulkDiscount(int currentCartItemCount)
         {
             decimal bulkDiscountPercentage = 0m;
+            // --- Bulk Discount Logic ---
             // Apply 5% discount if there are MORE THAN 5 items in the CURRENT order/cart.
+            // If the rule is 5 or more, change > 5 to >= 5.
             if (currentCartItemCount > 5)
             {
                 bulkDiscountPercentage = 0.05m; // 5% discount
@@ -1280,12 +1308,12 @@ private string BuildOrderConfirmationEmailBody(Order order, List<ShoppingCartIte
             }
             return bulkDiscountPercentage;
         }
+
         /// <summary>
         /// Calculates the loyalty discount percentage based on the total number of items
-        /// in past successful orders for a member.
-        /// NOTE: This is a simplified implementation. For the full "next order" and "reset" logic,
-        /// you would need to add fields to your Member model (e.g., OrdersSinceLastLoyaltyDiscount)
-        /// and update that state when an order is placed and the discount is applied.
+        /// in past successful orders for a member, using the tracking field in the Member model.
+        /// This implements the "10 items then reset" loyalty logic using the
+        /// TotalSuccessfulItemsSinceLastLoyaltyDiscount field.
         /// </summary>
         /// <param name="memberId">The ID of the member.</param>
         /// <returns>The loyalty discount percentage (e.g., 0.10 for 10%).</returns>
@@ -1293,33 +1321,28 @@ private string BuildOrderConfirmationEmailBody(Order order, List<ShoppingCartIte
         {
             decimal loyaltyDiscountPercentage = 0m;
 
-            // Fetch the total count of items from past successful orders for this member
-            var totalSuccessfulOrderItems = await _context.OrderItems
-                .Include(oi => oi.Order) // Include the parent Order to check its status
-                // Filter by member and orders that are NOT "Pending" (assuming non-pending means successful/completed)
-                .Where(oi => oi.Order.MemberId == memberId && oi.Order.OrderStatus != "Pending")
-                .SumAsync(oi => oi.Quantity); // Sum the quantities of items in those orders
+            // --- Loyalty Discount Logic ---
+            // Fetch the member to check their TotalSuccessfulItemsSinceLastLoyaltyDiscount
+            var member = await _context.Members.FindAsync(memberId);
 
-            Debug.WriteLine($"Total successful order items for Member ID {memberId}: {totalSuccessfulOrderItems}");
-
-            // Apply 10% if total successful order items is exactly 10, 20, 30, etc.
-            // This uses the total successful item count. For a true "next order" and "reset",
-            // you'd need a separate counter or state in the Member model that resets after discount application.
-            if (totalSuccessfulOrderItems > 0 && totalSuccessfulOrderItems % 10 == 0)
+            if (member != null)
             {
-                loyaltyDiscountPercentage = 0.10M; // 10% discount
-                Debug.WriteLine($"Loyalty Discount Applied: 10% for {totalSuccessfulOrderItems} successful items.");
+                Debug.WriteLine($"Member ID {memberId} has {member.TotalSuccessfulItemsSinceLastLoyaltyDiscount} successful items since last loyalty discount.");
+
+                // Apply 10% loyalty discount if the total successful order items
+                // since the last discount is 10 or more.
+                if (member.TotalSuccessfulItemsSinceLastLoyaltyDiscount >= 10)
+                {
+                    loyaltyDiscountPercentage = 0.10M; // 10% discount
+                    Debug.WriteLine($"Loyalty Discount Applied: 10% for {member.TotalSuccessfulItemsSinceLastLoyaltyDiscount} successful items.");
+
+                    
+                }
             }
 
-             // If you had other member-specific discounts (e.g., from StackableDiscount),
-             // you would add them here. This helper could return the sum of applicable discounts.
-             // var member = await _context.Members.FindAsync(memberId);
-             // if (member != null) {
-             //     loyaltyDiscountPercentage += (member.StackableDiscount / 100m); // Example if StackableDiscount is used
-             // }
-
-            return loyaltyDiscountPercentage; // Return the calculated loyalty discount
+            return loyaltyDiscountPercentage; 
         }
+
 
 
 
@@ -1546,12 +1569,7 @@ private string BuildOrderConfirmationEmailBody(Order order, List<ShoppingCartIte
             return Task.FromResult(0m); // No discount if member not found
         }
 
-        // Assuming you have a Login action in an AccountController
-        // private IActionResult Login()
-        // {
-        //     // Redirect to your login page
-        //     return RedirectToAction("Login", "Account");
-        // }
+        
         
     }
 }
