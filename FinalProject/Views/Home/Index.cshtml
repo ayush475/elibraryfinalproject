@@ -1,233 +1,1056 @@
 ﻿@*
     Welcome page for the E-Library.
-    This page serves as the initial landing page, displaying a welcome message and
-    potentially important announcements. It does not include book listings, search,
-    or filtering, which would typically be on a separate "Books" or "Catalog" page.
-    This version is enhanced for better responsiveness and visual appeal,
-    assuming header and footer are handled by the layout file.
-    The announcement banner styling has been improved.
+    This page serves as the initial landing page, displaying a welcome message,
+    a features section, contact information, sections for top trending books,
+    browsing genres, popular authors, and a Bookstore Meetup section.
+    Header and footer are handled by the layout file.
+    This version includes enhanced styling for better visual appeal,
+    wider content areas, and more prominent book cards.
 *@
 
 @* Define the page title *@
 @{
-    ViewData["Title"] = "Welcome to Our E-Library";
+    ViewData["Title"] = "Welcome to Bookistore";
 
     // Retrieve the Announcement model if available (assuming controller puts it here)
+    // Keeping this for potential future use, though not displayed in the new layout
     var announcement = ViewData["Announcement"] as FinalProject.Models.Announcement;
 }
 
-@* Ensure your _Layout.cshtml includes Bootstrap CSS (Bootstrap 5 recommended) *@
-@* Also include Bootstrap Icons CSS for the icons used in the features section *@
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+@* Add Google Font - Using 'Poppins' for a friendly feel (already in layout, but good to have here too if needed standalone) *@
+@* <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"> *@
 
-@* Add Google Font - Using 'Poppins' for a friendly feel *@
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-
-@* Custom CSS for subtle effects and fonts - Moved inline for this example, but ideally in a separate file *@
+@* Custom CSS for this page's layout - Enhanced Styling *@
 <style>
-    body {
-        font-family: 'Poppins', sans-serif; /* Apply Poppins font to the body */
-        background-color: #f8f9fa; /* Light background color */
-        /* Removed flexbox properties as layout handles footer */
+    /* Using a class for the main content area to apply background and padding */
+    .welcome-page-container {
+        background: linear-gradient(180deg, #e0e7ff 0%, #f8f9fa 100%); /* Subtle gradient background */
+        padding: 60px 20px; /* Increased padding */
+        min-height: calc(100vh - var(--header-height, 0px) - var(--footer-height, 0px)); /* Ensure it takes available height */
+        display: flex; /* Use flexbox for the main content layout */
+        align-items: center; /* Vertically center content */
+        justify-content: center; /* Horizontally center content */
     }
 
-    /* Adjust container padding for responsiveness */
-    .container {
-        padding-top: 1.5rem;
-        padding-bottom: 1.5rem;
+    .welcome-content-wrapper {
+        display: flex; /* Use flexbox for the two main columns */
+        flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        max-width: 1400px; /* Increased max width for wider content */
+        width: 100%; /* Take full width within max-width */
+        justify-content: space-around; /* Distribute space around items */
+        align-items: center; /* Vertically align items */
+        gap: 60px; /* Increased gap between columns */
     }
 
-    /* Announcement Banner Styling */
-    /* Targeting the specific alert used for announcements */
-    .alert.alert-info {
-        background-color: #e0f7fa; /* Lighter blue background */
-        border-color: #b2ebf2; /* Slightly darker border */
-        color: #006064; /* Darker text color for better contrast */
-        padding: 1.5rem; /* Increased padding */
-        border-radius: 0.75rem; /* More rounded corners */
-        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.08); /* Subtle shadow */
-        position: relative; /* Needed for close button positioning */
+    .welcome-text-section {
+        flex: 1; /* Allow text section to grow */
+        min-width: 320px; /* Slightly increased minimum width */
+        max-width: 600px; /* Increased max width */
+        text-align: left; /* Align text to the left */
     }
 
-    .alert.alert-info .alert-heading {
-        color: #004d40; /* Even darker heading color */
-        margin-bottom: 0.75rem; /* Space below heading */
+    .welcome-text-section p:first-child {
+        font-size: 1.1em;
+        color: #555;
+        margin-bottom: 5px;
     }
 
-    .alert.alert-info .btn-close {
-        /* Adjust close button position and color */
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        color: #006064; /* Match text color */
-        opacity: 0.7;
+    .welcome-text-section h1 {
+        font-size: 3.2em; /* Larger heading */
+        color: #4a148c; /* Deeper purple color */
+        margin-bottom: 25px; /* Increased margin */
+        line-height: 1.2;
     }
 
-    .alert.alert-info .btn-close:hover {
-         opacity: 1;
-    }
-
-
-    /* Hero Section Styling */
-    .hero-section {
-        background: linear-gradient(45deg, #0d6efd, #0dcaf0); /* Gradient background */
-        color: white; /* White text for contrast */
-        padding: 6rem 0; /* More vertical padding */
-        border-radius: 0.5rem;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); /* Stronger shadow */
-        margin-bottom: 3rem; /* Space below hero */
-    }
-
-    .hero-section h1 {
-        color: white !important; /* Ensure heading is white */
-        font-weight: 700; /* Bolder font */
-    }
-
-    .hero-section p {
-        color: rgba(255, 255, 255, 0.9) !important; /* Slightly transparent white for body text */
-        max-width: 700px; /* Limit text width */
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .hero-section .btn {
-        background-color: #ffffff; /* White button background */
-        color: #0d6efd; /* Primary color text */
-        border: none;
-        font-weight: 600;
-        transition: background-color 0.3s ease, color 0.3s ease;
-    }
-
-    .hero-section .btn:hover {
-        background-color: #e9ecef; /* Light grey on hover */
-        color: #0d6efd;
-    }
-
-
-    /* Features Section Styling */
-    .features-section .card {
-        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-        border: none; /* Remove default card border */
-    }
-
-    .features-section .card:hover {
-        transform: translateY(-10px); /* Lift more on hover */
-        box-shadow: 0 1rem 2rem rgba(0,0,0,.1)!important; /* Adjusted shadow on hover */
-    }
-
-    .features-section .card-title i {
-        font-size: 1.8rem; /* Larger icons */
-        vertical-align: middle;
-    }
-
-    /* About Us Section Styling */
-    .about-section .card {
-        border: none;
-        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05); /* Lighter shadow */
-    }
-
-    /* Ensure text colors match Bootstrap palette */
-    .text-primary {
-        color: #0d6efd !important; /* Bootstrap primary color */
-    }
-
-     .text-secondary {
-        color: #6c757d !important; /* Bootstrap secondary color */
-    }
-
-     .text-dark {
-         color: #212529 !important; /* Bootstrap dark color */
+     .welcome-text-section p:not(:first-child) {
+         font-size: 1.15em; /* Slightly larger */
+         line-height: 1.7; /* Increased line height */
+         margin-bottom: 30px; /* Increased margin */
+         color: #333;
      }
 
-     /* General utility classes */
-     .rounded-3 {
-        border-radius: 0.5rem !important; /* Standard rounded corners */
+    .welcome-text-section ul {
+        list-style: none; /* Remove default list bullets */
+        padding: 0;
+        margin-bottom: 40px;
     }
 
-    .shadow-sm {
-         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important; /* Subtle shadow */
+    .welcome-text-section ul li {
+        margin-bottom: 15px; /* Increased space between list items */
+        position: relative;
+        padding-left: 30px; /* Increased space for custom bullet */
+        font-size: 1.1em; /* Slightly larger */
+        color: #444;
+    }
+
+    .welcome-text-section ul li::before {
+        content: '✓'; /* Checkmark bullet point */
+        color: #008080; /* Teal color */
+        font-size: 1.4em; /* Larger bullet */
+        position: absolute;
+        left: 0;
+        top: 0;
+        font-weight: bold;
+    }
+
+
+    .login-button {
+        display: inline-block; /* Make button behave like a block for padding */
+        background-color: #ff7043; /* Vibrant orange button color */
+        color: white;
+        padding: 15px 40px; /* Increased padding */
+        border-radius: 35px; /* More rounded button */
+        text-decoration: none;
+        font-size: 1.3em; /* Larger font size */
+        font-weight: 600; /* Slightly bolder */
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        border: none; /* Remove default button border if used as button */
+        cursor: pointer; /* Indicate it's clickable */
+        box-shadow: 0 6px 15px rgba(255, 112, 67, 0.3); /* Stronger shadow */
+    }
+
+    .login-button:hover {
+        background-color: #f4511e; /* Darker shade on hover */
+        transform: translateY(-3px); /* Lift more on hover */
+        box-shadow: 0 8px 20px rgba(255, 112, 67, 0.4); /* Even stronger shadow on hover */
+    }
+
+    .contact-section {
+        margin-top: 80px; /* More space above contact section */
+        padding-top: 30px; /* Increased padding */
+        border-top: 1px solid #ccc; /* Add a subtle separator line */
+    }
+
+    .contact-section h4 {
+        font-size: 1.3em; /* Larger heading */
+        color: #4a148c; /* Deeper purple */
+        margin-bottom: 20px; /* Increased margin */
+    }
+
+    .contact-section p {
+        margin-bottom: 10px; /* Increased space */
+        color: #444;
+        font-size: 1.05em;
+    }
+
+    .contact-section .social-icons {
+        margin-top: 25px; /* More space above social icons */
+    }
+
+    .contact-section .social-icons a {
+        font-size: 2.2em; /* Larger icons */
+        margin-right: 25px; /* Increased space between icons */
+        color: #4a148c; /* Deeper purple */
+        transition: color 0.3s ease, transform 0.2s ease;
+        text-decoration: none; /* Remove underline */
+    }
+
+    .contact-section .social-icons a:hover {
+        color: #ff7043; /* Orange on hover */
+        transform: translateY(-4px); /* Lift icons more on hover */
+    }
+
+
+    .illustration-section {
+        flex: 1; /* Allow illustration section to grow */
+        min-width: 320px; /* Slightly increased minimum width */
+        max-width: 600px; /* Increased max width */
+        text-align: center; /* Center the illustration */
+    }
+
+    /* Placeholder styling for the illustration - Enhanced */
+    .illustration-placeholder {
+        width: 100%;
+        height: 500px; /* Increased height */
+        background: linear-gradient(135deg, #c3daff, #a2b9ee); /* Gradient placeholder background */
+        border-radius: 20px; /* More rounded corners */
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); /* Stronger shadow */
+        /* You would replace this with your actual SVG or image */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2em; /* Larger text */
+        color: #333;
+        overflow: hidden; /* Hide overflow if actual illustration is added */
+    }
+
+    /* Features Section Styling - Enhanced */
+    .features-ribbon {
+        background-color: #00695c; /* Darker teal background */
+        color: white; /* White text color */
+        padding: 80px 20px; /* Increased padding */
+        text-align: center; /* Center content */
+        margin-bottom: 80px; /* More space below the features section */
+    }
+
+    .features-ribbon h2 {
+        font-size: 2.8em; /* Larger heading */
+        margin-bottom: 50px; /* More space below heading */
+        font-weight: 700;
+    }
+
+    .features-list {
+        display: flex; /* Use flexbox for features */
+        justify-content: center; /* Center features */
+        flex-wrap: wrap; /* Allow features to wrap */
+        gap: 50px; /* Increased gap between feature items */
+    }
+
+    .feature-item {
+        flex-basis: 250px; /* Larger basis for each feature item */
+        display: flex;
+        flex-direction: column; /* Stack icon and text vertically */
+        align-items: center; /* Center content */
+        text-align: center;
+    }
+
+    .feature-item .icon {
+        width: 100px; /* Larger icon container size */
+        height: 100px;
+        background-color: white; /* White circle background */
+        border-radius: 50%; /* Make it a circle */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 25px; /* More space below icon */
+        /* Placeholder styling for icons - replace with actual icons */
+        font-size: 3em; /* Larger icon size */
+        color: #00695c; /* Darker teal color */
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+        transition: transform 0.3s ease;
+    }
+
+     .feature-item .icon:hover {
+         transform: scale(1.15); /* Scale icon more on hover */
+     }
+
+    .feature-item h4 {
+        font-size: 1.3em; /* Larger */
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .feature-item p {
+        font-size: 1.05em; /* Slightly larger */
+        color: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+    }
+
+    /* Trending Books Section Styling - Enhanced and Broader */
+    .trending-books-section {
+        padding: 80px 20px; /* Increased padding */
+        text-align: center; /* Center content */
+        background-color: #f8f9fa; /* Light background */
+        margin-bottom: 80px; /* More space below the section */
+    }
+
+    .trending-books-section h2 {
+        font-size: 3em; /* Larger heading */
+        color: #4a148c; /* Deeper purple */
+        margin-bottom: 60px; /* More space below heading */
+        font-weight: 700;
+    }
+
+    .book-list {
+        display: flex; /* Use flexbox for book cards */
+        justify-content: center; /* Center the book cards */
+        flex-wrap: wrap; /* Allow cards to wrap */
+        gap: 50px; /* Increased gap between book cards */
+    }
+
+    .book-card {
+        background-color: #ffffff; /* White background for the card */
+        border-radius: 12px; /* More rounded corners */
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+        padding: 25px; /* Increased padding */
+        width: 240px; /* Significantly wider card */
+        text-align: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .book-card:hover {
+        transform: translateY(-10px); /* Lift more on hover */
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25); /* Even stronger shadow on hover */
+    }
+
+    .book-cover {
+        width: 100%; /* Make image take full width of the card */
+        height: 300px; /* Increased height for book cover */
+        object-fit: cover; /* Cover the area without distorting aspect ratio */
+        border-radius: 8px; /* Rounded corners for image */
+        margin-bottom: 20px; /* More space below image */
+        /* Placeholder styling for book cover - Enhanced */
+        background: linear-gradient(45deg, #ccc, #bbb); /* Gradient placeholder */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #555;
+        font-size: 1.1em;
+        overflow: hidden; /* Hide overflow if actual image is added */
+    }
+
+    .book-title {
+        font-size: 1.3em; /* Larger */
+        font-weight: 700; /* Bolder */
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .book-author {
+        font-size: 1.1em; /* Larger */
+        color: #555;
+        margin-bottom: 25px; /* More space below author */
+    }
+
+    .add-to-cart-btn {
+        display: inline-block;
+        background-color: #66bb6a; /* Darker green */
+        color: #1b5e20; /* Dark green text color */
+        padding: 12px 25px; /* Increased padding */
+        border-radius: 30px; /* More rounded button */
+        text-decoration: none;
+        font-size: 1.1em; /* Larger */
+        font-weight: 600; /* Slightly bolder */
+        transition: background-color 0.3s ease, transform 0.2s ease;
+         box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    }
+
+    .add-to-cart-btn:hover {
+        background-color: #558b2f; /* Even darker green on hover */
+        color: #1b5e20;
+        text-decoration: none;
+        transform: translateY(-2px); /* Lift slightly on hover */
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+    }
+
+    /* Browse Genres Section Styling - Enhanced */
+    .genres-section {
+        padding: 80px 20px; /* Increased padding */
+        text-align: center; /* Center content */
+        background-color: #e0e7ff; /* Light blue background */
+        margin-bottom: 80px; /* More space below the section */
+    }
+
+    .genres-section h2 {
+        font-size: 3em; /* Larger heading */
+        color: #4a148c; /* Deeper purple */
+        margin-bottom: 50px; /* More space below heading */
+        font-weight: 700;
+    }
+
+    .genres-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 50px; /* More space */
+        flex-wrap: wrap; /* Allow wrapping */
+        gap: 30px; /* Increased gap in header */
+    }
+
+    .genres-header h2 {
+        margin-bottom: 0; /* Remove bottom margin */
+    }
+
+    .genres-header .dropdown button {
+         background-color: #ff7043; /* Button color */
+         border-color: #ff7043;
+         color: white;
+         font-weight: 600;
+         border-radius: 25px; /* More rounded button */
+         padding: 10px 25px; /* Increased padding */
+         transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+     .genres-header .dropdown button:hover {
+         background-color: #f4511e;
+         border-color: #f4511e;
+     }
+
+
+    .genre-buttons {
+        display: flex; /* Use flexbox for buttons */
+        justify-content: center; /* Center buttons */
+        flex-wrap: wrap; /* Allow buttons to wrap */
+        gap: 25px; /* Increased gap between buttons */
+    }
+
+    .genre-button {
+        background-color: #ff7043; /* Vibrant orange button color */
+        color: white;
+        padding: 14px 30px; /* Increased padding */
+        border-radius: 30px; /* More rounded corners */
+        text-decoration: none;
+        font-weight: 600; /* Slightly bolder */
+        font-size: 1.1em; /* Slightly larger */
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        border: none; /* Remove default button border */
+        cursor: pointer; /* Indicate it's clickable */
+         box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    }
+
+    .genre-button:hover {
+        background-color: #f4511e; /* Darker shade on hover */
+        color: white;
+        text-decoration: none;
+        transform: translateY(-2px); /* Lift slightly on hover */
+         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+    }
+
+    .see-all-genres {
+        display: inline-block; /* Changed to inline-block */
+        margin-top: 40px; /* More space above */
+        color: #4a148c; /* Deeper purple */
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.2em; /* Larger */
+        transition: color 0.3s ease;
+    }
+
+    .see-all-genres:hover {
+        color: #ff7043; /* Orange on hover */
+        text-decoration: underline;
+    }
+
+    /* Popular Authors Section Styling - Enhanced */
+    .authors-section {
+        padding: 80px 20px; /* Increased padding */
+        text-align: center; /* Center content */
+        background-color: #f8f9fa; /* Light background */
+        margin-bottom: 80px; /* More space below the section */
+    }
+
+     .authors-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 50px; /* More space */
+        flex-wrap: wrap; /* Allow wrapping */
+        gap: 30px; /* Increased gap in header */
+    }
+
+    .authors-header h2 {
+        font-size: 3em; /* Larger heading */
+        color: #4a148c; /* Deeper purple */
+        margin-bottom: 0; /* Remove bottom margin */
+        font-weight: 700;
+    }
+
+     .see-all-authors {
+        display: inline-block; /* Changed to inline-block */
+        color: #4a148c; /* Deeper purple */
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.2em; /* Larger */
+        transition: color 0.3s ease;
+    }
+
+    .see-all-authors:hover {
+        color: #ff7043; /* Orange on hover */
+        text-decoration: underline;
+    }
+
+
+    .author-list {
+        display: flex; /* Use flexbox for author items */
+        justify-content: center; /* Center author items */
+        flex-wrap: wrap; /* Allow items to wrap */
+        gap: 50px; /* Increased gap between author items */
+    }
+
+    .author-item {
+        display: flex;
+        flex-direction: column; /* Stack image and text vertically */
+        align-items: center; /* Center content */
+        text-align: center;
+        width: 160px; /* Wider author item */
+    }
+
+    .author-image {
+        width: 140px; /* Larger image size */
+        height: 140px;
+        border-radius: 50%; /* Make it a circle */
+        object-fit: cover; /* Cover the area */
+        margin-bottom: 20px; /* More space below image */
+        /* Placeholder styling for author image - Enhanced */
+        background: linear-gradient(45deg, #ffccbc, #ffab91); /* Gradient placeholder */
+        border: 5px solid #ff7043; /* Thicker orange border */
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #555;
+        font-size: 1em;
+        overflow: hidden; /* Hide overflow */
+        transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+     .author-image:hover {
+         transform: scale(1.08); /* Slightly enlarge more on hover */
+         border-color: #f4511e; /* Darker orange border on hover */
+     }
+
+
+    .author-name {
+        font-size: 1.2em; /* Larger */
+        font-weight: 700; /* Bolder */
+        margin-bottom: 8px;
+        color: #333;
+    }
+
+    .author-books-count {
+        font-size: 1.1em; /* Larger */
+        color: #ff7043; /* Orange color */
+        font-weight: 600;
+    }
+
+    /* Bookstore Meetup Section Styling - Enhanced */
+    .meetup-section {
+        background-color: #e0e7ff; /* Light blue background */
+        padding: 80px 20px; /* Increased padding */
+        margin-bottom: 80px; /* More space below the section */
+    }
+
+    .meetup-content {
+        display: flex; /* Use flexbox for content and image */
+        flex-wrap: wrap; /* Allow wrapping */
+        max-width: 1400px; /* Increased max width */
+        margin: 0 auto; /* Center the content */
+        align-items: center; /* Vertically align items */
+        justify-content: space-around; /* Distribute space */
+        gap: 60px; /* Increased gap */
+    }
+
+    .meetup-text-content {
+        flex: 1; /* Allow text content to grow */
+        min-width: 320px; /* Slightly increased minimum width */
+        max-width: 600px; /* Increased max width */
+        text-align: left; /* Align text to the left */
+    }
+
+    .meetup-text-content .logo {
+        margin-bottom: 20px; /* More space below logo */
+    }
+
+    .meetup-text-content .logo img {
+        height: 70px; /* Larger logo size */
+         margin-right: 15px;
+    }
+
+     .meetup-text-content .logo span {
+        font-size: 2.2em; /* Larger text size */
+        color: #00695c; /* Darker teal color */
+        font-weight: 700;
+     }
+
+
+    .meetup-text-content h2 {
+        font-size: 2.5em; /* Larger */
+        color: #00695c; /* Darker teal color */
+        margin-bottom: 30px; /* Increased margin */
+        line-height: 1.4;
+    }
+
+    .meetup-text-content p {
+        font-size: 1.15em; /* Slightly larger */
+        line-height: 1.7; /* Increased line height */
+        margin-bottom: 30px; /* Increased margin */
+        color: #444;
+    }
+
+    .meetup-stats {
+        display: flex; /* Use flexbox for stats */
+        justify-content: space-around; /* Distribute space */
+        margin-bottom: 50px; /* More space */
+        flex-wrap: wrap; /* Allow wrapping */
+        gap: 40px; /* Increased gap between stats */
+    }
+
+    .stat-item {
+        text-align: center;
+        flex-basis: 140px; /* Larger basis for stat item */
+    }
+
+    .stat-item .number {
+        font-size: 2.2em; /* Larger number */
+        font-weight: 700;
+        color: #ff7043; /* Orange color */
+        margin-bottom: 8px; /* Increased margin */
+    }
+
+    .stat-item .label {
+        font-size: 1.1em; /* Larger */
+        color: #555;
+    }
+
+    .join-now-button {
+        display: inline-block;
+        background-color: #ff7043; /* Vibrant orange button color */
+        color: white;
+        padding: 15px 40px; /* Increased padding */
+        border-radius: 35px; /* More rounded button */
+        text-decoration: none;
+        font-size: 1.3em; /* Larger font size */
+        font-weight: 600; /* Slightly bolder */
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        border: none; /* Remove default button border if used as button */
+        cursor: pointer; /* Indicate it's clickable */
+        box-shadow: 0 6px 15px rgba(255, 112, 67, 0.3); /* Stronger shadow */
+    }
+
+    .join-now-button:hover {
+        background-color: #f4511e; /* Darker shade on hover */
+        transform: translateY(-3px); /* Lift more on hover */
+        box-shadow: 0 8px 20px rgba(255, 112, 67, 0.4); /* Even stronger shadow on hover */
+    }
+
+
+    .meetup-image-section {
+        flex: 1; /* Allow image section to grow */
+        min-width: 320px; /* Slightly increased minimum width */
+        max-width: 600px; /* Increased max width */
+        text-align: center; /* Center the image */
+    }
+
+    /* Placeholder for the meetup image - Enhanced */
+    .meetup-image-placeholder {
+        width: 100%;
+        height: 400px; /* Increased height */
+        background: linear-gradient(135deg, #a2b9ee, #c3daff); /* Gradient placeholder */
+        border-radius: 20px; /* More rounded corners */
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); /* Stronger shadow */
+        /* Replace with your actual image */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8em; /* Larger text */
+        color: #555;
+        overflow: hidden; /* Hide overflow */
+    }
+
+
+    /* Responsive adjustments */
+    @@media (max-width: 1200px) {
+         .welcome-content-wrapper,
+         .meetup-content {
+             max-width: 960px; /* Adjust max-width for medium screens */
+         }
+
+         .book-card {
+             width: 200px; /* Adjust card width */
+             padding: 20px;
+         }
+
+         .book-cover {
+             height: 250px; /* Adjust cover height */
+         }
+
+         .author-item {
+             width: 140px; /* Adjust author item width */
+         }
+
+         .author-image {
+             width: 120px; /* Adjust image size */
+             height: 120px;
+         }
+    }
+
+    @@media (max-width: 992px) {
+         .welcome-content-wrapper,
+         .meetup-content {
+             max-width: 720px; /* Adjust max-width for smaller screens */
+             flex-direction: column; /* Stack content vertically */
+             gap: 40px; /* Adjust gap */
+         }
+
+         .welcome-text-section,
+         .illustration-section,
+         .meetup-text-content,
+         .meetup-image-section {
+             max-width: 100%; /* Allow sections to take full width */
+             margin-right: 0; /* Remove right margin */
+             margin-bottom: 0; /* Removed bottom margin as gap is used */
+             text-align: center; /* Center text content */
+         }
+
+         .welcome-text-section ul {
+             text-align: left; /* Align list items to the left */
+             display: inline-block; /* Allow centering the list block */
+         }
+
+         .welcome-text-section ul li {
+             padding-left: 25px; /* Maintain padding for bullet */
+         }
+
+         .login-button,
+         .join-now-button {
+             width: auto; /* Auto width for better centering */
+             padding: 14px 35px; /* Adjust padding */
+             font-size: 1.2em; /* Adjust font size */
+         }
+
+         .contact-section {
+             margin-top: 60px; /* Adjust margin */
+             text-align: center; /* Center contact info */
+         }
+
+         .contact-section .social-icons a {
+             margin: 0 15px; /* Adjust space between social icons */
+         }
+
+         .features-ribbon,
+         .trending-books-section,
+         .genres-section,
+         .authors-section,
+         .meetup-section {
+             padding: 60px 20px; /* Adjust padding */
+             margin-bottom: 60px; /* Adjust margin */
+         }
+
+         .features-ribbon h2,
+         .trending-books-section h2,
+         .genres-section h2,
+         .authors-header h2,
+         .meetup-text-content h2 {
+             font-size: 2.2em; /* Adjust font size */
+             margin-bottom: 30px; /* Adjust margin */
+         }
+
+         .features-list {
+             flex-direction: column; /* Stack features vertically */
+             gap: 30px; /* Adjust gap */
+         }
+
+         .feature-item {
+             flex-basis: auto; /* Remove fixed basis */
+             width: 100%; /* Make feature items full width */
+         }
+
+         .book-list {
+             gap: 30px; /* Adjust gap */
+         }
+
+         .book-card {
+             width: 180px; /* Adjust card width on smaller screens */
+             padding: 15px; /* Adjust padding */
+         }
+
+         .book-cover {
+             height: 220px; /* Adjust cover height */
+         }
+
+         .genres-header,
+         .authors-header {
+             flex-direction: column; /* Stack header items vertically */
+             align-items: center; /* Center items */
+             margin-bottom: 30px; /* Adjust margin */
+             gap: 15px; /* Adjust gap */
+         }
+
+         .genres-header h2,
+         .authors-header h2 {
+             margin-bottom: 0; /* Remove bottom margin */
+         }
+
+         .genre-buttons {
+             flex-direction: column; /* Stack genre buttons vertically */
+             gap: 15px; /* Adjust gap */
+         }
+
+         .genre-button {
+             width: 100%; /* Make genre buttons full width */
+             padding: 12px 25px; /* Adjust padding */
+             font-size: 1.1em; /* Adjust font size */
+         }
+
+         .see-all-genres,
+         .see-all-authors {
+             margin-top: 20px; /* Adjust margin */
+             font-size: 1.1em; /* Adjust font size */
+         }
+
+         .author-list {
+              flex-direction: column; /* Stack author items vertically */
+              gap: 30px; /* Adjust gap */
+         }
+
+         .author-item {
+             width: 100%; /* Make author items full width */
+         }
+
+         .author-image {
+             width: 120px; /* Adjust image size */
+             height: 120px; /* Adjust image size */
+         }
+
+         .meetup-stats {
+             flex-direction: column; /* Stack stats vertically */
+             gap: 20px; /* Adjust gap */
+         }
+
+         .stat-item {
+             flex-basis: auto; /* Remove fixed basis */
+         }
+
+         .stat-item .number {
+             font-size: 1.8em; /* Adjust font size */
+         }
+
+         .meetup-image-placeholder {
+             height: 300px; /* Adjust height */
+         }
+    }
+
+    @@media (max-width: 767px) {
+        .welcome-page-container,
+        .features-ribbon,
+        .trending-books-section,
+        .genres-section,
+        .authors-section,
+        .meetup-section {
+            padding: 40px 15px; /* Further reduce padding on very small screens */
+            margin-bottom: 40px; /* Adjust margin */
+        }
+
+        .welcome-text-section h1 {
+            font-size: 2.5em; /* Adjust heading size */
+        }
+
+        .features-ribbon h2,
+        .trending-books-section h2,
+        .genres-section h2,
+        .authors-header h2,
+        .meetup-text-content h2 {
+            font-size: 1.8em; /* Adjust heading size */
+        }
+
+        .book-card {
+            width: 140px; /* Further adjust card width */
+            padding: 10px;
+        }
+
+        .book-cover {
+            height: 180px; /* Further adjust cover height */
+        }
+
+        .author-item {
+            width: 120px; /* Adjust author item width */
+        }
+
+        .author-image {
+            width: 100px; /* Adjust image size */
+            height: 100px;
+        }
+
+        .meetup-image-placeholder {
+            height: 200px; /* Further adjust height */
+        }
     }
 
 </style>
 
+@* Main container for the welcome page content *@
+<div class="welcome-page-container">
+    <div class="welcome-content-wrapper">
+        <div class="welcome-text-section">
+            <p>Anywhere and Everywhere.</p>
+            <h1>Welcome To Bookistore</h1>
+            <ul>
+                <li>Track your Reading and Build your Library.</li>
+                <li>Discover your next Favourite Book.</li>
+                <li>Browse from the Largest Collections of Ebooks.</li>
+                <li>Read stories from anywhere at anytime.</li>
+            </ul>
+            @* Using a simple anchor tag styled as a button *@
+            <a href="#" class="login-button">Login to Continue</a>
 
-<div class="container"> @* Use a container for standard padding and centering *@
-
-    @* Announcement Section - Display if an announcement is available *@
-    @if (announcement != null)
-    {
-        @* Added custom styling to the alert class directly in CSS *@
-        <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
-            <h4 class="alert-heading">@announcement.Title</h4>
-            <p>@announcement.Message</p>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    @* Welcoming Hero Section - Enhanced Styling *@
-    <div class="hero-section text-center"> @* Apply custom hero class *@
-        <div class="container-fluid py-5">
-            <h1 class="display-4 fw-bold mb-3">Welcome to Our E-Library</h1> @* Text color handled by hero-section class *@
-            <p class="fs-5 col-md-8 mx-auto">
-                Your gateway to a vast collection of books, stories, and knowledge.
-                Dive in and explore our digital shelves from the comfort of your home.
-            </p>
-            @* Optional: Add a button to navigate to the books page *@
-            <a asp-controller="Book" asp-action="Index" class="btn btn-lg mt-4">Browse Our Collection</a> @* Button styling handled by hero-section *@
-        </div>
-    </div>
-
-    @* Features Section - Using Cards *@
-     <div class="features-section row row-cols-1 row-cols-md-3 g-4 mb-5 text-center"> @* Apply custom features class *@
-        <div class="col">
-            <div class="card h-100 shadow-sm"> @* Use shadow-sm here *@
-                <div class="card-body">
-                    <h5 class="card-title text-primary"><i class="bi bi-book-half me-2"></i>Vast Collection</h5> @* Using Bootstrap Icons *@
-                    <p class="card-text text-secondary">Access thousands of titles across diverse genres.</p>
+            <div class="contact-section">
+                <h4>Contact us:</h4>
+                <p>Address: Kathmandu, Nepal</p>
+                <p>Email: admin@bookistore.com</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    @* Using envelope icon for email, assuming Font Awesome is available *@
+                    <a href="mailto:admin@bookistore.com"><i class="fas fa-envelope"></i></a>
                 </div>
             </div>
         </div>
-        <div class="col">
-            <div class="card h-100 shadow-sm">
-                 <div class="card-body">
-                    <h5 class="card-title text-primary"><i class="bi bi-laptop me-2"></i>Read Anywhere</h5>
-                    <p class="card-text text-secondary">Enjoy reading on your computer, tablet, or phone.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col">
-            <div class="card h-100 shadow-sm">
-                 <div class="card-body">
-                    <h5 class="card-title text-primary"><i class="bi bi-lightbulb me-2"></i>Explore & Learn</h5>
-                    <p class="card-text text-secondary">Discover new authors and expand your horizons.</p>
-                </div>
+
+        <div class="illustration-section">
+            @* Placeholder for the illustration. Replace with your actual SVG or image. *@
+            <div class="illustration-placeholder">
+                [Illustration Placeholder]
             </div>
         </div>
     </div>
+</div>
 
-    @* Simple About Us Section *@
-    <div class="about-section row justify-content-center mb-5"> @* Apply custom about class *@
-        <div class="col-md-10 col-lg-8"> @* Adjusted column width for larger screens *@
-            <div class="card shadow-sm"> @* Use shadow-sm here *@
-                <div class="card-body text-center">
-                    <h3 class="card-title text-dark mb-3">About Our Library</h3>
-                    <p class="card-text text-secondary">
-                        We are a private library store dedicated to bringing the joy of reading to everyone.
-                        With a curated selection of books ranging from timeless classics to the latest releases,
-                        we aim to be your go-to destination for all your literary needs. Our online platform
-                        makes it easier than ever to find your next favorite book.
-                    </p>
-                    @* Optional: Link to a dedicated About Us page if you have one *@
-                    @* <a href="#" class="btn btn-outline-primary mt-3">Learn More</a> *@
+@* Features Section *@
+<div class="features-ribbon">
+    <h2>Some Of Our Features include:</h2>
+    <div class="features-list">
+        <div class="feature-item">
+            <div class="icon">📚</div> @* Placeholder Icon *@
+            <h4>Used Book Buying</h4>
+            <p>& Exchanges</p>
+        </div>
+        <div class="feature-item">
+            <div class="icon">🔄</div> @* Placeholder Icon *@
+            <h4>Returnes</h4>
+            <p>& Exchanges</p>
+        </div>
+        <div class="feature-item">
+            <div class="icon">🛍️</div> @* Placeholder Icon *@
+            <h4>Online</h4>
+            <p>Ordering</p>
+        </div>
+        <div class="feature-item">
+            <div class="icon">🎧</div> @* Placeholder Icon *@
+            <h4>24 Hours</h4>
+            <p>customer support</p>
+        </div>
+    </div>
+</div>
+
+@* Trending Books Section *@
+<div class="trending-books-section">
+    <h2>TOP TRENDING BOOKS</h2>
+    <div class="book-list">
+        @* Example Book Card (Repeat for each book) *@
+        <div class="book-card">
+            <div class="book-cover">[Book Cover Image]</div> @* Placeholder for image *@
+            <div class="book-title">Palpasa Café</div>
+            <div class="book-author">Narayan Wagle</div>
+            <a href="#" class="add-to-cart-btn">Add to Cart</a>
+        </div>
+        <div class="book-card">
+             <div class="book-cover">[Book Cover Image]</div> @* Placeholder for image *@
+            <div class="book-title">Seto Dharti</div>
+            <div class="book-author">Amar Neupane</div>
+            <a href="#" class="add-to-cart-btn">Add to Cart</a>
+        </div>
+         <div class="book-card">
+             <div class="book-cover">[Book Cover Image]</div> @* Placeholder for image *@
+            <div class="book-title">Karnali Blues</div>
+            <div class="book-author">Buddhi Sagar</div>
+            <a href="#" class="add-to-cart-btn">Add to Cart</a>
+        </div>
+         <div class="book-card">
+             <div class="book-cover">[Book Cover Image]</div> @* Placeholder for image *@
+            <div class="book-title">Summer Love</div>
+            <div class="book-author">Subin Bhattarai</div>
+            <a href="#" class="add-to-cart-btn">Add to Cart</a>
+        </div>
+        @* Add more book cards here following the same structure *@
+    </div>
+</div>
+
+@* Browse Genres Section *@
+<div class="genres-section">
+    <div class="genres-header">
+        <h2>BROWSE GENRES</h2>
+        @* Placeholder for the "All Categories" dropdown *@
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                All Categories
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <li><a class="dropdown-item" href="#">Action</a></li>
+                <li><a class="dropdown-item" href="#">Another action</a></li>
+                <li><a class="dropdown-item" href="#">Something else here</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="genre-buttons">
+        <a href="#" class="genre-button">Adventure</a>
+        <a href="#" class="genre-button">Biography</a>
+        <a href="#" class="genre-button">Thriller</a>
+        <a href="#" class="genre-button">Love</a>
+        <a href="#" class="genre-button">Fiction</a>
+        <a href="#" class="genre-button">Science Fiction</a>
+        <a href="#" class="genre-button">History</a>
+        <a href="#" class="genre-button">Adult</a>
+        @* Add more genre buttons as needed *@
+    </div>
+     <a href="#" class="see-all-genres">See All</a>
+</div>
+
+@* Popular Authors Section *@
+<div class="authors-section">
+     <div class="authors-header">
+        <h2>POPULAR AUTHORS</h2>
+        <a href="#" class="see-all-authors">See All</a>
+     </div>
+    <div class="author-list">
+        @* Example Author Item (Repeat for each author) *@
+        <div class="author-item">
+            <div class="author-image">[Author Image]</div> @* Placeholder for image *@
+            <div class="author-name">Parijat</div>
+            <div class="author-books-count">600 + Books</div>
+        </div>
+         <div class="author-item">
+            <div class="author-image">[Author Image]</div> @* Placeholder for image *@
+            <div class="author-name">Suman Pokhrel</div>
+            <div class="author-books-count">150 + Books</div>
+        </div>
+         <div class="author-item">
+            <div class="author-image">[Author Image]</div> @* Placeholder for image *@
+            <div class="author-name">Subin Bhattarai</div>
+            <div class="author-books-count">10 Ebooks</div>
+        </div>
+         <div class="author-item">
+            <div class="author-image">[Author Image]</div> @* Placeholder for image *@
+            <div class="author-name">Budhisagar</div>
+            <div class="author-books-count">100 + Novels</div>
+        </div>
+         <div class="author-item">
+            <div class="author-image">[Author Image]</div> @* Placeholder for image *@
+            <div class="author-name">Narayan Wagle</div>
+            <div class="author-books-count">250+Books</div>
+        </div>
+        @* Add more author items here following the same structure *@
+    </div>
+</div>
+
+@* New Bookstore Meetup Section *@
+<div class="meetup-section">
+    <div class="meetup-content">
+        <div class="meetup-text-content">
+            <div class="logo">
+                 <img src="https://placehold.co/50x50/ff8a65/ffffff?text=Logo" alt="Bookstore Logo"> @* Placeholder logo *@
+                 <span>BOOKISTORE<br>MEETUP.</span>
+            </div>
+            <h2>Meet Kindred Book Lovers In A Local Meetup Book Club!</h2>
+            <p>Fiction Or Non Fiction, Paperback Or Hardcover, You Like?</p>
+            <p>Read A New Book Every Month..</p>
+            <div class="meetup-stats">
+                <div class="stat-item">
+                    <div class="number">1M+</div>
+                    <div class="label">Books Collections</div>
                 </div>
+                 <div class="stat-item">
+                    <div class="number">50K+</div>
+                    <div class="label">Club Members</div>
+                </div>
+                 <div class="stat-item">
+                    <div class="number">4,972</div>
+                    <div class="label">Groups Created</div>
+                </div>
+            </div>
+            <a href="#" class="join-now-button">Join Now</a>
+        </div>
+        <div class="meetup-image-section">
+            @* Placeholder for the meetup image. Replace with your actual image. *@
+            <div class="meetup-image-placeholder">
+                [Meetup Image Placeholder]
             </div>
         </div>
     </div>
+</div>
 
 
-</div> @* End of container *@
+@* The rest of the page content (like footer) is handled by the _Layout.cshtml *@
 
 @section Scripts {
-    @* Add Bootstrap JS if needed for dismissible alerts or other components *@
-    @* <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> *@
+    @* You can add page-specific scripts here if needed *@
 }
