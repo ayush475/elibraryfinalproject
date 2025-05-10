@@ -9,6 +9,10 @@
 
     // Define a placeholder image URL for books without covers
     var placeholderImageUrl = "https://placehold.co/300x450/e9ecef/495057?text=No+Cover+Available"; // Larger placeholder
+
+    // Assuming ViewBag.HasPurchased is set in the controller action
+    // This boolean determines if the user has purchased the book.
+    var hasPurchased = ViewBag.HasPurchased != null && (bool)ViewBag.HasPurchased;
 }
 
 @* Assuming Bootstrap CSS and Font Awesome are already included in your layout file (_Layout.cshtml) *@
@@ -212,7 +216,7 @@
 
         @* Edit Button *@
         @* <a asp-action="Edit" asp-route-id="@Model?.BookId" class="btn btn-warning btn-lg shadow-sm"> *@
-        @*      <i class="fas fa-edit me-2"></i> Edit *@
+        @* <i class="fas fa-edit me-2"></i> Edit *@
         @* </a> $1$ Bootstrap warning button, large size, shadow #1# *@
 
         @* Back to List Button *@
@@ -254,20 +258,7 @@
                 </button> @* Bootstrap primary button, large size, shadow *@
             </form>
 
-            @* Conditional Cancel Order Button (if applicable) *@
-            @if (ViewBag.CancellableOrderItemId != null)
-            {
-                @* Create a form to submit the cancellation request *@
-                <form asp-controller="Orders" asp-action="CancelOrderItem" method="post" class="d-inline-block">
-                    @* Pass the OrderItemId to the controller action *@
-                    <input type="hidden" name="orderItemId" value="@ViewBag.CancellableOrderItemId" />
-                    @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                    <button type="submit" class="btn btn-danger btn-lg shadow-sm" title="Cancel this order item">
-                         <i class="fas fa-times-circle me-2"></i> Cancel Order
-                    </button> @* Bootstrap danger button, large size, shadow *@
-                </form>
-            }
-
+           
             @* Conditional Delete Button (e.g., for Admin users) *@
             @if (canDelete)
             {
@@ -287,4 +278,113 @@
             </span> @* Bootstrap outline secondary button (disabled), large size, shadow *@
         }
     </div>
-</div>
+
+    <div class="reviews-section mt-5">
+        <h2 class="mb-3 text-center text-secondary">Customer Reviews</h2>
+        <hr class="mb-4"/>
+
+        @if (Model.Reviews != null && Model.Reviews.Any())
+        {
+            <div class="review-list">
+                @* FIX: Iterate over Model.Reviews, not Models.Review *@
+                @foreach (var review in Model.Reviews.OrderByDescending(r => r.ReviewDate))
+                {
+                    <div class="review-item border-bottom mb-3 pb-3">
+                        <h5> @(review.Member?.FirstName ?? "Anonymous User")</h5> @* Display member's username if available *@
+                        <div class="rating">
+                            @for (int i = 0; i < review.Rating; i++)
+                            {
+                                <i class="fas fa-star text-warning"></i> @* Full star *@
+                            }
+                            @for (int i = review.Rating; i < 5; i++)
+                            {
+                                <i class="far fa-star text-warning"></i> @* Empty star *@
+                            }
+                            <span class="ms-2 text-muted">(@review.Rating}/5)</span> @* Display numerical rating *@
+                        </div>
+                        <p class="mt-2">@review.Comment</p>
+                        <small class="text-muted">Reviewed on: @review.ReviewDate.ToShortDateString()</small>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-center text-muted">No reviews yet. Be the first to review this book!</p>
+        }
+    </div>
+    @* --- End Section to Display Existing Reviews --- *@
+
+
+    @* --- Conditional "Add Review" Section --- *@
+    @* Check the ViewBag.HasPurchased value set in the controller.
+       Only show the review form/button if the user is authenticated AND has purchased the book. *@
+    @if (User?.Identity?.IsAuthenticated == true && hasPurchased)
+    {
+        @* Add a check here too if the user *already* submitted a review?
+           This would require another check in the controller and ViewBag value (e.g., ViewBag.HasUserAlreadyReviewed).
+           For now, we only check purchase. *
+
+        <div class="add-review-section mt-5 p-4 border rounded-3 bg-light shadow-sm"> @* Added styling for the section *@
+            <h3 class="mb-3 text-secondary">Leave Your Review</h3>
+            <p class="text-muted">Share your thoughts on this book after purchasing it.</p>
+            <hr class="mb-4"/>
+
+            @*
+                // Place your review submission form here.
+                // This form should post to your ReviewController's CreateReview action.
+                // Ensure you include the BookId as a hidden input or route value.
+                // Example simple form structure:
+            *@
+            <form asp-controller="Reviews" asp-action="Create" method="post">
+                <input type="hidden" name="BookId" value="@Model.BookId" />
+
+                <div class="mb-3"> @* Bootstrap margin bottom *@
+                    <label for="Rating" class="form-label">Rating</label> @* Bootstrap form label *@
+                    @* REMOVED the 'required' attribute from the select tag.
+                       The server-side [Required] and [Range(1, 5)] annotations on the Review model
+                       will handle the validation. *@
+                    <select name="Rating" id="Rating" class="form-select">
+                        <option value="1">Select Rating</option>
+                        <option value="1">1 - Poor</option>
+                        <option value="2">2 - Fair</option>
+                        <option value="3">3 - Good</option>
+                        <option value="4">4 - Very Good</option>
+                        <option value="5">5 - Excellent</option>
+                    </select>
+                    @* Optional: Add validation message span for Rating *@
+                     @* <span asp-validation-for="Rating" class="text-danger"></span> *@
+                </div>
+
+                <div class="mb-3"> @* Bootstrap margin bottom *@
+                    <label for="Comment" class="form-label">Your Comment</label> @* Bootstrap form label *@
+                    <textarea name="Comment" id="Comment" class="form-control" rows="5" required></textarea> @* Bootstrap form control, added required *@
+                     @* Optional: Add validation message span for Comment *@
+                     @* <span asp-validation-for="Comment" class="text-danger"></span> *@
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg mt-3">Submit Review</button> @* Bootstrap button styling *@
+
+                @* Include the anti-forgery token for security on POST forms *@
+                @Html.AntiForgeryToken()
+            </form>
+
+    }
+    else
+    {
+        @* Display a message if the user cannot review *@
+        <div class="add-review-section mt-5 p-4 border rounded-3 bg-light shadow-sm text-center"> @* Added styling for the section *@
+            @if (User?.Identity?.IsAuthenticated == true)
+            {
+                <p class="lead text-muted">You must purchase this book to leave a review.</p>
+            }
+            else
+            {
+                <p class="lead text-muted"><a asp-controller="Account" asp-action="Login">Login</a> or register to purchase and review books.</p> @* Adjust controller/action name if needed *@
+            }
+        </div>
+    }
+    @* --- End Conditional "Add Review" Section --- *@
+
+
+</div> @* End container *@

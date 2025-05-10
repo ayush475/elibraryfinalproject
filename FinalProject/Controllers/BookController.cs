@@ -167,59 +167,15 @@ namespace FinalProject.Controllers
         // GET: Book/Details/5
         // GET: Book/Details/5
 // Refactored Details action using a helper method for user-specific checks.
-public async Task<IActionResult> Details(int? id)
-{
-    // Debugging line to trace when the action is called.
-    Debug.WriteLine($"BookController.Details action called for Book ID: {id}");
-
-    // 1. Check if ID is Provided:
-    // If no ID is provided, return a 404 Not Found.
-    if (id == null)
-    {
-        Debug.WriteLine("Book ID is null. Returning NotFound.");
-        return NotFound();
-    }
-
-    // 2. Fetch the Book from the Database:
-    // Query the database for the book with the specified ID.
-    // .Include() is used for Eager Loading related entities (Author, Genre, Publisher)
-    // in the same database query.
-    // .FirstOrDefaultAsync() finds the first book matching the ID or returns null.
-    var book = await _context.Books
-        .Include(b => b.Author)
-        .Include(b => b.Genre)
-        .Include(b => b.Publisher)
-        .FirstOrDefaultAsync(m => m.BookId == id);
-
-    // 3. Check if the Book was Found:
-    // If no book was found with the given ID, return a 404 Not Found.
-    if (book == null)
-    {
-        Debug.WriteLine($"Book with ID {id} not found. Returning NotFound.");
-        return NotFound();
-    }
-    // Debugging line to confirm the book was found.
-    Debug.WriteLine($"Book found: {book.Title} (ID: {book.BookId})");
-
-    // --- Get and Set User-Specific View Data using Helper ---
-    // 4. Call the Helper Method:
-    // This line calls the new private helper method.
-    // It passes the book's ID, the current user object (User), and the controller's ViewBag.
-    // The helper method will perform the user-specific checks (order items, bookmarks)
-    // and directly populate the ViewBag properties needed by the view.
-    await GetAndSetUserSpecificBookViewDataAsync(book.BookId, User, ViewBag);
-    // --- End Get and Set User-Specific View Data ---
-
-    // 5. Return the View:
-    // Render the Details.cshtml view, passing the retrieved book object as the model.
-    // The view will use the book model and the data set in ViewBag by the helper.
-    return View(book);
-}
-
-// --- Helper Methods for Details Action ---
-
 /// <summary>
-/// Performs user-specific checks (cancellable order item, bookmark status) for a book
+/// Performs user-specific checks (cancellable order item, bookmark status, purchased status) for a book
+/// and sets relevant ViewBag properties for the Details view.
+/// </summary>
+/// <param name="bookId">The ID of the book being viewed.</param>
+/// <param name="user">The current user principal (ClaimsPrincipal).</param>
+/// <param name="viewBag">The ViewBag object to populate.</param>
+/// <summary>
+/// Performs user-specific checks (cancellable order item, bookmark status, purchased status) for a book
 /// and sets relevant ViewBag properties for the Details view.
 /// </summary>
 /// <param name="bookId">The ID of the book being viewed.</param>
@@ -236,6 +192,7 @@ private async Task GetAndSetUserSpecificBookViewDataAsync(int bookId, ClaimsPrin
     // or the checks don't find any relevant data.
     viewBag.CancellableOrderItemId = null;
     viewBag.IsBookmarked = false;
+    viewBag.HasPurchased = false; // Initialize the new property
 
     // 2. Check if User is Authenticated:
     // Proceed with user-specific checks only if the user is logged in.
@@ -298,6 +255,18 @@ private async Task GetAndSetUserSpecificBookViewDataAsync(int bookId, ClaimsPrin
             // Set the ViewBag property to true or false based on whether a bookmark exists.
             viewBag.IsBookmarked = isBookmarked;
             Debug.WriteLine($"Bookmarked status for MemberId {memberId} and Book ID {bookId}: {isBookmarked}");
+
+            // --- NEW: Check if the user has purchased this book ---
+            // Query the database to see if there's any OrderItem for this book
+            // that belongs to an Order placed by this member.
+            var hasPurchased = await _context.OrderItems
+                .AnyAsync(oi => oi.BookId == bookId && oi.Order.MemberId == memberId);
+
+            // Set the ViewBag property for the purchase status.
+            viewBag.HasPurchased = hasPurchased;
+            Debug.WriteLine($"Purchase status for Member ID {memberId} and Book ID {bookId}: {hasPurchased}");
+            // --- End NEW: Check if the user has purchased this book ---
+
         }
         else
         {
@@ -313,6 +282,48 @@ private async Task GetAndSetUserSpecificBookViewDataAsync(int bookId, ClaimsPrin
     // The helper method finishes here. It doesn't return a value (Task).
     // Its purpose is to modify the ViewBag object passed to it.
 }
+// The Details action remains the same as it already calls the helper:
+
+        public async Task<IActionResult> Details(int? id)
+        {
+            // Debugging line to trace when the action is called.
+            Debug.WriteLine($"BookController.Details action called for Book ID: {id}");
+
+            // 1. Check if ID is Provided:
+            if (id == null)
+            {
+                Debug.WriteLine("Book ID is null. Returning NotFound.");
+                return NotFound();
+            }
+
+            // 2. Fetch the Book from the Database:
+            var book = await _context.Books
+                .Include(b => b.Author)
+                .Include(b => b.Genre)
+                .Include(b => b.Publisher)
+                // *** Include Reviews if you want to display existing reviews on the same page ***
+                // Make sure to include Reviews here if your view displays them directly from the book model
+                .Include(b => b.Reviews)
+                .FirstOrDefaultAsync(m => m.BookId == id);
+
+            // 3. Check if the Book was Found:
+            if (book == null)
+            {
+                Debug.WriteLine($"Book with ID {id} not found. Returning NotFound.");
+                return NotFound();
+            }
+            Debug.WriteLine($"Book found: {book.Title} (ID: {book.BookId})");
+
+            // --- Get and Set User-Specific View Data using Helper ---
+            // This helper now includes the purchase check and sets ViewBag.HasPurchased
+            await GetAndSetUserSpecificBookViewDataAsync(book.BookId, User, ViewBag);
+            // --- End Get and Set User-Specific View Data ---
+
+            // 5. Return the View:
+            // The view will use the book model and the data set in ViewBag by the helper,
+            // including the ViewBag.HasPurchased value.
+            return View(book);
+        }
 
 // --- End Helper Methods for Details Action ---
 

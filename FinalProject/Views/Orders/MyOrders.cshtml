@@ -7,6 +7,27 @@
 <div class="container mt-4">
     <h2 class="mb-4">My Orders</h2>
 
+    @* Display TempData messages for success or error from controller actions *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    }
+
+
     @if (Model == null || !Model.Orders.Any())
     {
         <div class="alert alert-info text-center" role="alert">
@@ -24,12 +45,22 @@
                     <h5 class="mb-0">
                         Order #@order.OrderId
                         <small class="text-muted ml-3">Placed on @order.OrderDateDisplay</small> @* Display formatted date *@
-                        <span class="badge badge-info ml-3">@order.OrderStatus</span> @* Display order status *@
+                        
+                        @* Dynamically set badge color based on status *@
+                        @{
+                            string statusBadgeClass = "badge-info"; // Default
+                            if (order.OrderStatus?.ToLower() == "completed") { statusBadgeClass = "badge-success"; }
+                            else if (order.OrderStatus?.ToLower() == "cancelled" || order.OrderStatus?.ToLower() == "failed") { statusBadgeClass = "badge-danger"; }
+                            else if (order.OrderStatus?.ToLower() == "shipped") { statusBadgeClass = "badge-primary"; }
+                            else if (order.OrderStatus?.ToLower() == "pending" || order.OrderStatus?.ToLower() == "processing") { statusBadgeClass = "badge-warning"; }
+                        }
+                        <span class="badge @statusBadgeClass ml-3">@order.OrderStatus</span> @* Display order status *@
+                        
                         <span class="float-right font-weight-bold">Total: @order.TotalAmountDisplay</span> @* Display formatted total amount *@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p><strong>Items:</strong> @order.ItemCount</p>
+                    <p><strong>Items:</strong> @order.ItemCount</p>,
                     <p><strong>Discount Applied:</strong> @order.DiscountAppliedDisplay</p>
                     @if (!string.IsNullOrEmpty(order.ClaimCode))
                     {
@@ -39,8 +70,33 @@
                     @* Link to view order details (assuming you have an OrderDetail action) *@
                     <a href="@Url.Action("OrderDetail", "Orders", new { id = order.OrderId })" class="btn btn-sm btn-primary mt-2">View Details</a>
 
+                    @* Conditionally display Cancel Order button/form *@
+                    @* Users can cancel if the order is not "Completed" or "Shipped" *@
+                    @{
+                        // Define non-cancellable statuses (case-insensitive comparison)
+                        var nonCancellableStatuses = new[] { "completed", "shipped" };
+                        bool canCancel = order.OrderStatus != null && 
+                                         !nonCancellableStatuses.Contains(order.OrderStatus.ToLower());
+                    }
+
+                    @if (canCancel)
+                    {
+                        <form asp-action="CancelOrder" asp-controller="Orders" asp-route-id="@order.OrderId" method="post" style="display: inline;" class="ml-2">
+                            @Html.AntiForgeryToken() @* Important for security *@
+                            <button type="submit" class="btn btn-sm btn-danger mt-2"
+                                    onclick="return confirm('Are you sure you want to cancel and remove this order (Order #@order.OrderId)? This action cannot be undone.');">
+                                Cancel Order
+                            </button>
+                        </form>
+                    }
                 </div>
             </div> @* End of card *@
         }
     }
 </div>
+
+@* Include jQuery and Bootstrap JS if not already included in your _Layout.cshtml for alert dismissal *@
+@* Example:
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+*@
