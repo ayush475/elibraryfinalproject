@@ -12,92 +12,429 @@
 @* <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> *@
 
 
-<div class="container mt-4 py-4"> @* Use Bootstrap container, margin top, and vertical padding *@
+@* Custom CSS for the Registration Page Layout *@
+<style>
+    body {
+        background-color: #f8f9fa; /* Light background for the whole page */
+    }
 
-    <h1 class="mb-2 text-center text-primary">Register for an Account</h1> @* Bootstrap heading, centered, primary color *@
-    <h4 class="mb-4 text-center text-secondary">Join Our Community</h4> @* Subtitle, centered, secondary color *@
-    <hr class="mb-4"/>
+    .register-container {
+        display: flex; /* Use flexbox for the two-column layout */
+        min-height: 40vh; /* Ensure it takes available height */
+        align-items: stretch; /* Stretch items to fill the container height */
+        border-radius: 10px; /* Rounded corners for the main container */
+        overflow: hidden; /* Hide overflow for rounded corners */
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* Subtle shadow for the container */
+        max-width: 1000px; /* Limit the maximum width of the registration container */
+        margin: 40px auto; /* Center the container and add margin */
+        background-color: #fff; /* White background for the registration form side */
+    }
 
-    @* Introductory Information Section *@
-    <div class="alert alert-info shadow-sm mb-4" role="alert">
-        <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i> Welcome!</h5>
-        <p>Create an account to unlock features like bookmarking books, managing your profile, and more.</p>
-        <hr>
-        <p class="mb-0">Please fill out the form below to register.</p>
-    </div>
+    .register-left-panel {
+        flex: 1; /* Allow left panel to grow */
+        background-color: #008080; /* Teal background color from the image */
+        color: white;
+        padding: 40px; /* Add padding */
+        display: flex;
+        flex-direction: column; /* Stack content vertically */
+        justify-content: center; /* Center content vertically */
+        align-items: center; /* Center content horizontally */
+        text-align: center;
+    }
 
-    @* Potential Warnings/Requirements Section (Example) *@
-    @* You can customize this based on your actual registration requirements *@
-     <div class="alert alert-warning shadow-sm mb-4" role="alert">
-        <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i> Important Notes</h5>
-        <p class="mb-0">Your password must meet the following criteria:</p>
-        <ul class="mb-0">
-            <li>At least 6 characters long.</li>
-            <li>Include at least one uppercase letter.</li>
-            <li>Include at least one lowercase letter.</li>
-            <li>Include at least one digit.</li>
-            <li>Include at least one special character (e.g., !#$%^&*).</li>
-        </ul>
-    </div>
+    .register-left-panel .logo {
+        margin-bottom: 30px; /* Space below logo */
+    }
+
+     .register-left-panel .logo img {
+         height: 60px; /* Adjust logo size */
+         filter: brightness(0) invert(1); /* Make logo white */
+     }
+
+     .register-left-panel .logo span {
+         font-size: 2em; /* Adjust text size */
+         color: white;
+         font-weight: 700;
+     }
 
 
-    <div class="card shadow-lg border-0 rounded-3"> @* Bootstrap card container for the form with larger shadow, no border, rounded corners *@
-        <div class="card-body p-4"> @* Increased padding *@
-            <h4 class="card-title mb-4 text-secondary">Registration Form</h4> @* Secondary color for title *@
+    .register-left-panel h2 {
+        font-size: 2.5em; /* Larger heading */
+        margin-bottom: 20px;
+        font-weight: 700;
+    }
 
-            <div class="row justify-content-center"> @* Center the form column *@
-                <div class="col-md-8 col-lg-6"> @* Adjust column size for better form width *@
-                    <form asp-action="Register">
-                        <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-4"></div> @* Style validation summary as an alert *@
+    .register-left-panel .illustration-placeholder {
+        width: 100%;
+        max-width: 300px; /* Limit illustration width */
+        height: 300px; /* Adjust height */
+        background-color: rgba(255, 255, 255, 0.2); /* Semi-transparent white background for placeholder */
+        border-radius: 8px;
+        margin-top: 30px; /* Space above illustration */
+        /* Replace with your actual illustration */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+        color: rgba(255, 255, 255, 0.8);
+        overflow: hidden; /* Hide overflow */
+    }
 
-                        <div class="mb-3"> @* Use mb-3 for consistent spacing *@
-                            <label asp-for="MembershipId" class="form-label fw-bold text-muted"><i class="fas fa-id-card me-2"></i> @Html.DisplayNameFor(model => model.MembershipId)</label> @* Bootstrap form-label, bold, muted text, icon *@
-                            <input asp-for="MembershipId" class="form-control form-control-lg" /> @* Larger form control *@
-                            <span asp-validation-for="MembershipId" class="text-danger small"></span> @* Smaller text for validation messages *@
-                        </div>
-                        <div class="mb-3">
-                            <label asp-for="FirstName" class="form-label fw-bold text-muted"><i class="fas fa-user me-2"></i> @Html.DisplayNameFor(model => model.FirstName)</label> @* Bootstrap form-label, bold, muted text, icon *@
-                            <input asp-for="FirstName" class="form-control form-control-lg" /> @* Larger form control *@
-                            <span asp-validation-for="FirstName" class="text-danger small"></span> @* Smaller text for validation messages *@
-                        </div>
-                        <div class="mb-3">
-                            <label asp-for="LastName" class="form-label fw-bold text-muted"><i class="fas fa-user me-2"></i> @Html.DisplayNameFor(model => model.LastName)</label> @* Bootstrap form-label, bold, muted text, icon *@
-                            <input asp-for="LastName" class="form-control form-control-lg" /> @* Larger form control *@
-                            <span asp-validation-for="LastName" class="text-danger small"></span> @* Smaller text for validation messages *@
-                        </div>
-                        <div class="mb-3">
-                            <label asp-for="Email" class="form-label fw-bold text-muted"><i class="fas fa-envelope me-2"></i> @Html.DisplayNameFor(model => model.Email)</label> @* Bootstrap form-label, bold, muted text, icon *@
-                            <input asp-for="Email" class="form-control form-control-lg" /> @* Larger form control *@
-                            <span asp-validation-for="Email" class="text-danger small"></span> @* Smaller text for validation messages *@
-                        </div>
-                        <div class="mb-3">
-                            <label asp-for="Password" class="form-label fw-bold text-muted"><i class="fas fa-lock me-2"></i> @Html.DisplayNameFor(model => model.Password)</label> @* Bootstrap form-label, bold, muted text, icon *@
-                            <input asp-for="Password" class="form-control form-control-lg" type="password" /> @* Larger form control *@
-                            <span asp-validation-for="Password" class="text-danger small"></span> @* Smaller text for validation messages *@
-                        </div>
-                        <div class="mb-4"> @* Increased bottom margin for the last input group *@
-                            <label asp-for="ConfirmPassword" class="form-label fw-bold text-muted"><i class="fas fa-lock me-2"></i> @Html.DisplayNameFor(model => model.ConfirmPassword)</label> @* Bootstrap form-label, bold, muted text, icon *@
-                            <input asp-for="ConfirmPassword" class="form-control form-control-lg" type="password" /> @* Larger form control *@
-                            <span asp-validation-for="ConfirmPassword" class="text-danger small"></span> @* Smaller text for validation messages *@
-                        </div>
 
-                        <div class="d-grid"> @* Use d-grid to make the button full-width *@
-                            <button type="submit" class="btn btn-primary btn-lg shadow">
-                                <i class="fas fa-user-plus me-2"></i> Register
-                            </button> @* Bootstrap primary button, large size, shadow, icon *@
-                        </div>
-                    </form>
-                </div>
-            </div>
+    .register-right-panel {
+        flex: 1.5; /* Allow right panel to grow more */
+        padding: 40px; /* Add padding */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .register-right-panel .top-login-link {
+        text-align: right;
+        margin-bottom: 20px; /* Space below the link */
+        font-size: 0.9em; /* Smaller text */
+        color: #555;
+    }
+
+    .register-right-panel .top-login-link a {
+        color: #008080; /* Teal link color */
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+     .register-right-panel .top-login-link a:hover {
+         text-decoration: underline;
+     }
+
+
+    .register-right-panel h2 {
+        font-size: 1.8em;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .register-right-panel p {
+        font-size: 1em;
+        color: #555;
+        margin-bottom: 30px;
+    }
+
+    .register-form .form-label {
+        font-weight: 600; /* Slightly bolder labels */
+        color: #444; /* Darker label color */
+        font-size: 0.95em; /* Slightly smaller label text */
+        margin-bottom: 5px; /* Reduced space below label */
+    }
+
+    .register-form .form-control {
+        border-color: #ccc; /* Subtle border color */
+        border-radius: 5px; /* Slightly rounded input fields */
+        padding: 10px 15px; /* Adjust padding */
+        font-size: 1em;
+    }
+
+     .register-form .form-control:focus {
+         border-color: #008080; /* Teal border on focus */
+         box-shadow: 0 0 0 0.25rem rgba(0, 128, 128, 0.25); /* Subtle teal shadow on focus */
+     }
+
+
+    .register-form .text-danger.small {
+        font-size: 0.85em; /* Smaller validation message text */
+    }
+
+    .register-form .form-check-label {
+        font-weight: 400; /* Normal font weight for checkbox label */
+        color: #555; /* Darker color */
+        font-size: 0.9em; /* Smaller text */
+    }
+
+    .register-form .privacy-terms-link {
+        color: #008080; /* Teal link color */
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+     .register-form .privacy-terms-link:hover {
+         text-decoration: underline;
+     }
+
+
+    .signup-button {
+        background-color: #ff7043; /* Orange button */
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px; /* Rounded button */
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(255, 112, 67, 0.3); /* Subtle shadow */
+        width: 100%; /* Full width button */
+        margin-bottom: 15px; /* Space below button */
+    }
+
+    .signup-button:hover {
+        background-color: #f4511e; /* Darker shade on hover */
+        transform: translateY(-2px); /* Lift slightly */
+        box-shadow: 0 6px 12px rgba(255, 112, 67, 0.4); /* Stronger shadow */
+    }
+
+    .social-login-divider {
+        text-align: center;
+        margin: 20px 0; /* Space above and below the divider */
+        position: relative;
+        color: #aaa;
+        font-size: 0.9em;
+    }
+
+    .social-login-divider::before,
+    .social-login-divider::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        width: 40%; /* Adjust width of the lines */
+        height: 1px;
+        background-color: #ddd;
+    }
+
+    .social-login-divider::before {
+        left: 0;
+    }
+
+    .social-login-divider::after {
+        right: 0;
+    }
+
+
+    .social-login-options {
+        display: flex; /* Use flexbox for social login buttons */
+        gap: 15px; /* Increased gap between buttons */
+        margin-top: 0; /* Removed top margin as divider adds space */
+    }
+
+    .social-login-button {
+        flex: 1; /* Allow buttons to grow and share space */
+        display: flex; /* Use flexbox to align icon and text */
+        align-items: center; /* Vertically align */
+        justify-content: center; /* Center content */
+        background-color: #fff; /* White background */
+        color: #555; /* Dark grey text */
+        border: 1px solid #ccc; /* Subtle border */
+        padding: 10px 15px; /* Adjust padding */
+        border-radius: 25px; /* Rounded button */
+        font-size: 1em;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+    }
+
+    .social-login-button i {
+        margin-right: 8px; /* Space between icon and text */
+        font-size: 1.2em; /* Adjust icon size */
+    }
+
+     .social-login-button:hover {
+         background-color: #f8f9fa; /* Light grey background on hover */
+         border-color: #bbb; /* Darker border on hover */
+         text-decoration: none;
+         box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1); /* Stronger shadow on hover */
+     }
+
+     .social-login-button.google {
+         /* Specific styles for Google button if needed */
+     }
+
+     .social-login-button.facebook {
+         /* Specific styles for Facebook button if needed */
+     }
+
+
+    /* Responsive adjustments */
+    @@media (max-width: 768px) {
+        .register-container {
+            flex-direction: column; /* Stack columns vertically */
+            margin: 20px auto; /* Adjust margin */
+            max-width: 95%; /* Allow container to be wider on smaller screens */
+        }
+
+        .register-left-panel {
+            padding: 30px; /* Adjust padding */
+        }
+
+         .register-left-panel .logo img {
+             height: 50px; /* Adjust logo size */
+         }
+
+         .register-left-panel .logo span {
+             font-size: 1.8em; /* Adjust text size */
+         }
+
+
+        .register-left-panel h2 {
+            font-size: 2em; /* Adjust heading size */
+        }
+
+        .register-left-panel .illustration-placeholder {
+            height: 250px; /* Adjust height */
+            max-width: 250px; /* Adjust max width */
+        }
+
+        .register-right-panel {
+            padding: 30px; /* Adjust padding */
+        }
+
+        .register-right-panel .top-login-link {
+            text-align: center; /* Center the link */
+            margin-bottom: 15px; /* Adjust margin */
+        }
+
+        .register-right-panel h2 {
+            font-size: 1.5em; /* Adjust heading size */
+            text-align: center; /* Center heading */
+        }
+
+        .register-right-panel p {
+             margin-bottom: 20px; /* Adjust margin */
+             text-align: center; /* Center text */
+        }
+
+        .register-form .form-label {
+            font-size: 0.9em; /* Adjust label size */
+        }
+
+        .register-form .form-control {
+            padding: 8px 12px; /* Adjust padding */
+            font-size: 0.95em;
+        }
+
+         .signup-button {
+             padding: 10px 20px; /* Adjust padding */
+             font-size: 1em; /* Adjust font size */
+         }
+
+         .social-login-divider {
+             margin: 15px 0; /* Adjust margin */
+         }
+
+         .social-login-options {
+             flex-direction: column; /* Stack social login buttons vertically */
+             gap: 10px; /* Adjust gap */
+         }
+
+         .social-login-button {
+             padding: 10px 20px; /* Adjust padding */
+             font-size: 1em; /* Adjust font size */
+         }
+
+         .social-login-button i {
+             font-size: 1.2em; /* Adjust icon size */
+         }
+    }
+</style>
+
+
+<div class="register-container">
+    <div class="register-left-panel">
+        <div class="logo">
+            @* Using the logo from the layout, adjust path if necessary *@
+            <img src="~/bookstore-logo.png" alt="Bookstore Logo">
+            <span>BOOKISTORE</span>
+        </div>
+        <h2>Explore the World<br>with BOOKS</h2>
+        @* Placeholder for the illustration *@
+        <div class="illustration-placeholder">
+            [Illustration Placeholder]
         </div>
     </div>
+    <div class="register-right-panel">
+        <div class="top-login-link">
+             <p>Already have an account? <a asp-action="Login">LOGIN</a></p>
+        </div>
+        <h2>Please Fill this form to create an Account</h2>
 
-    @* Login Link *@
-    <div class="text-center mt-4"> @* Centered text with margin top *@
-        <p class="text-muted">Already have an account? <a asp-action="Login" class="text-decoration-none fw-semibold">Login here</a>.</p> @* Muted text, no underline on link, bold link text *@
+        <div class="register-form">
+            <form asp-action="Register">
+                @* Validation Summary *@
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-4"></div>
+
+                @* MembershipId Input *@
+                <div class="mb-3">
+                    <label asp-for="MembershipId" class="form-label">MembershipId *</label>
+                    <input asp-for="MembershipId" class="form-control" />
+                    <span asp-validation-for="MembershipId" class="text-danger small"></span>
+                </div>
+
+                @* FirstName Input *@
+                <div class="mb-3">
+                    <label asp-for="FirstName" class="form-label">First Name *</label>
+                    <input asp-for="FirstName" class="form-control" />
+                    <span asp-validation-for="FirstName" class="text-danger small"></span>
+                </div>
+
+                 @* LastName Input *@
+                <div class="mb-3">
+                    <label asp-for="LastName" class="form-label">Last Name *</label>
+                    <input asp-for="LastName" class="form-control" />
+                    <span asp-validation-for="LastName" class="text-danger small"></span>
+                </div>
+
+                @* Email Address Input *@
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label">Email Address *</label>
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                @* Password Input *@
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label">Password *</label>
+                    <input asp-for="Password" class="form-control" type="password" />
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                 @* ConfirmPassword Input *@
+                <div class="mb-3">
+                    <label asp-for="ConfirmPassword" class="form-label">Confirm Password *</label>
+                    <input asp-for="ConfirmPassword" class="form-control" type="password" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                </div>
+
+
+                @* Terms and Privacy Checkbox - Based on image *@
+                 <div class="mb-3 form-check">
+                    <input class="form-check-input" type="checkbox" id="termsCheckbox" required>
+                    <label class="form-check-label" for="termsCheckbox">
+                        By signing up, I've read and agree to our <a href="#" class="privacy-terms-link">Privacy Policy</a> and <a href="#" class="privacy-terms-link">Terms of use</a>.
+                    </label>
+                    @* Add validation for the checkbox if needed in your ViewModel and controller *@
+                 </div>
+
+                @* Sign Up Button - Based on image *@
+                <button type="submit" class="signup-button">
+                    Sign Up
+                </button>
+
+                @* Social Login Divider - Based on image *@
+                <div class="social-login-divider">OR</div>
+
+                @* Social Login Options - Based on image (Google and Facebook) *@
+                <div class="social-login-options">
+                     <a href="#" class="social-login-button google">
+                         <i class="fab fa-google"></i> Google
+                     </a>
+                     <a href="#" class="social-login-button facebook">
+                         <i class="fab fa-facebook-f"></i> Facebook
+                     </a>
+                </div>
+
+            </form>
+        </div>
     </div>
-
 </div>
+
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

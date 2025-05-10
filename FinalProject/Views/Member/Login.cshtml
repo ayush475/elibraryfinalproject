@@ -12,62 +12,325 @@
 @* <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> *@
 
 
-<div class="container mt-4 py-4"> @* Use Bootstrap container, margin top, and vertical padding *@
+@* Custom CSS for the Login Page Layout *@
+<style>
+    body {
+        background-color: #f8f9fa; /* Light background for the whole page */
+    }
 
-    <h1 class="mb-2 text-center text-primary">Member Login</h1> @* Bootstrap heading, centered, primary color *@
-    <h4 class="mb-4 text-center text-secondary">Access Your Account</h4> @* Subtitle, centered, secondary color *@
-    <hr class="mb-4"/>
+    .login-container {
+        display: flex; /* Use flexbox for the two-column layout */
+        min-height: 20vh; /* Ensure it takes available height */
+        align-items: stretch; /* Stretch items to fill the container height */
+        border-radius: 10px; /* Rounded corners for the main container */
+        overflow: hidden; /* Hide overflow for rounded corners */
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* Subtle shadow for the container */
+        max-width: 1000px; /* Limit the maximum width of the login container */
+        margin: 40px auto; /* Center the container and add margin */
+        background-color: #fff; /* White background for the login form side */
+    }
 
-    @* Introductory Information Section *@
-    <div class="alert alert-info shadow-sm mb-4" role="alert">
-        <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i> Welcome Back!</h5>
-        <p>Log in to your account to manage your profile, view bookmarks, and more.</p>
-    </div>
+    .login-left-panel {
+        flex: 1; /* Allow left panel to grow */
+        background-color: #008080; /* Teal background color from the image */
+        color: white;
+        padding: 40px; /* Add padding */
+        display: flex;
+        flex-direction: column; /* Stack content vertically */
+        justify-content: center; /* Center content vertically */
+        align-items: center; /* Center content horizontally */
+        text-align: center;
+    }
+
+    .login-left-panel .logo {
+        margin-bottom: 30px; /* Space below logo */
+    }
+
+     .login-left-panel .logo img {
+         height: 60px; /* Adjust logo size */
+         filter: brightness(0) invert(1); /* Make logo white */
+     }
+
+     .login-left-panel .logo span {
+         font-size: 2em; /* Adjust text size */
+         color: white;
+         font-weight: 700;
+     }
 
 
-    <div class="card shadow-lg border-0 rounded-3"> @* Bootstrap card container for the form with larger shadow, no border, rounded corners *@
-        <div class="card-body p-4"> @* Increased padding *@
-            <h4 class="card-title mb-4 text-secondary">Login Form</h4> @* Secondary color for title *@
+    .login-left-panel h2 {
+        font-size: 2.5em; /* Larger heading */
+        margin-bottom: 20px;
+        font-weight: 700;
+    }
 
-            <div class="row justify-content-center"> @* Center the form column *@
-                <div class="col-md-8 col-lg-6"> @* Adjust column size for better form width *@
-                    <form asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]">
-                        <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-4"></div> @* Style validation summary as an alert *@
+    .login-left-panel .illustration-placeholder {
+        width: 100%;
+        max-width: 300px; /* Limit illustration width */
+        height: 300px; /* Adjust height */
+        background-color: rgba(255, 255, 255, 0.2); /* Semi-transparent white background for placeholder */
+        border-radius: 8px;
+        margin-top: 30px; /* Space above illustration */
+        /* Replace with your actual illustration */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+        color: rgba(255, 255, 255, 0.8);
+        overflow: hidden; /* Hide overflow */
+    }
 
-                        <div class="mb-3"> @* Use mb-3 for consistent spacing *@
-                            <label asp-for="Email" class="form-label fw-bold text-muted"><i class="fas fa-envelope me-2"></i> @Html.DisplayNameFor(model => model.Email)</label> @* Bootstrap form-label, bold, muted text, icon *@
-                            <input asp-for="Email" class="form-control form-control-lg" /> @* Larger form control *@
-                            <span asp-validation-for="Email" class="text-danger small"></span> @* Smaller text for validation messages *@
-                        </div>
-                        <div class="mb-3">
-                            <label asp-for="Password" class="form-label fw-bold text-muted"><i class="fas fa-lock me-2"></i> @Html.DisplayNameFor(model => model.Password)</label> @* Bootstrap form-label, bold, muted text, icon *@
-                            <input asp-for="Password" class="form-control form-control-lg" type="password" /> @* Larger form control *@
-                            <span asp-validation-for="Password" class="text-danger small"></span> @* Smaller text for validation messages *@
-                        </div>
-                        <div class="mb-4 form-check"> @* Use mb-4 for consistent spacing, form-check for checkbox styling *@
-                            <input class="form-check-input" asp-for="RememberMe" />
-                            <label class="form-check-label fw-bold text-muted" asp-for="RememberMe"> @* Bootstrap form-check-label, bold, muted text *@
-                                <i class="fas fa-remember me-2"></i> @Html.DisplayNameFor(model => model.RememberMe) @* Icon added *@
-                            </label>
-                        </div>
 
-                        <div class="d-grid"> @* Use d-grid to make the button full-width *@
-                            <button type="submit" class="btn btn-primary btn-lg shadow">
-                                <i class="fas fa-sign-in-alt me-2"></i> Login
-                            </button> @* Bootstrap primary button, large size, shadow, icon *@
-                        </div>
-                    </form>
-                </div>
-            </div>
+    .login-right-panel {
+        flex: 1.5; /* Allow right panel to grow more */
+        padding: 40px; /* Add padding */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .login-right-panel h2 {
+        font-size: 1.8em;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .login-right-panel p {
+        font-size: 1em;
+        color: #555;
+        margin-bottom: 30px;
+    }
+
+    .login-form .form-label {
+        font-weight: 600; /* Slightly bolder labels */
+        color: #444; /* Darker label color */
+    }
+
+    .login-form .form-control {
+        border-color: #ccc; /* Subtle border color */
+        border-radius: 5px; /* Slightly rounded input fields */
+        padding: 10px 15px; /* Adjust padding */
+        font-size: 1em;
+    }
+
+     .login-form .form-control:focus {
+         border-color: #008080; /* Teal border on focus */
+         box-shadow: 0 0 0 0.25rem rgba(0, 128, 128, 0.25); /* Subtle teal shadow on focus */
+     }
+
+
+    .login-form .text-danger.small {
+        font-size: 0.85em; /* Smaller validation message text */
+    }
+
+    .login-form .form-check-label {
+        font-weight: 400; /* Normal font weight for checkbox label */
+        color: #555; /* Darker color */
+    }
+
+    .login-form .forgot-password {
+        display: block; /* Make it a block to align right */
+        text-align: right;
+        font-size: 0.9em;
+        color: #008080; /* Teal color */
+        text-decoration: none;
+        margin-top: 5px;
+        margin-bottom: 20px;
+    }
+
+    .login-form .forgot-password:hover {
+        text-decoration: underline;
+    }
+
+
+    .login-button {
+        background-color: #ff7043; /* Orange button */
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px; /* Rounded button */
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(255, 112, 67, 0.3); /* Subtle shadow */
+        width: 100%; /* Full width button */
+        margin-bottom: 15px; /* Space below button */
+    }
+
+    .login-button:hover {
+        background-color: #f4511e; /* Darker shade on hover */
+        transform: translateY(-2px); /* Lift slightly */
+        box-shadow: 0 6px 12px rgba(255, 112, 67, 0.4); /* Stronger shadow */
+    }
+
+    .google-login-button {
+        display: flex; /* Use flexbox to align icon and text */
+        align-items: center; /* Vertically align */
+        justify-content: center; /* Center content */
+        background-color: #fff; /* White background */
+        color: #555; /* Dark grey text */
+        border: 1px solid #ccc; /* Subtle border */
+        padding: 10px 20px;
+        border-radius: 25px; /* Rounded button */
+        font-size: 1.1em;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+        width: 100%; /* Full width button */
+    }
+
+    .google-login-button i {
+        margin-right: 10px; /* Space between icon and text */
+        font-size: 1.3em; /* Larger icon */
+    }
+
+     .google-login-button:hover {
+         background-color: #f8f9fa; /* Light grey background on hover */
+         border-color: #bbb; /* Darker border on hover */
+         text-decoration: none;
+     }
+
+
+    .register-link {
+        text-align: center;
+        margin-top: 30px; /* Space above link */
+        font-size: 0.95em;
+        color: #555;
+    }
+
+    .register-link a {
+        color: #008080; /* Teal link color */
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+     .register-link a:hover {
+         text-decoration: underline;
+     }
+
+
+    /* Responsive adjustments */
+    @@media (max-width: 768px) {
+        .login-container {
+            flex-direction: column; /* Stack columns vertically */
+            margin: 20px auto; /* Adjust margin */
+            max-width: 95%; /* Allow container to be wider on smaller screens */
+        }
+
+        .login-left-panel {
+            padding: 30px; /* Adjust padding */
+        }
+
+         .login-left-panel .logo img {
+             height: 50px; /* Adjust logo size */
+         }
+
+         .login-left-panel .logo span {
+             font-size: 1.8em; /* Adjust text size */
+         }
+
+
+        .login-left-panel h2 {
+            font-size: 2em; /* Adjust heading size */
+        }
+
+        .login-left-panel .illustration-placeholder {
+            height: 250px; /* Adjust height */
+            max-width: 250px; /* Adjust max width */
+        }
+
+        .login-right-panel {
+            padding: 30px; /* Adjust padding */
+        }
+
+        .login-right-panel h2 {
+            font-size: 1.5em; /* Adjust heading size */
+        }
+
+        .login-right-panel p {
+             margin-bottom: 20px; /* Adjust margin */
+        }
+
+        .login-form .form-control {
+            padding: 8px 12px; /* Adjust padding */
+            font-size: 0.95em;
+        }
+
+         .login-button,
+         .google-login-button {
+             padding: 10px 20px; /* Adjust padding */
+             font-size: 1em; /* Adjust font size */
+         }
+
+         .google-login-button i {
+             font-size: 1.2em; /* Adjust icon size */
+         }
+
+        .register-link {
+            margin-top: 20px; /* Adjust margin */
+        }
+    }
+</style>
+
+
+<div class="login-container">
+    <div class="login-left-panel">
+        <div class="logo">
+            @* Using the logo from the layout, adjust path if necessary *@
+            <img src="~/bookstore-logo.png" alt="Bookstore Logo">
+            <span>BOOKISTORE</span>
+        </div>
+        <h2>Welcome<br>Back!</h2>
+        @* Placeholder for the illustration *@
+        <div class="illustration-placeholder">
+            [Illustration Placeholder]
         </div>
     </div>
+    <div class="login-right-panel">
+        <h2>Hello! Welcome back.</h2>
+        <p>Login with the data you entered during Registration.</p>
 
-    @* Register Link *@
-    <div class="text-center mt-4"> @* Centered text with margin top *@
-        <p class="text-muted">Don't have an account? <a asp-action="Register" class="text-decoration-none fw-semibold">Register here</a>.</p> @* Muted text, no underline on link, bold link text *@
+        <div class="login-form">
+            <form asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-4"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label">Email Address *</label>
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label">Password *</label>
+                    <input asp-for="Password" class="form-control" type="password" />
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                    <a href="#" class="forgot-password">Forgot Password?</a>
+                </div>
+                @* Removed Remember Me checkbox as it's not in the image layout *@
+                @* <div class="mb-4 form-check">
+                    <input class="form-check-input" asp-for="RememberMe" />
+                    <label class="form-check-label" asp-for="RememberMe">
+                         @Html.DisplayNameFor(model => model.RememberMe)
+                    </label>
+                </div> *@
+
+                <button type="submit" class="login-button">
+                    Login Now
+                </button>
+
+                @* Placeholder for Continue with Google button *@
+                <a href="#" class="google-login-button">
+                     <i class="fab fa-google"></i> Continue with Google
+                </a>
+            </form>
+        </div>
+
+        <div class="register-link">
+            <p>Don't have an Account? <a asp-action="Register">REGISTER</a></p>
+        </div>
     </div>
-
 </div>
+
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
