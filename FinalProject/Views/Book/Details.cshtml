@@ -1,178 +1,202 @@
 @model FinalProject.Models.Book
 
 @{
-    ViewData["Title"] = Model.Title; // Use the book title for the page title
+    ViewData["Title"] = Model.Title + " Details"; // Use the book title for the page title and add "Details"
+    // Assuming ViewBag.IsBookmarked is set in the controller action
+    var isBookmarked = ViewBag.IsBookmarked != null && (bool)ViewBag.IsBookmarked;
+    // Assuming ViewBag.CanDelete is set in the controller action (e.g., based on user role)
+    var canDelete = ViewBag.CanDelete != null && (bool)ViewBag.CanDelete;
+
+    // Define a placeholder image URL for books without covers
+    var placeholderImageUrl = "https://placehold.co/300x450/e9ecef/495057?text=No+Cover+Available"; // Larger placeholder
 }
 
-@* Assuming Bootstrap CSS is already included in your layout file (_Layout.cshtml) *@
-@* If not, you would need to add the Bootstrap CDN link here: *@
+@* Assuming Bootstrap CSS and Font Awesome are already included in your layout file (_Layout.cshtml) *@
+@* If not, you would need to add the CDN links: *@
 @* <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> *@
+@* <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> *@
 @* And the Bootstrap JS bundle (for alerts, etc.): *@
 @* <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> *@
 
 
-<div class="container mt-4"> @* Use Bootstrap container and margin top *@
+<div class="container mt-4 py-4"> @* Use Bootstrap container, margin top, and vertical padding *@
 
-    <h1 class="mb-4">@Html.DisplayFor(model => model.Title)</h1> @* Bootstrap heading with margin bottom *@
+    <h1 class="mb-4 text-center text-primary">@Html.DisplayFor(model => model.Title)</h1> @* Bootstrap heading with margin bottom, centered, primary color *@
 
     @* Display TempData message if it exists *@
     @if (TempData["Message"] != null)
     {
-        <div class="alert alert-info alert-dismissible fade show" role="alert"> @* Bootstrap alert styling *@
+        <div class="alert alert-info alert-dismissible fade show shadow-sm mb-4" role="alert"> @* Bootstrap alert styling with shadow and margin bottom *@
             @TempData["Message"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <div class="card mb-4"> @* Bootstrap card container for details *@
-        <div class="card-body">
-            <h4 class="card-title mb-4">Details</h4>
-            <hr class="mb-4"/>
+    <div class="card shadow-lg border-0 rounded-3"> @* Bootstrap card container for details with larger shadow, no border, rounded corners *@
+        <div class="card-body p-4"> @* Increased padding *@
 
-            <div class="row"> @* Bootstrap row for details layout *@
+            <div class="row g-4"> @* Bootstrap row for details layout with larger gap *@
                 @* Book Cover Image Section *@
-                <div class="col-md-4 mb-4 mb-md-0 d-flex justify-content-center align-items-start"> @* Responsive column, centering *@
-                    @if (!string.IsNullOrEmpty(Model.CoverImageUrl))
-                    {
-                        <img src="@Model.CoverImageUrl" alt="Book Cover" class="img-fluid rounded shadow-sm" style="max-height: 300px;" /> @* Bootstrap image classes *@
-                    }
-                    else
-                    {
-                         <div class="w-100 bg-light rounded shadow-sm d-flex align-items-center justify-content-center text-muted" style="height: 200px;">No cover image available</div> @* Placeholder styling *@
-                    }
+                <div class="col-md-4 d-flex justify-content-center align-items-start"> @* Responsive column, centering *@
+                    <img src="@(string.IsNullOrEmpty(Model.CoverImageUrl) ? placeholderImageUrl : Model.CoverImageUrl)"
+                         alt="Book Cover"
+                         class="img-fluid rounded shadow-sm border border-light" style="max-height: 400px; object-fit: cover;" /> @* Bootstrap image classes, rounded, shadow, light border, increased max-height, object-fit *@
                 </div>
 
                 @* Book Details List Section *@
                 <div class="col-md-8"> @* Responsive column *@
-                    <dl class="row"> @* Bootstrap row for definition list *@
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.Isbn)
+                    <h4 class="card-title mb-3 text-secondary">Book Information</h4> @* Secondary color for title *@
+                    <hr class="mb-4"/>
+
+                    <dl class="row g-3"> @* Bootstrap row for definition list with larger gap *@
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-barcode me-2"></i> @Html.DisplayNameFor(model => model.Isbn) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.Isbn)
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.Description)
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-align-left me-2"></i> @Html.DisplayNameFor(model => model.Description) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.Description)
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.PublicationDate)
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-calendar-alt me-2"></i> @Html.DisplayNameFor(model => model.PublicationDate) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.PublicationDate)
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.ListPrice)
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-dollar-sign me-2"></i> @Html.DisplayNameFor(model => model.ListPrice) @* Icon added *@
                         </dt>
-                        <dd class="col-sm-9">
+                        <dd class="col-sm-9 fw-bold text-success fs-5"> @* Bold, green color, larger font size *@
                             @Html.DisplayFor(model => model.ListPrice)
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.Author)
+                        @* Display Sale Information if applicable *@
+                        @if (Model.OnSale && Model.SaleDiscount.HasValue)
+                        {
+                            <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                                <i class="fas fa-tags me-2"></i> Sale Price @* Icon added *@
+                            </dt>
+                            <dd class="col-sm-9 fw-bold text-danger fs-5"> @* Bold, red color, larger font size *@
+                                @((Model.ListPrice * (1 - Model.SaleDiscount.Value)).ToString("C")) @* Calculate and display sale price *@
+                            </dd>
+                             <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                                <i class="fas fa-percent me-2"></i> Sale Discount @* Icon added *@
+                            </dt>
+                            <dd class="col-sm-9">
+                                @(Model.SaleDiscount.Value.ToString("P0")) @* Display discount as percentage *@
+                            </dd>
+                             @if(Model.SaleStartDate.HasValue && Model.SaleEndDate.HasValue)
+                             {
+                                 <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                                    <i class="fas fa-clock me-2"></i> Sale Dates @* Icon added *@
+                                </dt>
+                                <dd class="col-sm-9">
+                                    @Model.SaleStartDate.Value.ToString("yyyy-MM-dd") to @Model.SaleEndDate.Value.ToString("yyyy-MM-dd")
+                                </dd>
+                             }
+                        }
+
+
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-user me-2"></i> @Html.DisplayNameFor(model => model.Author) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @(Model.Author != null ? $"{Model.Author.FirstName} {Model.Author.LastName}" : "Unknown Author")
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.Publisher)
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-building me-2"></i> @Html.DisplayNameFor(model => model.Publisher) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @(Model.Publisher != null ? Model.Publisher.Name : "Unknown Publisher")
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.Genre)
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-book me-2"></i> @Html.DisplayNameFor(model => model.Genre) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @(Model.Genre != null ? Model.Genre.Name : "Unknown Genre")
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.Language)
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-language me-2"></i> @Html.DisplayNameFor(model => model.Language) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.Language)
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.Format)
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-file-alt me-2"></i> @Html.DisplayNameFor(model => model.Format) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.Format)
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.AvailabilityStock)
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-warehouse me-2"></i> @Html.DisplayNameFor(model => model.AvailabilityStock) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.AvailabilityStock)
                         </dd>
 
-                         <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.AvailabilityLibrary)
+                         <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-book-reader me-2"></i> @Html.DisplayNameFor(model => model.AvailabilityLibrary) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.AvailabilityLibrary)
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.Rating)
+                        @* Rating Display *@
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-star me-2"></i> @Html.DisplayNameFor(model => model.Rating) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.Rating)
+                             @if (Model.Rating.HasValue)
+                            {
+                                @* Display stars based on rating *@
+                                @for (int i = 0; i < Math.Floor(Model.Rating.Value); i++)
+                                {
+                                    <i class="fas fa-star text-warning"></i> @* Full star *@
+                                }
+                                @if (Model.Rating % 1 != 0) // Check for half star
+                                {
+                                    <i class="fas fa-star-half-alt text-warning"></i> @* Half star *@
+                                }
+                                @for (int i = 0; i < 5 - Math.Ceiling(Model.Rating.Value); i++)
+                                {
+                                    <i class="far fa-star text-warning"></i> @* Empty star *@
+                                }
+                                <span class="ms-2 text-muted">(@Html.DisplayFor(model => model.Rating) / 5)</span> @* Display numerical rating *@
+                            }
+                            else
+                            {
+                                <span>No rating available</span>
+                            }
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.RatingCount)
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-users me-2"></i> @Html.DisplayNameFor(model => model.RatingCount) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.RatingCount)
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.OnSale)
-                        </dt>
-                        <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.OnSale)
-                        </dd>
-
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.SaleDiscount)
-                        </dt>
-                        <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.SaleDiscount)
-                        </dd>
-
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.SaleStartDate)
-                        </dt>
-                        <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.SaleStartDate)
-                        </dd>
-
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.SaleEndDate)
-                        </dt>
-                        <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.SaleEndDate)
-                        </dd>
-
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.DateAdded)
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-calendar-plus me-2"></i> @Html.DisplayNameFor(model => model.DateAdded) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.DateAdded)
                         </dd>
 
-                        <dt class="col-sm-3">
-                            @Html.DisplayNameFor(model => model.DateUpdated)
+                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                            <i class="fas fa-edit me-2"></i> @Html.DisplayNameFor(model => model.DateUpdated) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.DateUpdated)
@@ -183,47 +207,84 @@
         </div>
     </div>
 
-    <div class="d-flex flex-wrap gap-2 mt-4"> @* Bootstrap flex container for buttons with gap and margin top *@
-        <a asp-action="Edit" asp-route-id="@Model?.BookId" class="btn btn-primary">Edit</a> @* Bootstrap primary button *@
-        <a asp-action="Index" class="btn btn-secondary">Back to List</a> @* Bootstrap secondary button *@
+    @* Action Buttons *@
+    <div class="d-flex flex-wrap gap-3 mt-4 justify-content-center"> @* Bootstrap flex container for buttons with larger gap, margin top, centered *@
 
-        @* Add Bookmark button on Details page *@
+        @* Edit Button *@
+        @* <a asp-action="Edit" asp-route-id="@Model?.BookId" class="btn btn-warning btn-lg shadow-sm"> *@
+        @*      <i class="fas fa-edit me-2"></i> Edit *@
+        @* </a> $1$ Bootstrap warning button, large size, shadow #1# *@
+
+        @* Back to List Button *@
+        <a asp-action="Index" class="btn btn-secondary btn-lg shadow-sm">
+            <i class="fas fa-arrow-left me-2"></i> Back to List
+        </a> @* Bootstrap secondary button, large size, shadow *@
+
+        @* Conditional Buttons for Authenticated Users *@
         @if (User?.Identity?.IsAuthenticated == true)
         {
-            // Check if the book is bookmarked (assuming ViewBag.IsBookmarked is set in Details action)
-            if (ViewBag.IsBookmarked != null && ViewBag.IsBookmarked == true)
+            @* Bookmark Button *@
+            @if (isBookmarked)
             {
-                <span class="btn btn-success disabled" title="You have bookmarked this book.">Bookmarked</span> @* Bootstrap success button (disabled) *@
+                <span class="btn btn-success btn-lg disabled shadow-sm" title="You have bookmarked this book.">
+                    <i class="fas fa-bookmark me-2"></i> Bookmarked
+                </span> @* Bootstrap success button (disabled), large size, shadow *@
             }
             else
             {
-                @* Create a small form for the Bookmark action *@
-                <form asp-controller="Book" asp-action="Bookmark" method="post" class="d-inline-block"> @* Bootstrap inline block form *@
+                @* Create a form for the Bookmark action *@
+                <form asp-controller="Book" asp-action="Bookmark" method="post" class="d-inline-block">
                     <input type="hidden" name="bookId" value="@Model?.BookId" />
                     @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                    <button type="submit" class="btn btn-outline-primary" title="Bookmark this book">Bookmark</button> @* Bootstrap outline primary button *@
+                    <button type="submit" class="btn btn-outline-primary btn-lg shadow-sm" title="Bookmark this book">
+                         <i class="far fa-bookmark me-2"></i> Bookmark
+                    </button> @* Bootstrap outline primary button, large size, shadow *@
                 </form>
             }
 
-            @* --- Add Cancel Order Button (Conditional) --- *@
-            @* Check if a cancellable OrderItemId was passed from the controller *@
+            @* Add to Cart Button *@
+            @* Form targets BookController and AddToCart action (assuming this action exists) *@
+            <form asp-controller="Book" asp-action="AddToCart" method="post" class="d-inline-block">
+                <input type="hidden" name="bookId" value="@Model?.BookId" />
+                @* Optional: Add a quantity input if needed, default is 1 in the controller *@
+                @* <input type="number" name="quantity" value="1" min="1" style="width: 50px;" /> *@
+                @Html.AntiForgeryToken() @* Include the anti-forgery token *@
+                <button type="submit" class="btn btn-primary btn-lg shadow-sm" title="Add this book to your shopping cart">
+                    <i class="fas fa-shopping-cart me-2"></i> Add to Cart
+                </button> @* Bootstrap primary button, large size, shadow *@
+            </form>
+
+            @* Conditional Cancel Order Button (if applicable) *@
             @if (ViewBag.CancellableOrderItemId != null)
             {
                 @* Create a form to submit the cancellation request *@
-                <form asp-controller="Orders" asp-action="CancelOrderItem" method="post" class="d-inline-block"> @* Bootstrap inline block form *@
+                <form asp-controller="Orders" asp-action="CancelOrderItem" method="post" class="d-inline-block">
                     @* Pass the OrderItemId to the controller action *@
                     <input type="hidden" name="orderItemId" value="@ViewBag.CancellableOrderItemId" />
                     @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                    <button type="submit" class="btn btn-danger" title="Cancel this order item">Cancel Order</button> @* Bootstrap danger button *@
+                    <button type="submit" class="btn btn-danger btn-lg shadow-sm" title="Cancel this order item">
+                         <i class="fas fa-times-circle me-2"></i> Cancel Order
+                    </button> @* Bootstrap danger button, large size, shadow *@
                 </form>
             }
-            @* --- End Cancel Order Button --- *@
 
+            @* Conditional Delete Button (e.g., for Admin users) *@
+            @if (canDelete)
+            {
+                 <a asp-action="Delete" asp-route-id="@Model?.BookId" class="btn btn-danger btn-lg shadow-sm">
+                     <i class="fas fa-trash-alt me-2"></i> Delete
+                 </a> @* Bootstrap danger button, large size, shadow *@
+            }
         }
         else
         {
-            @* Optional: Show a disabled button or message for unauthenticated users for Bookmark *@
-            <span class="btn btn-outline-secondary disabled" title="Login to bookmark books">Bookmark</span> @* Bootstrap outline secondary button (disabled) *@
+            @* Show disabled buttons or messages for unauthenticated users *@
+            <span class="btn btn-outline-secondary btn-lg disabled shadow-sm" title="Login to bookmark books">
+                <i class="far fa-bookmark me-2"></i> Bookmark
+            </span> @* Bootstrap outline secondary button (disabled), large size, shadow *@
+             <span class="btn btn-outline-secondary btn-lg disabled shadow-sm" title="Login to add to cart">
+                <i class="fas fa-shopping-cart me-2"></i> Add to Cart
+            </span> @* Bootstrap outline secondary button (disabled), large size, shadow *@
         }
     </div>
 </div>
