@@ -137,19 +137,29 @@
                                     @if (User.Identity.IsAuthenticated)
                                     {
                                         // Check if the current book's ID is in the list of bookmarked IDs
-                                        if (bookmarkedBookIds != null && bookmarkedBookIds.Contains(item.BookId))
-                                        {
-                                            <span class="btn btn-sm btn-success disabled" title="You have bookmarked this book."><i class="fas fa-bookmark me-1"></i> Bookmarked</span> @* Icon added *@
-                                        }
-                                        else
-                                        {
-                                            @* Create a small form for the Bookmark action *@
-                                            <form asp-controller="Book" asp-action="Bookmark" method="post" style="display:inline;">
-                                                <input type="hidden" name="bookId" value="@item.BookId" />
-                                                @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                                                <button type="submit" class="btn btn-sm btn-outline-primary" title="Bookmark this book"><i class="far fa-bookmark me-1"></i> Bookmark</button> @* Icon added (outline version) *@
-                                            </form>
-                                        }
+                                        // Check if the current book's ID is in the list of bookmarked IDs
+                                        var isBookmarked = bookmarkedBookIds != null && bookmarkedBookIds.Contains(item.BookId);
+
+                                        @* Create a small form for the Bookmark action (add or remove) *@
+                                        <form asp-controller="Book" asp-action="Bookmark" method="post" style="display:inline;">
+                                            <input type="hidden" name="bookId" value="@item.BookId" />
+                                            @Html.AntiForgeryToken() @* Include the anti-forgery token *@
+
+                                            @if (isBookmarked)
+                                            {
+                                                @* If bookmarked, show button to REMOVE bookmark *@
+                                                <button type="submit" class="btn btn-sm btn-success" title="Remove bookmark">
+                                                    <i class="fas fa-bookmark me-1"></i> Bookmarked
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                @* If NOT bookmarked, show button to ADD bookmark *@
+                                                <button type="submit" class="btn btn-sm btn-outline-primary" title="Bookmark this book">
+                                                    <i class="far fa-bookmark me-1"></i> Bookmark
+                                                </button>
+                                            }
+                                        </form>
 
                                         @* --- Add to Cart Button (Calls AddToCart in BookController) --- *@
                                         @* Form targets BookController and AddToCart action as per your provided code *@

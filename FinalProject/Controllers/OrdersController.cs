@@ -5,19 +5,10 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore; // Added for Include and ToListAsync
 using FinalProject.Data; // Assuming your DbContext is here
 using FinalProject.ViewModels; // Assuming your ViewModels are here
-using System.Linq; // Added for LINQ
-using System.Threading.Tasks; // Added for async/await
 using Microsoft.AspNetCore.Authorization; // Added for [Authorize]
-using System.Collections.Generic; // Added for List
-using Microsoft.AspNetCore.Mvc.Rendering; // Added for SelectList
 using FinalProject.Models; // Added for ShoppingCartItem model
 using System.Diagnostics; // Required for Debug.WriteLine
 using System.Text;
-using System.Net;
-using System.Net.Mail;
-using System.Text;
-using Microsoft.Extensions.Options;
-using FinalProject.Configuration;
 using FinalProject.Services;
 
 
@@ -993,110 +984,7 @@ private string BuildOrderConfirmationEmailBody(Order order, List<ShoppingCartIte
 
 
 
-        // --- Action to Add a Single Item and Create a New Order ---
-        [HttpPost] // Use POST for actions that change data
-        [Authorize] // Requires the user to be authenticated
-        [ValidateAntiForgeryToken] // Good practice for POST requests from views
-        public async Task<IActionResult> AddSingleItemOrder(int bookId, int quantity = 1) // Default quantity to 1
-        {
-            // Get the authenticated user's MemberId from the claims.
-            var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            // Determine the return URL.
-            var returnUrl = Request.Headers["Referer"].ToString();
-            if (string.IsNullOrEmpty(returnUrl) || !Url.IsLocalUrl(returnUrl))
-            {
-                returnUrl = Url.Action(nameof(Index), "Book"); // Default to Book Index
-            }
-
-            // Validate MemberId from claims.
-            if (string.IsNullOrEmpty(memberIdString) || !int.TryParse(memberIdString, out int memberId))
-            {
-                TempData["Message"] = "Authentication failed. Please log in again.";
-                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return RedirectToAction("Login", "Member");
-            }
-
-            // Find the member in the database.
-            var member = await _context.Members.FindAsync(memberId);
-            if (member == null)
-            {
-                TempData["Message"] = "Error: Your member account data could not be found in the database.";
-                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return RedirectToAction("Login", "Member");
-            }
-
-            // Validate the bookId and check if the book exists.
-            var book = await _context.Books.FindAsync(bookId);
-            if (book == null)
-            {
-                TempData["Message"] = $"Error: Book with ID {bookId} not found.";
-                return Redirect(returnUrl);
-            }
-
-            // Ensure quantity is at least 1.
-            if (quantity < 1)
-            {
-                quantity = 1;
-            }
-
-            // --- Calculate Member Discount ---
-            decimal discountPercentage = await CalculateMemberDiscount(memberId);
-            Debug.WriteLine($"Member ID {memberId} qualifies for {discountPercentage * 100}% discount.");
-            // --- End Calculate Member Discount ---
-
-
-            // --- Create a NEW Order for this item ---
-            var newOrder = new Order
-            {
-                MemberId = member.MemberId,
-                Member = member, // Assign the fetched Member entity
-                OrderDate = DateTime.UtcNow, // Use UTC for consistency
-                OrderStatus = "Placed", // Set status to indicate a direct order (e.g., "Placed", "Completed")
-                ClaimCode = null, // No claim code initially
-                DateAdded = DateTime.UtcNow,
-                DateUpdated = DateTime.UtcNow,
-                OrderItems = new List<OrderItem>() // Initialize the collection
-            };
-
-            // --- Create the OrderItem for the book ---
-            var newOrderItem = new OrderItem
-            {
-                // OrderId is set implicitly when adding to the Order's collection and saving
-                Order = newOrder, // Assign the new Order object to the navigation property
-                BookId = book.BookId,
-                Book = book, // Assign the fetched Book entity
-                Quantity = quantity,
-                UnitPrice = book.ListPrice, // Use ListPrice from the Book
-                Discount = book.SaleDiscount ?? 0 // Use SaleDiscount from the Book, handle null
-            };
-
-            // Add the OrderItem to the new Order's collection
-            newOrder.OrderItems.Add(newOrderItem);
-
-            // Calculate the TotalAmount for the new order (based on the single item) BEFORE member discount
-            decimal subtotal = (newOrderItem.Quantity * newOrderItem.UnitPrice) - newOrderItem.Discount;
-            newOrder.TotalAmount = subtotal; // Start with subtotal
-
-            // Apply the member-level discount
-            newOrder.DiscountApplied = newOrder.TotalAmount * discountPercentage;
-            newOrder.TotalAmount -= newOrder.DiscountApplied;
-
-            // Add the new Order and its OrderItem to the context
-            _context.Orders.Add(newOrder);
-            // EF Core will automatically add the newOrderItem because it's part of the newOrder's collection
-
-            // Save changes to the database (creates the new Order and OrderItem)
-            await _context.SaveChangesAsync();
-
-            TempData["Message"] = $"Order placed for {book.Title}. A discount of {newOrder.DiscountApplied:C} was applied."; // Display applied discount
-
-            // Redirect to the details page of the newly created order
-            return RedirectToAction(nameof(Details), new { id = newOrder.OrderId });
-            // Alternatively, redirect to an order confirmation page or the user's order history
-        }
-        // --- End AddSingleItemOrder Action ---
-
+      
 
         // --- Original AddItemToOrder (likely used for "Add to Cart") ---
         // Keeping this action as it seems to be intended for adding to a pending cart

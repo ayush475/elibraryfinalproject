@@ -456,87 +456,90 @@ private async Task GetAndSetUserSpecificBookViewDataAsync(int bookId, ClaimsPrin
         [HttpPost] // Use POST for actions that change data
         [Authorize] // Requires the user to be authenticated
         [ValidateAntiForgeryToken] // Good practice for POST requests from views
-        public async Task<IActionResult> Bookmark(int bookId)
+       public async Task<IActionResult> Bookmark(int bookId)
+{
+    // Get the authenticated user's MemberId (as a string) from the claims.
+    // ClaimTypes.NameIdentifier stores the MemberId (the integer primary key) from the login process.
+    var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    // Determine the return URL. Prioritize the Referer header if available and local.
+    // Otherwise, default to the Index page.
+    var returnUrl = Request.Headers["Referer"].ToString();
+    if (string.IsNullOrEmpty(returnUrl) || !Url.IsLocalUrl(returnUrl))
+    {
+        returnUrl = Url.Action(nameof(Index), "Book"); // Default to Index (assuming an Index action in BookController)
+    }
+
+    // Check if the MemberId claim is present and can be parsed as an integer.
+    if (string.IsNullOrEmpty(memberIdString) || !int.TryParse(memberIdString, out int memberId))
+    {
+        // If the claim is missing or invalid, it indicates an authentication issue.
+        TempData["Message"] = "Authentication failed. Please log in again.";
+        // Consider signing out the user if the identity seems invalid
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); // Use constant for scheme
+        // Redirect to the Login action in the Member controller using string literals
+        return RedirectToAction("Login", "Member"); // Adjust "Login" and "Member" as necessary
+    }
+
+    // Find the member using the MemberId (the primary key) obtained from the claims.
+    // This is the correct way to identify the authenticated member in the database.
+    var member = await _context.Members.FindAsync(memberId);
+
+    if (member == null)
+    {
+        // Member not found in the database for the given MemberId from claims.
+        // This is a serious issue indicating a potential database problem or data inconsistency.
+        TempData["Message"] = "Error: Your member account data could not be found in the database.";
+        // Consider logging this error internally for debugging.
+        // Consider signing out the user as their authenticated identity doesn't match a database record.
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); // Use constant for scheme
+        return RedirectToAction("Login", "Member"); // Adjust "Login" and "Member" as necessary
+    }
+
+    // Check if the book exists.
+    var book = await _context.Books.FindAsync(bookId); // FindAsync is efficient for primary keys
+    if (book == null)
+    {
+        TempData["Message"] = $"Error: Book with ID {bookId} not found.";
+        return Redirect(returnUrl);
+    }
+
+    // --- Bookmark Toggle Logic ---
+
+    // Find the specific bookmark for this member and book.
+    // Use FirstOrDefaultAsync to get the entity if it exists, or null otherwise.
+    var existingBookmark = await _context.Bookmarks
+        .FirstOrDefaultAsync(b => b.MemberId == member.MemberId && b.BookId == bookId);
+
+    if (existingBookmark != null)
+    {
+        // Bookmark exists, so remove it.
+        _context.Bookmarks.Remove(existingBookmark);
+        await _context.SaveChangesAsync();
+        TempData["Message"] = "Bookmark removed successfully.";
+    }
+    else
+    {
+        // Bookmark does not exist, so add it.
+        var newBookmark = new Bookmark
         {
-            // Get the authenticated user's MemberId (as a string) from the claims.
-            // ClaimTypes.NameIdentifier stores the MemberId (the integer primary key) from the login process.
-            var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            MemberId = member.MemberId, // Use the MemberId from the found member
+            BookId = bookId,
+            DateAdded = DateTime.Now, // Set the date added
+            // As per your model definition with 'required' navigation properties,
+            // you must set these when creating a new Bookmark entity.
+            Member = member,
+            Book = book
+        };
 
-            // Determine the return URL. Prioritize the Referer header if available and local.
-            // Otherwise, default to the Index page.
-            var returnUrl = Request.Headers["Referer"].ToString();
-            if (string.IsNullOrEmpty(returnUrl) || !Url.IsLocalUrl(returnUrl))
-            {
-                returnUrl = Url.Action(nameof(Index), "Book"); // Default to Index
-            }
+        _context.Bookmarks.Add(newBookmark);
+        await _context.SaveChangesAsync();
+        TempData["Message"] = "Book bookmarked successfully!";
+    }
 
-            // Check if the MemberId claim is present and can be parsed as an integer.
-            if (string.IsNullOrEmpty(memberIdString) || !int.TryParse(memberIdString, out int memberId))
-            {
-                // If the claim is missing or invalid, it indicates an authentication issue.
-                TempData["Message"] = "Authentication failed. Please log in again.";
-                // Consider signing out the user if the identity seems invalid
-                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); // Use constant for scheme
-                // Redirect to the Login action in the Member controller using string literals
-                return RedirectToAction("Login", "Member");
-            }
-
-            // Find the member using the MemberId (the primary key) obtained from the claims.
-            // This is the correct way to identify the authenticated member in the database.
-            var member = await _context.Members.FindAsync(memberId);
-
-            if (member == null)
-            {
-                // Member not found in the database for the given MemberId from claims.
-                // This is a serious issue indicating a potential database problem or data inconsistency.
-                TempData["Message"] = "Error: Your member account data could not be found in the database.";
-                // Consider logging this error internally for debugging.
-                // Consider signing out the user as their authenticated identity doesn't match a database record.
-                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); // Use constant for scheme
-                return RedirectToAction("Login", "Member");
-            }
-
-            // Check if the book exists.
-            var book = await _context.Books.FindAsync(bookId); // FindAsync is efficient for primary keys
-            if (book == null)
-            {
-                TempData["Message"] = $"Error: Book with ID {bookId} not found.";
-                return Redirect(returnUrl);
-            }
-
-            // Check if the bookmark already exists for this member and book using AnyAsync for efficiency.
-            var existingBookmark = await _context.Bookmarks
-                .AnyAsync(b => b.MemberId == member.MemberId && b.BookId == bookId);
-
-            if (existingBookmark)
-            {
-                // Bookmark already exists.
-                 TempData["Message"] = "This book is already bookmarked.";
-                 return Redirect(returnUrl);
-            }
-
-            // Create the new bookmark.
-            var newBookmark = new Bookmark
-            {
-                MemberId = member.MemberId, // Use the MemberId from the found member
-                BookId = bookId,
-                DateAdded = DateTime.Now, // Set the date added
-                // FIXED: Explicitly set the required navigation properties
-                Member = member,
-                Book = book
-            };
-
-            // Add the bookmark to the database context.
-            _context.Bookmarks.Add(newBookmark);
-
-            // Save changes to the database.
-            await _context.SaveChangesAsync();
-
-            // Indicate success and redirect back to the origin page.
-             TempData["Message"] = "Book bookmarked successfully!";
-             return Redirect(returnUrl);
-        }
-
+    // Redirect back to the origin page.
+    return Redirect(returnUrl);
+}
         // --- End Bookmark Action ---
 
 
