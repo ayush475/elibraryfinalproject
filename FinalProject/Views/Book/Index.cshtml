@@ -149,24 +149,13 @@
                                     </form>
                                     @* --- End Add to Cart Button --- *@
 
-                                    @* --- Add to Order Button (Now calls AddSingleItemOrder in OrdersController) --- *@
-                                    @* Form targets OrdersController and the new AddSingleItemOrder action *@
-                                    <form asp-controller="Orders" asp-action="AddSingleItemOrder" method="post" style="display:inline;">
-                                        <input type="hidden" name="bookId" value="@item.BookId" />
-                                        @* Optional: Add a quantity input if needed, default is 1 in the controller *@
-                                        @* <input type="number" name="quantity" value="1" min="1" style="width: 50px;" /> *@
-                                        @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                                        <button type="submit" class="btn btn-sm btn-success" title="Place an order for this book immediately"><i class="fas fa-truck"></i> Add to Order</button> @* Icon added *@
-                                    </form>
-                                    @* --- End Add to Order Button --- *@
-
+                                  
                                 }
                                 else
                                 {
                                     @* Show disabled buttons for unauthenticated users *@
                                     <span class="btn btn-sm btn-outline-secondary disabled" title="Login to bookmark books"><i class="far fa-bookmark"></i> Bookmark</span> @* Icon added *@
                                     <span class="btn btn-sm btn-outline-secondary disabled" title="Login to add to cart"><i class="fas fa-shopping-cart"></i> Add to Cart</span> @* Icon added *@
-                                    <span class="btn btn-sm btn-outline-secondary disabled" title="Login to add to order"><i class="fas fa-truck"></i> Add to Order</span> @* Icon added *@
                                 }
                              </div>
                              <small class="text-muted"><i class="fas fa-calendar-alt me-1"></i> Added: @item.DateAdded.ToString("yyyy-MM-dd")</small> @* Icon added *@
