@@ -1,0 +1,58 @@
+@model IEnumerable<FinalProject.ViewModels.BookmarkViewModel>
+
+@{
+    ViewData["Title"] = "My Bookmarked Books";
+}
+
+<h1>My Bookmarked Books</h1>
+
+@if (Model == null || !Model.Any())
+{
+    <p>You haven't bookmarked any books yet.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            @* Updated headers to match BookmarkViewModel properties *@
+            <th>
+                Book Title
+            </th>
+            <th>
+                Author
+            </th>
+            <th>
+                Date Bookmarked
+            </th>
+            <th></th> @* Column for actions *@
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                @* Display Book Title from ViewModel *@
+                <td>
+                    @Html.DisplayFor(modelItem => item.BookTitle)
+                </td>
+                @* Display Author Name from ViewModel *@
+                <td>
+                    @Html.DisplayFor(modelItem => item.BookAuthorName)
+                </td>
+                @* Display Bookmark Date from ViewModel *@
+                <td>
+                    @Html.DisplayFor(modelItem => item.DateAddedDisplay)
+                </td>
+                <td>
+                    @* Link to view Book Details using BookId from ViewModel *@
+                    <a asp-controller="Book" asp-action="Details" asp-route-id="@item.BookId">Details</a> |
+                    @* Placeholder for a "Remove Bookmark" action *@
+                    @* You would typically use a form or JavaScript POST to remove a bookmark for security *@
+                    @* <a asp-controller="Bookmark" asp-action="Remove" asp-route-id="@item.BookmarkId">Remove</a> *@
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
