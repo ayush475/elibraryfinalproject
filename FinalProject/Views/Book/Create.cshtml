@@ -1,127 +1,321 @@
 @model FinalProject.Models.Book
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Create Book"; // Updated title
+    // Define color variables based on the image's theme
+    var primaryColor = "#ff7f50"; // Coral/Orange from the button in the landing page image
+    var secondaryColor = "#4682b4"; // Steel Blue, a complementary color for accents
+    var backgroundColor = "#f8f9fa"; // Light grey background, common in clean UIs
+    var cardBg = "#ffffff"; // White background for the form card
+    var textColor = "#343a40"; // Dark grey for text
+    var lightTextColor = "#6c757d"; // Muted grey for labels and hints
+    var borderColor = "#ced4da"; // Light grey border
+    var successColor = "#28a745"; // Green for success/positive actions (if needed later)
+    var dangerColor = "#dc3545"; // Red for errors/danger
 }
 
-<h1>Create</h1>
+@* Apply basic body styles and form styling *******************************************@
+<style>
+    body {
+        font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* Clean sans-serif font */
+        background-color: @backgroundColor;
+        color: @textColor;
+        margin: 0;
+        padding: 0;
+        line-height: 1.6; /* Improved readability */
+    }
 
-<h4>Book</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Isbn" class="control-label"></label>
-                <input asp-for="Isbn" class="form-control" />
-                <span asp-validation-for="Isbn" class="text-danger"></span>
+    .container {
+        max-width: 800px; /* Limit form width for better readability */
+        margin: 40px auto; /* Center the container with margin */
+        padding: 20px;
+    }
+
+    .card {
+        background-color: @cardBg;
+        border: 1px solid @borderColor;
+        border-radius: 8px; /* Rounded corners for the card */
+        padding: 30px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    }
+
+    .card-title {
+        color: @textColor;
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 2rem;
+        text-align: center;
+    }
+
+    .form-group {
+        margin-bottom: 20px; /* More space between form groups */
+    }
+
+    .control-label {
+        display: block; /* Make labels block elements */
+        margin-bottom: 8px; /* Space below label */
+        font-weight: 600; /* Slightly bolder labels */
+        color: @lightTextColor; /* Muted color for labels */
+    }
+
+    .form-control {
+        display: block;
+        width: 100%;
+        padding: 10px 15px;
+        font-size: 1rem;
+        line-height: 1.5;
+        color: @textColor;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid @borderColor;
+        border-radius: 5px; /* Rounded corners for inputs */
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .form-control:focus {
+        border-color: lighten(@primaryColor, 10%); /* Highlight color on focus */
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(@primaryColor, 0.25); /* Subtle glow on focus */
+    }
+
+     select.form-control {
+         appearance: none; /* Remove default select arrow */
+         background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23343a40%22%20d%3D%22M287%2C114.7L159.3%2C242.5c-8.3%2C8.3-21.7%2C8.3-30%2C0L5.4%2C114.7c-8.3-8.3-8.3-21.7%2C0-30l13.7-13.7c8.3-8.3%2C21.7-8.3%2C30%2C0l114.6%2C114.6l114.6-114.6c8.3-8.3%2C21.7-8.3%2C30%2C0l13.7%2C13.7C295.3%2C93%2C295.3%2C106.4%2C287%2C114.7z%22%2F%3E%3C%2Fsvg%3E'); /* Custom arrow */
+         background-repeat: no-repeat;
+         background-position: right 10px top 50%;
+         background-size: 12px auto;
+     }
+
+
+    .form-check-input {
+        margin-top: 0.3em; /* Align checkbox better */
+        margin-left: -1.25rem; /* Standard Bootstrap alignment */
+    }
+
+    .form-check-label {
+         color: @lightTextColor; /* Muted color for checkbox labels */
+    }
+
+    .text-danger {
+        color: @dangerColor; /* Red color for validation messages */
+        font-size: 0.875em; /* Slightly smaller font for errors */
+        margin-top: 5px;
+        display: block; /* Ensure validation message is on its own line */
+    }
+
+    .btn-primary {
+        color: #fff;
+        background-color: @primaryColor;
+        border-color: @primaryColor;
+        padding: 10px 20px;
+        font-size: 1.1rem;
+        border-radius: 5px; /* Rounded button */
+        transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .btn-primary:hover {
+        background-color: darken(@primaryColor, 10%); /* Darken on hover */
+        border-color: darken(@primaryColor, 12%);
+    }
+
+    .btn-primary:focus {
+        box-shadow: 0 0 0 0.25rem rgba(@primaryColor, 0.25); /* Subtle glow on focus */
+    }
+
+    .back-link {
+        display: block; /* Make the link a block element */
+        margin-top: 20px;
+        text-align: center;
+        color: @secondaryColor; /* Use secondary color for the link */
+        text-decoration: none;
+        font-size: 1rem;
+        transition: color 0.2s ease;
+    }
+
+    .back-link:hover {
+        color: darken(@secondaryColor, 10%); /* Darken on hover */
+        text-decoration: underline;
+    }
+
+     /* Optional: Improve layout for date inputs if they are HTML5 type="date" */
+    input[type="date"].form-control {
+        /* Specific styles for date inputs if needed */
+    }
+
+</style>
+
+@* Main content container and card *******************************************@
+<div class="container">
+    <div class="card">
+        <h1 class="card-title">Create Book</h1>
+
+        <div class="row">
+            <div class="col-md-12"> @* Use full width column within the card *@
+                @* Updated asp-action to point to the new method *@
+                <form asp-action="CreateBookPost" asp-controller="Book" method="post">
+                    @* FIX: Added Anti-Forgery Token *@
+                    @* @Html.AntiForgeryToken() *@
+
+                    @* Keep validatiaon summary as is *@
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    @* Wrap form groups for potential future layout improvements (optional) *@
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label asp-for="Isbn" class="control-label"></label>
+                            <input asp-for="Isbn" class="form-control" />
+                            <span asp-validation-for="Isbn" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="Title" class="control-label"></label>
+                            <input asp-for="Title" class="form-control" />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="Description" class="control-label"></label>
+                            <input asp-for="Description" class="form-control" />
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="CoverImageUrl" class="control-label"></label>
+                            <input asp-for="CoverImageUrl" class="form-control" />
+                            <span asp-validation-for="CoverImageUrl" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="PublicationDate" class="control-label"></label>
+                            <input asp-for="PublicationDate" class="form-control" />
+                            <span asp-validation-for="PublicationDate" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="ListPrice" class="control-label"></label>
+                            <input asp-for="ListPrice" class="form-control" />
+                            <span asp-validation-for="ListPrice" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                     @* Grouping dropdowns for potential layout *@
+                     <div class="form-section">
+                        <div class="form-group">
+                            <label asp-for="AuthorId" class="control-label"></label>
+                            <select asp-for="AuthorId" class ="form-control" asp-items="ViewBag.AuthorId"></select>
+                             <span asp-validation-for="AuthorId" class="text-danger"></span> @* Added validation span *@
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="PublisherId" class="control-label"></label>
+                            <select asp-for="PublisherId" class ="form-control" asp-items="ViewBag.PublisherId"></select>
+                             <span asp-validation-for="PublisherId" class="text-danger"></span> @* Added validation span *@
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="GenreId" class="control-label"></label>
+                            <select asp-for="GenreId" class ="form-control" asp-items="ViewBag.GenreId"></select>
+                             <span asp-validation-for="GenreId" class="text-danger"></span> @* Added validation span *@
+                        </div>
+                    </div>
+
+                     @* More fields *@
+                     <div class="form-section">
+                        <div class="form-group">
+                            <label asp-for="Language" class="control-label"></label>
+                            <input asp-for="Language" class="form-control" />
+                            <span asp-validation-for="Language" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="Format" class="control-label"></label>
+                            <input asp-for="Format" class="form-control" />
+                            <span asp-validation-for="Format" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="AvailabilityStock" class="control-label"></label>
+                            <input asp-for="AvailabilityStock" class="form-control" />
+                            <span asp-validation-for="AvailabilityStock" class="text-danger"></span>
+                        </div>
+                        <div class="form-group form-check">
+                            <label class="form-check-label">
+                                <input class="form-check-input" asp-for="AvailabilityLibrary" /> @Html.DisplayNameFor(model => model.AvailabilityLibrary)
+                            </label>
+                             <span asp-validation-for="AvailabilityLibrary" class="text-danger"></span> @* Added validation span *@
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="Rating" class="control-label"></label>
+                            <input asp-for="Rating" class="form-control" />
+                            <span asp-validation-for="Rating" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="RatingCount" class="control-label"></label>
+                            <input asp-for="RatingCount" class="form-control" />
+                            <span asp-validation-for="RatingCount" class="text-danger"></span>
+                        </div>
+                         <div class="form-group form-check">
+                            <label class="form-check-label">
+                                <input class="form-check-input" asp-for="OnSale" /> @Html.DisplayNameFor(model => model.OnSale)
+                            </label>
+                             <span asp-validation-for="OnSale" class="text-danger"></span> @* Added validation span *@
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="SaleDiscount" class="control-label"></label>
+                            <input asp-for="SaleDiscount" class="form-control" />
+                            <span asp-validation-for="SaleDiscount" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="SaleStartDate" class="control-label"></label>
+                            <input asp-for="SaleStartDate" class="form-control" />
+                            <span asp-validation-for="SaleStartDate" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="SaleEndDate" class="control-label"></label>
+                            <input asp-for="SaleEndDate" class="form-control" />
+                            <span asp-validation-for="SaleEndDate" class="text-danger"></span>
+                        </div>
+                        @* Removed DateAdded and DateUpdated input fields - these should be set automatically in the backend *@
+                        @*
+                        <div class="form-group">
+                            <label asp-for="DateAdded" class="control-label"></label>
+                            <input asp-for="DateAdded" class="form-control" />
+                            <span asp-validation-for="DateAdded" class="text-danger"></span>
+                        </div>
+                        <div class="form-group">
+                            <label asp-for="DateUpdated" class="control-label"></label>
+                            <input asp-for="DateUpdated" class="form-control" />
+                            <span asp-validation-for="DateUpdated" class="text-danger"></span>
+                        </div>
+                        *@
+                         @* Keep validation spans in case of backend validation errors *@
+                         <span asp-validation-for="DateAdded" class="text-danger"></span>
+                         <span asp-validation-for="DateUpdated" class="text-danger"></span>
+                    </div>
+
+
+                    @* Submit Button *@
+                    <div class="form-group mt-4"> @* Added margin top *@
+                        <input type="submit" value="Create" class="btn btn-primary" />
+                    </div>
+                </form>
             </div>
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Description" class="control-label"></label>
-                <input asp-for="Description" class="form-control" />
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CoverImageUrl" class="control-label"></label>
-                <input asp-for="CoverImageUrl" class="form-control" />
-                <span asp-validation-for="CoverImageUrl" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="PublicationDate" class="control-label"></label>
-                <input asp-for="PublicationDate" class="form-control" />
-                <span asp-validation-for="PublicationDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="ListPrice" class="control-label"></label>
-                <input asp-for="ListPrice" class="form-control" />
-                <span asp-validation-for="ListPrice" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="AuthorId" class="control-label"></label>
-                <select asp-for="AuthorId" class ="form-control" asp-items="ViewBag.AuthorId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="PublisherId" class="control-label"></label>
-                <select asp-for="PublisherId" class ="form-control" asp-items="ViewBag.PublisherId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="GenreId" class="control-label"></label>
-                <select asp-for="GenreId" class ="form-control" asp-items="ViewBag.GenreId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="Language" class="control-label"></label>
-                <input asp-for="Language" class="form-control" />
-                <span asp-validation-for="Language" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Format" class="control-label"></label>
-                <input asp-for="Format" class="form-control" />
-                <span asp-validation-for="Format" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="AvailabilityStock" class="control-label"></label>
-                <input asp-for="AvailabilityStock" class="form-control" />
-                <span asp-validation-for="AvailabilityStock" class="text-danger"></span>
-            </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="AvailabilityLibrary" /> @Html.DisplayNameFor(model => model.AvailabilityLibrary)
-                </label>
-            </div>
-            <div class="form-group">
-                <label asp-for="Rating" class="control-label"></label>
-                <input asp-for="Rating" class="form-control" />
-                <span asp-validation-for="Rating" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="RatingCount" class="control-label"></label>
-                <input asp-for="RatingCount" class="form-control" />
-                <span asp-validation-for="RatingCount" class="text-danger"></span>
-            </div>
-            <div class="form-group form-check">
-                <label class="form-check-label">
-                    <input class="form-check-input" asp-for="OnSale" /> @Html.DisplayNameFor(model => model.OnSale)
-                </label>
-            </div>
-            <div class="form-group">
-                <label asp-for="SaleDiscount" class="control-label"></label>
-                <input asp-for="SaleDiscount" class="form-control" />
-                <span asp-validation-for="SaleDiscount" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="SaleStartDate" class="control-label"></label>
-                <input asp-for="SaleStartDate" class="form-control" />
-                <span asp-validation-for="SaleStartDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="SaleEndDate" class="control-label"></label>
-                <input asp-for="SaleEndDate" class="form-control" />
-                <span asp-validation-for="SaleEndDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="DateAdded" class="control-label"></label>
-                <input asp-for="DateAdded" class="form-control" />
-                <span asp-validation-for="DateAdded" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="DateUpdated" class="control-label"></label>
-                <input asp-for="DateUpdated" class="form-control" />
-                <span asp-validation-for="DateUpdated" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+        </div>
+    </div>
+
+    @* Back to List Link *@
+    <div>
+        <a asp-action="Index" class="back-link">Back to List</a>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
 
+@* Notes:
+1.  This code includes inline <style> tags for demonstration purposes. For a production application, it's best practice to move these styles to a separate CSS file (e.g., wwwroot/css/forms.css or wwwroot/css/book-forms.css) and link it in your _Layout.cshtml file.
+2.  This example uses Bootstrap 5 grid classes (`container`, `row`, `col-md-12`) and utility classes (`mt-4`). Ensure you have Bootstrap included in your project's _Layout.cshtml file.
+3.  The color variables are defined based on the provided bookstore UI images. You can adjust these to perfectly match your desired palette.
+4.  Basic styling is applied to the body, a container is used to center and limit the form width, and the form is wrapped in a 'card' div for a visually distinct section.
+5.  Form elements (labels, inputs, selects, checkboxes, validation messages) are styled to have a cleaner look with rounded corners, subtle borders, and appropriate spacing, aligning with the professional vibe.
+6.  The submit button is styled using the primary color from the image and given rounded corners.
+7.  The "Back to List" link is styled separately and centered below the form card.
+8.  Added `<span>` tags for validation messages for the dropdown lists and the boolean checkboxes, as these were missing in the original code, which is important for displaying validation errors for those fields.
+9.  Removed the <label> and <input> tags for `DateAdded` and `DateUpdated` as these fields should be populated automatically by your backend code when a book is created or updated.
+10. Kept the validation spans for `DateAdded` and `DateUpdated` in case of backend validation errors.
+11. The `@section Scripts` for validation is kept as is, as it's necessary for client-side validation.
+12. **FIX:** Added `method="post"` to the form tag.
+13. **FIX:** Explicitly added `@Html.AntiForgeryToken()` inside the form tag.
+*@

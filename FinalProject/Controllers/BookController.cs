@@ -342,27 +342,57 @@ private async Task GetAndSetUserSpecificBookViewDataAsync(int bookId, ClaimsPrin
         // POST: Book/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+              // POST: Book/Create
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("BookId,Isbn,Title,Description,CoverImageUrl,PublicationDate,ListPrice,AuthorId,PublisherId,GenreId,Language,Format,AvailabilityStock,AvailabilityLibrary,Rating,RatingCount,OnSale,SaleDiscount,SaleStartDate,SaleEndDate,DateAdded,DateUpdated")] Book book)
+        // [ValidateAntiForgeryToken] // Ensures the request includes a valid anti-forgery token
+        // [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Add this if only admins should create books
+        public async Task<IActionResult> CreateBookPost([Bind("Isbn,Title,Description,CoverImageUrl,PublicationDate,ListPrice,AuthorId,PublisherId,GenreId,Language,Format,AvailabilityStock,AvailabilityLibrary,Rating,RatingCount,OnSale,SaleDiscount,SaleStartDate,SaleEndDate")] Book book)
         {
+            // Check if the submitted data is valid according to the model's data annotations
             if (ModelState.IsValid)
             {
-                // Set DateAdded and DateUpdated when creating a new book
+                // Set creation and update timestamps
                 book.DateAdded = DateTime.Now;
                 book.DateUpdated = DateTime.Now;
+
+                // Add the new book entity to the database context
                 _context.Add(book);
+
+                // Save the changes to the database asynchronously
                 await _context.SaveChangesAsync();
+
+                // Redirect to the Index action upon successful creation
                 return RedirectToAction(nameof(Index));
             }
-            // Add null checks for Author properties when creating SelectList (Fixes CS8602 warning)
-            ViewData["AuthorId"] = new SelectList(_context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName).Select(a => new { a.AuthorId, FullName = $"{a.FirstName ?? ""} {a.LastName ?? ""}".Trim() }), "AuthorId", "FullName", book.AuthorId);
-            ViewData["GenreId"] = new SelectList(_context.Genres.OrderBy(g => g.Name), "GenreId", "Name", book.GenreId);
-            ViewData["PublisherId"] = new SelectList(_context.Publishers.OrderBy(p => p.Name), "PublisherId", "Name", book.PublisherId);
-            return View(book);
+
+            // If ModelState is not valid, repopulate ViewBag for dropdowns
+            // This is necessary so the Create view can display the dropdowns correctly
+            // when returning due to validation errors.
+            ViewData["AuthorId"] = new SelectList(
+                _context.Authors.OrderBy(a => a.LastName).ThenBy(a => a.FirstName).Select(a => new { a.AuthorId, FullName = $"{a.FirstName ?? ""} {a.LastName ?? ""}".Trim() }),
+                "AuthorId",
+                "FullName",
+                book.AuthorId); // Pass the selected AuthorId back to the view
+
+            ViewData["GenreId"] = new SelectList(
+                _context.Genres.OrderBy(g => g.Name),
+                "GenreId",
+                "Name",
+                book.GenreId); // Pass the selected GenreId back to the view
+
+            ViewData["PublisherId"] = new SelectList(
+                _context.Publishers.OrderBy(p => p.Name),
+                "PublisherId",
+                "Name",
+                book.PublisherId); // Pass the selected PublisherId back to the view
+
+            // Return the view with the book object to display validation errors
+            return View("Create", book); // Explicitly specify the "Create" view name
         }
 
-        // GET: Book/Edit/5
+ // GET: Book/Edit/5
         [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
 
         public async Task<IActionResult> Edit(int? id)
