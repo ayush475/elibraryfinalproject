@@ -115,6 +115,16 @@
         background-color: darken(#dc3545, 10%);
     }
 
+    /* Added style for view button */
+     .sidebar-nav button.view-btn {
+        background-color: @accentColor; /* Using accent color for view */
+        color: white;
+    }
+
+     .sidebar-nav button.view-btn:hover {
+        background-color: darken(@accentColor, 10%);
+     }
+
 
     .main-content {
         flex-grow: 1; /* Allow main content to fill the remaining space */
@@ -234,15 +244,25 @@
             @* Edit Book with ID Input *@
             <li>
                 <a href="#" class="sidebar-link"><i class="fas fa-edit"></i> Edit Book</a>
-                <input type="text" class="book-id-input" placeholder="ID" data-action="edit">
-                <button class="edit-btn" data-action="edit">Go</button>
+                <input type="text" class="item-id-input" placeholder="ID" data-action="edit-book">
+                <button class="edit-btn" data-action="edit-book">Go</button>
             </li>
 
             @* Delete Book with ID Input *@
             <li>
                 <a href="#" class="sidebar-link"><i class="fas fa-trash-alt"></i> Delete Book</a>
-                <input type="text" class="book-id-input" placeholder="ID" data-action="delete">
-                <button class="delete-btn" data-action="delete">Go</button>
+                <input type="text" class="item-id-input" placeholder="ID" data-action="delete-book">
+                <button class="delete-btn" data-action="delete-book">Go</button>
+            </li>
+
+            @* Manage Announcements Link *@
+             <li><a href="/announcement"><i class="fas fa-bullhorn"></i> Manage Announcements</a></li>
+
+            @* View Specific Announcement with ID Input *@
+            <li>
+                <a href="#" class="sidebar-link"><i class="fas fa-eye"></i> View Announcement</a>
+                <input type="text" class="item-id-input" placeholder="ID" data-action="view-announcement">
+                <button class="view-btn" data-action="view-announcement">Go</button>
             </li>
         </ul>
 
@@ -265,7 +285,7 @@
         </div>
 
         <p>
-            Welcome to the Admin Dashboard prototype. Use the links in the sidebar to navigate to different sections. For editing or deleting a book, enter the Book ID next to the respective link and click "Go".
+            Welcome to the Admin Dashboard prototype. Use the links in the sidebar to navigate to different sections. For editing or deleting a book, or viewing a specific announcement, enter the ID next to the respective link and click "Go".
         </p>
 
         @* Few Static Cards with Key Metrics *********************************@
@@ -315,8 +335,6 @@
                     <td>@Html.DisplayFor(modelItem => item.Username)</td>
                     <td>@Html.DisplayFor(modelItem => item.Email)</td>
                     <td>@Html.DisplayFor(modelItem => item.FullName)</td>
-                    <td>@Html.DisplayFor(modelItem => item.LastLogin)</td>
-                    <td>@Html.DisplayFor(modelItem => item.DateAdded)</td>
                     <td>@Html.DisplayFor(modelItem => item.DateUpdated)</td>
                     <td>
                         <a asp-action="Edit" asp-route-id="@item.AdminId">Edit</a> |
@@ -335,25 +353,38 @@
 @* JavaScript for handling ID input and navigation ***************************@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Get all 'Go' buttons for edit and delete
+        // Get all 'Go' buttons for different actions
         const goButtons = document.querySelectorAll('.sidebar-nav button[data-action]');
 
         goButtons.forEach(button => {
             button.addEventListener('click', function () {
-                const action = this.getAttribute('data-action'); // 'edit' or 'delete'
+                const action = this.getAttribute('data-action'); // 'edit-book', 'delete-book', or 'view-announcement'
                 // Find the input field associated with this button's action
-                const input = this.closest('li').querySelector(`.book-id-input[data-action="${action}"]`);
+                const input = this.closest('li').querySelector(`.item-id-input[data-action="${action}"]`);
 
                 if (input) {
-                    const bookId = input.value.trim(); // Get the entered ID and remove whitespace
+                    const itemId = input.value.trim(); // Get the entered ID and remove whitespace
 
-                    if (bookId) {
-                        // Construct the URL and navigate
-                        const url = `/book/${action}/${bookId}`;
-                        window.location.href = url; // Navigate to the constructed URL
+                    if (itemId) {
+                        let url = '';
+                        // Construct the URL based on the action
+                        if (action === 'edit-book') {
+                            url = `/book/edit/${itemId}`;
+                        } else if (action === 'delete-book') {
+                            url = `/book/delete/${itemId}`;
+                        } else if (action === 'view-announcement') {
+                            url = `/announcement/details/${itemId}`;
+                        }
+
+                        if (url) {
+                           window.location.href = url; // Navigate to the constructed URL
+                        } else {
+                           // Should not happen with the current logic, but good for safety
+                           console.error('Invalid action or URL not constructed.');
+                        }
                     } else {
-                        // Optionally, provide feedback to the user if the ID is empty
-                        alert(`Please enter a Book ID to ${action}.`); // Using alert for simplicity in prototype
+                        // Provide feedback to the user if the ID is empty
+                        alert(`Please enter an ID to perform the ${action.replace('-', ' ')} action.`); // Using alert for simplicity
                     }
                 }
             });
@@ -368,7 +399,11 @@
 4.  The areas for graphs are static placeholders (`div` elements with dashed borders and text). To display actual dynamic charts, you would need to integrate a JavaScript charting library (such as Chart.js, Plotly.js, or ApexCharts) and write code to fetch and render data within these placeholder divs.
 5.  The `@model` directive is retained, but the code to display a list of admins from the model is kept commented out to align with the request for a more static initial view. You can uncomment and style this table if you need to display dynamic data later.
 6.  Added input fields and "Go" buttons next to the "Edit Book" and "Delete Book" links.
-7.  Included a simple JavaScript block that listens for clicks on the "Go" buttons, reads the value from the corresponding input field, and navigates to the appropriate URL (`/book/edit/{id}` or `/book/delete/{id}`).
+7.  Included a simple JavaScript block that listens for clicks on the "Go" buttons, reads the value from the corresponding input field, and navigates to the appropriate URL (`/book/edit/{id}`, `/book/delete/{id}`, or `/announcement/{id}`).
 8.  Added basic styling for the input fields and buttons within the sidebar.
 9.  Included a basic alert for demonstration if the ID input is empty. In a real application, you might use a more user-friendly notification method.
+10. Added two new list items in the sidebar-nav for Announcements: "Manage Announcements" linking to `/announcement` and "View Announcement" with an ID input and a "Go" button linking to `/announcement/{id}`.
+11. Updated the JavaScript to handle the "view-announcement" action, constructing the correct URL based on the entered ID.
+12. Added a new CSS class `.view-btn` and styling for the "Go" button associated with viewing announcements.
+13. Renamed the input class from `.book-id-input` to `.item-id-input` to be more generic for handling different item types (books, announcements). Updated the JavaScript selector accordingly.
 *@

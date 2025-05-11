@@ -1,60 +1,165 @@
 @model FinalProject.Models.Announcement
 
 @{
-    ViewData["Title"] = "Details";
+    ViewData["Title"] = "Announcement Details"; // Adjusted title for clarity
 }
 
-<h1>Details</h1>
+@* Add a style block for CSS rules *@
+<style>
+    body {
+        font-family: 'Inter', sans-serif; /* Sans-serif font, Inter suggested */
+        background-color: #f2f4f8; /* Light purple/blue from reference */
+        margin: 0;
+        padding: 0;
+    }
 
-<div>
-    <h4>Announcement</h4>
+    .container {
+        max-width: 800px; /* Limit width for better readability */
+        margin: 20px auto; /* Center the container with margin */
+        padding: 30px; /* Increased padding */
+        background-color: #ffffff; /* White background for the content area */
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1); /* Soft shadow for depth */
+    }
+
+    .ui-heading {
+        color: #333; /* Dark grey for text */
+        font-size: 2.5em; /* Large heading size */
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .details-list dt {
+        font-weight: bold; /* Make definition terms bold */
+        color: #555; /* Slightly lighter text */
+        margin-bottom: 8px; /* Space below term */
+    }
+
+    .details-list dd {
+        margin-bottom: 15px; /* Space below definition description */
+        color: #333; /* Dark grey text */
+        padding-left: 10px; /* Indent description slightly */
+    }
+
+    .details-list hr {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        border: 0;
+        border-top: 1px solid #eee; /* Light separator line */
+    }
+
+    .actions-container {
+        margin-top: 30px; /* Space above action links */
+        text-align: center; /* Center the action links */
+    }
+
+    .ui-button {
+        display: inline-block;
+        background-color: #ff8a65; /* Coral/Orange button color for Edit */
+        color: white;
+        padding: 10px 20px; /* Adjusted padding for button */
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 1em;
+        transition: background-color 0.3s ease; /* Smooth transition on hover */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Added shadow */
+        border: none; /* Remove default button border */
+        cursor: pointer; /* Indicate it's clickable */
+        margin: 0 10px; /* Space between buttons/links */
+    }
+
+    .ui-button:hover {
+        background-color: #ff7043; /* Slightly darker orange on hover */
+    }
+
+    .back-link {
+        display: inline-block; /* Make the link inline-block */
+        margin: 0 10px; /* Space between buttons/links */
+        color: #00a398; /* Teal/Green color for the link */
+        text-decoration: none;
+        font-size: 1em;
+        transition: color 0.3s ease;
+        padding: 10px 20px; /* Match padding of button */
+        border-radius: 5px; /* Match border-radius of button */
+         border: 1px solid transparent; /* Add transparent border for consistent spacing */
+    }
+
+    .back-link:hover {
+        text-decoration: underline; /* Underline on hover */
+        color: darken(#00a398, 10%); /* Slightly darker on hover */
+    }
+
+</style>
+
+@* Add a container div for the main content area *@
+<div class="container">
+
+    @* Apply heading style *@
+    <h1 class="ui-heading">Announcement Details</h1> @* Adjusted heading text *@
+
     <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
+    @* Apply styling to the description list *@
+    <dl class="row details-list">
+        <dt class = "col-sm-3"> @* Adjusted column width for terms *@
             @Html.DisplayNameFor(model => model.Title)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class = "col-sm-9"> @* Adjusted column width for descriptions *@
             @Html.DisplayFor(model => model.Title)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class = "col-sm-3">
             @Html.DisplayNameFor(model => model.Message)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class = "col-sm-9">
             @Html.DisplayFor(model => model.Message)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class = "col-sm-3">
             @Html.DisplayNameFor(model => model.StartTime)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class = "col-sm-9">
             @Html.DisplayFor(model => model.StartTime)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class = "col-sm-3">
             @Html.DisplayNameFor(model => model.EndTime)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class = "col-sm-9">
             @Html.DisplayFor(model => model.EndTime)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class = "col-sm-3">
             @Html.DisplayNameFor(model => model.IsActive)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class = "col-sm-9">
             @Html.DisplayFor(model => model.IsActive)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class = "col-sm-3">
             @Html.DisplayNameFor(model => model.DateAdded)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class = "col-sm-9">
             @Html.DisplayFor(model => model.DateAdded)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class = "col-sm-3">
             @Html.DisplayNameFor(model => model.DateUpdated)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class = "col-sm-9">
             @Html.DisplayFor(model => model.DateUpdated)
         </dd>
     </dl>
-</div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.AnnouncementId">Edit</a> |
-    <a asp-action="Index">Back to List</a>
-</div>
+
+    @* Container for action links *@
+    <div class="actions-container">
+        @* Style the Edit link as a button *@
+        <a asp-action="Edit" asp-route-id="@Model?.AnnouncementId" class="ui-button">Edit</a>
+        @* Style the Back to List link *@
+        <a asp-action="Index" class="back-link">Back to List</a>
+    </div>
+
+</div> @* Close the main container div *@
+
+@* Notes:
+1.  This code includes inline <style> tags for demonstration purposes. For a production application, it's best practice to move these styles to a separate CSS file (e.g., wwwroot/css/announcement-details.css) and link it in your _Layout.cshtml file.
+2.  The styling is adapted from the list and create views to provide a consistent look and feel.
+3.  Added specific styles for the description list (`dl`, `dt`, `dd`) to improve readability.
+4.  Wrapped action links in a container (`actions-container`) and centered them.
+5.  Styled the "Edit" link as a button using the `ui-button` class.
+6.  Styled the "Back to List" link using the `back-link` class.
+7.  Adjusted Bootstrap column classes (`col-sm-3`, `col-sm-9`) slightly for potentially better alignment in the details list. Ensure Bootstrap CSS is included in your project.
+*@

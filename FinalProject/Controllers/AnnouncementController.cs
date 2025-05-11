@@ -3,12 +3,15 @@ using Microsoft.EntityFrameworkCore;
 using FinalProject.Data;
 using FinalProject.Models;
 using Microsoft.AspNetCore.Authorization; // Required for [Authorize] and [AllowAnonymous]
+using FinalProject.ViewModels; // Required for AnnouncementListViewModel
+using System.Linq; // Required for Skip and Take
 
 namespace FinalProject.Controllers
 {
     // Apply Authorize attribute to the entire controller to require authentication
     // Only users authenticated with the "AdminCookieAuth" scheme and having the "Admin" role
     // can access actions within this controller, *unless* an action is marked with [AllowAnonymous].
+    // [Authorize(AuthenticationSchemes = "AdminCookieAuth", Roles = "Admin")] // You might want to uncomment this if you have Role-based authorization configured
     public class AnnouncementController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -57,15 +60,46 @@ namespace FinalProject.Controllers
         // GET: Announcement
         // This action is now protected by the [Authorize] attribute on the controller level.
         // Only authenticated admins with the "Admin" role can access this.
-        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can access admin actions
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 10) // Added pagination parameters
         {
-            return View(await _context.Announcements.ToListAsync());
+            // Ensure pageNumber is at least 1
+            pageNumber = pageNumber < 1 ? 1 : pageNumber;
+
+            // Get the total number of announcements
+            var totalAnnouncements = await _context.Announcements.CountAsync();
+
+            // Calculate the total number of pages
+            var totalPages = (int)Math.Ceiling(totalAnnouncements / (double)pageSize);
+
+            // Ensure pageNumber does not exceed totalPages
+            pageNumber = pageNumber > totalPages && totalPages > 0 ? totalPages : pageNumber;
+
+
+            // Get the announcements for the current page
+            var announcements = await _context.Announcements
+                                            .OrderBy(a => a.AnnouncementId) // Order by a relevant field for consistent pagination
+                                            .Skip((pageNumber - 1) * pageSize)
+                                            .Take(pageSize)
+                                            .ToListAsync();
+
+            // Create the ViewModel
+            var viewModel = new AnnouncementListViewModel
+            {
+                Announcements = announcements,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages
+            };
+
+            // Pass the ViewModel to the view
+            return View(viewModel);
         }
 
         // GET: Announcement/Details/5
         // This action is now protected by the [Authorize] attribute on the controller level.
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can access admin actions
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -90,7 +124,7 @@ namespace FinalProject.Controllers
         /// <returns>The Create view.</returns>
         [HttpGet]
         // This action is now protected by the [Authorize] attribute on the controller level.
-        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can access admin actions
 
         public IActionResult Create()
         {
@@ -102,7 +136,7 @@ namespace FinalProject.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can access admin actions
         public async Task<IActionResult> Create([Bind("AnnouncementId,Title,Message,StartTime,EndTime,IsActive")] Announcement announcement) // Removed DateAdded, DateUpdated from Bind as they should be set by the controller/model
         {
             if (ModelState.IsValid)
@@ -113,6 +147,8 @@ namespace FinalProject.Controllers
 
                 _context.Add(announcement);
                 await _context.SaveChangesAsync();
+                // Consider adding a success message to TempData here
+                TempData["SuccessMessage"] = "Announcement created successfully!";
                 return RedirectToAction(nameof(Index));
             }
             return View(announcement);
@@ -120,7 +156,7 @@ namespace FinalProject.Controllers
 
         // GET: Announcement/Edit/5
         // This action is now protected by the [Authorize] attribute on the controller level.
-        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can access admin actions
 
         public async Task<IActionResult> Edit(int? id)
         {
@@ -144,7 +180,7 @@ namespace FinalProject.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can access admin actions
 
         // This action is now protected by the [Authorize] attribute on the controller level.
         public async Task<IActionResult> Edit(int id, [Bind("AnnouncementId,Title,Message,StartTime,EndTime,IsActive")] Announcement announcement) // Removed DateAdded, DateUpdated from Bind
@@ -173,6 +209,8 @@ namespace FinalProject.Controllers
                     announcementToUpdate.DateUpdated = DateTime.Now; // Update DateUpdated
                     _context.Update(announcementToUpdate); // Mark as modified
                     await _context.SaveChangesAsync();
+                    // Consider adding a success message to TempData here
+                     TempData["SuccessMessage"] = "Announcement updated successfully!";
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -196,7 +234,7 @@ namespace FinalProject.Controllers
 
         // GET: Announcement/Delete/5
         // This action is now protected by the [Authorize] attribute on the controller level.
-        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can access admin actions
 
         public async Task<IActionResult> Delete(int? id)
         {
@@ -218,7 +256,7 @@ namespace FinalProject.Controllers
         // POST: Announcement/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can access admin actions
 
         // This action is now protected by the [Authorize] attribute on the controller level.
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -230,6 +268,8 @@ namespace FinalProject.Controllers
             }
 
             await _context.SaveChangesAsync();
+             // Consider adding a success message to TempData here
+             TempData["SuccessMessage"] = "Announcement deleted successfully!";
             return RedirectToAction(nameof(Index));
         }
 

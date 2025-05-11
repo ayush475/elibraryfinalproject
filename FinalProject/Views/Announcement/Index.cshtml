@@ -1,43 +1,224 @@
-@model IEnumerable<FinalProject.Models.Announcement>
+@* Now using the ViewModel for pagination *@
+@model FinalProject.ViewModels.AnnouncementListViewModel
 
 @{
-    ViewData["Title"] = "Index";
+ViewData["Title"] = "Announcements List"; // Adjusted title for clarity
 }
 
-<h1>Index</h1>
+@* Add a style block for CSS rules *@
+<style>
+    body {
+        font-family: 'Inter', sans-serif; /* Sans-serif font, Inter suggested */
+        background-color: #f2f4f8; /* Light purple/blue from reference */
+        margin: 0;
+        padding: 0;
+    }
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
+    .container {
+        max-width: 1200px; /* Limit content width */
+        margin: 20px auto; /* Center the container with margin */
+        padding: 20px;
+        background-color: #ffffff; /* White background for the content area */
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1); /* Soft shadow for depth */
+    }
+
+    .ui-heading {
+        color: #333; /* Dark grey for text */
+        font-size: 2.5em; /* Large heading size */
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .button-container {
+        text-align: center; /* Center the button */
+        margin-bottom: 20px;
+    }
+
+    .ui-button {
+        display: inline-block;
+        background-color: #ff8a65; /* Coral/Orange button color */
+        color: white;
+        padding: 12px 24px; /* Adjusted padding */
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        transition: background-color 0.3s ease; /* Smooth transition on hover */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Added shadow */
+        border: none; /* Remove default button border */
+        cursor: pointer; /* Indicate it's clickable */
+    }
+
+    .ui-button:hover {
+        background-color: #ff7043; /* Slightly darker orange on hover */
+    }
+
+    .ui-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px; /* Space above the table */
+    }
+
+    .ui-table thead tr {
+        background-color: #00a398; /* Teal/Green header background */
+        color: white;
+        text-align: left;
+    }
+
+    .ui-table th, .ui-table td {
+        padding: 15px; /* Increased padding for better spacing */
+        border-bottom: 1px solid #eee; /* Light border between rows/cells */
+    }
+
+    .ui-table th {
+        font-weight: bold; /* Ensure headers are bold */
+    }
+
+    .ui-table tbody tr:nth-child(even) {
+        background-color: #f9f9f9; /* Light grey for even rows */
+    }
+
+    .ui-table tbody tr:nth-child(odd) {
+        background-color: #ffffff; /* White for odd rows */
+    }
+
+    .ui-table tbody tr:hover {
+        background-color: #e0e0e0; /* Subtle hover effect */
+    }
+
+    .ui-table td:last-child {
+        text-align: center; /* Center action links */
+    }
+
+    .ui-table a {
+        text-decoration: none; /* Remove underline from links */
+        margin: 0 5px; /* Space between links */
+        transition: color 0.3s ease; /* Added transition for hover effect */
+    }
+
+    .ui-table a:hover {
+        text-decoration: underline; /* Add underline on hover for links */
+    }
+
+    /* Styling for action links based on the Order List page colors */
+    .ui-table a[asp-action="Edit"] {
+        color: #ff8a65; /* Coral/Orange for Edit */
+    }
+
+    .ui-table a[asp-action="Details"] {
+        color: #00a398; /* Teal/Green for Details */
+    }
+
+    .ui-table a[asp-action="Delete"] {
+        color: #e57373; /* Soft red for Delete */
+    }
+
+    /* Styling for pagination */
+    .pagination {
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .pagination a, .pagination span {
+        display: inline-block;
+        padding: 8px 16px;
+        margin: 0 4px;
+        color: #333;
+        text-decoration: none;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+    }
+
+    .pagination a:hover {
+        background-color: #ddd;
+    }
+
+    .pagination .active {
+        background-color: #00a398; /* Teal/Green for active page */
+        color: white;
+        border-color: #00a398;
+    }
+
+    .pagination .disabled {
+        color: #ccc;
+        pointer-events: none; /* Disable clicking */
+        border-color: #eee;
+    }
+
+    .pagination a i {
+        /* Style for icons within pagination links */
+        margin-right: 5px; /* Space between icon and text */
+    }
+
+    /* Style for the success message */
+    .alert-success {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 44px; /* More rounded corners */
+        color: #155724; /* Dark green text */
+        background-color: #d4edda; /* Light green background */
+        border-color: #c3e6cb; /* Green border */
+    }
+</style>
+
+@* Add a container div for the main content area *@
+<div class="container">
+
+    @* Apply heading style *@
+    <h1 class="ui-heading">Announcements</h1> @* Adjusted heading text *@
+
+    @* --- Add this section to display the success message from TempData --- *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+    <div class="alert alert-success" role="alert">
+        @TempData["SuccessMessage"]
+    </div>
+    }
+    @* --- End of success message section --- *@
+
+    @* Container for the button *@
+    <div class="button-container">
+        @* Style the "Create New" link as a button *@
+        <a asp-action="Create" class="ui-button">Create New Announcement</a> @* Adjusted link text and styled as a button *@
+    </div>
+
+    @* Apply table styling *@
+    <table class="table ui-table">
+        <thead>
+        @* Apply header row styling *@
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.Title)
+                @* DisplayNameFor now uses the Announcement model from the ViewModel's list property *@
+                @Html.DisplayNameFor(model => model.Announcements.FirstOrDefault().Title)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Message)
+                @Html.DisplayNameFor(model => model.Announcements.FirstOrDefault().Message)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.StartTime)
+                @Html.DisplayNameFor(model => model.Announcements.FirstOrDefault().StartTime)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.EndTime)
+                @Html.DisplayNameFor(model => model.Announcements.FirstOrDefault().EndTime)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.IsActive)
+                @Html.DisplayNameFor(model => model.Announcements.FirstOrDefault().IsActive)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.DateAdded)
+                @Html.DisplayNameFor(model => model.Announcements.FirstOrDefault().DateAdded)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.DateUpdated)
+                @Html.DisplayNameFor(model => model.Announcements.FirstOrDefault().DateUpdated)
             </th>
-            <th></th>
+            <th>Actions</th> @* Descriptive header for action column *@
         </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
+        </thead>
+        <tbody>
+        @* Loop through the list of Announcements within the ViewModel *@
+        @foreach (var item in Model.Announcements)
+        {
+        @* Apply alternating row colors for readability *@
         <tr>
             <td>
                 @Html.DisplayFor(modelItem => item.Title)
@@ -61,11 +242,67 @@
                 @Html.DisplayFor(modelItem => item.DateUpdated)
             </td>
             <td>
+                @* Style the action links *@
                 <a asp-action="Edit" asp-route-id="@item.AnnouncementId">Edit</a> |
                 <a asp-action="Details" asp-route-id="@item.AnnouncementId">Details</a> |
                 <a asp-action="Delete" asp-route-id="@item.AnnouncementId">Delete</a>
             </td>
         </tr>
-}
-    </tbody>
-</table>
+        }
+        </tbody>
+    </table>
+
+    @* Pagination Controls *@
+    <div class="pagination">
+        @* Link to the previous page *@
+        @{
+        var prevDisabled = !Model.Announcements.Any() || Model.PageNumber <= 1 ? "disabled" : "";
+        }
+        <a asp-action="Index"
+           asp-route-pageNumber="@(Model.PageNumber - 1)"
+           asp-route-pageSize="@Model.PageSize"
+           class="@prevDisabled">
+            <i class="fas fa-chevron-left"></i> Previous
+        </a>
+
+        @* Display page numbers *@
+        @for (int i = 1; i <= Model.TotalPages; i++)
+        {
+        var activeClass = i == Model.PageNumber ? "active" : "";
+        <a asp-action="Index"
+           asp-route-pageNumber="@i"
+           asp-route-pageSize="@Model.PageSize"
+           class="@activeClass">
+            @i
+        </a>
+        }
+
+        @* Link to the next page *@
+        @{
+        var nextDisabled = !Model.Announcements.Any() || Model.PageNumber >= Model.TotalPages ? "disabled" : "";
+        }
+        <a asp-action="Index"
+           asp-route-pageNumber="@(Model.PageNumber + 1)"
+           asp-route-pageSize="@Model.PageSize"
+           class="@nextDisabled">
+            Next <i class="fas fa-chevron-right"></i>
+        </a>
+    </div>
+
+</div> @* Close the main container div *@
+
+@* Notes:
+1.  This code includes inline <style> tags for demonstration purposes. For a production application, it's best practice to move these styles to a separate CSS file (e.g., wwwroot/css/announcement-list.css) and link it in your _Layout.cshtml file.
+2.  This view now expects a ViewModel named `AnnouncementListViewModel` which should contain:
+    -   `IEnumerable<FinalProject.Models.Announcement> Announcements`: The list of announcements for the current page.
+    -   `int PageNumber`: The current page number.
+    -   `int PageSize`: The number of items per page.
+    -   `int TotalPages`: The total number of pages.
+3.  The pagination links (`<a>` tags within the `.pagination` div) are generated using ASP.NET Core Tag Helpers (`asp-action`, `asp-route-pageNumber`, `asp-route-pageSize`) to navigate to the `Index` action of your Announcements controller, passing the requested page number and size.
+4.  The `disabled` class is added to the 'Previous' and 'Next' links when the user is on the first or last page, respectively, to visually indicate they are not clickable.
+5.  The `active` class is added to the link for the current page number to highlight it.
+6.  The success message display logic using `TempData["SuccessMessage"]` is included, similar to the Order List page.
+7.  The styling for the table, heading, and "Create New" button matches the styles used in the Order List view.
+8.  Added Font Awesome icons to the "Previous" (`<i class="fas fa-chevron-left"></i>`) and "Next" (`<i class="fas fa-chevron-right"></i>`) pagination links for enhanced UI.
+9.  Added a small margin-right to icons within pagination links for spacing.
+*@
