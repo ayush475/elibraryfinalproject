@@ -266,41 +266,52 @@
     </style>
 </head>
 <body>
-    <header>
-        <div class="logo">
-            <img src="https://placehold.co/40x40/6200ea/ffffff?text=Logo" alt="Bookstore Logo">
-            <span>Bookstore</span>
-        </div>
-        <nav>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">About</a></li>
-                <li><a href="#">Vision</a></li>
-                <li><a href="#">Contact Us</a></li>
-            </ul>
-        </nav>
-        <form asp-controller="Book" asp-action="Index" method="get" class="search-bar">
-            <input type="text" name="searchString" placeholder="Search">
-            <button type="submit">🔍</button>
-        </form>
-        <div class="user-actions">
-            <span>🔔</span>
-            @if (User.Identity.IsAuthenticated)
-            {
-                // If the user is authenticated, show something else, maybe a welcome message and a logout button
-                <a href="#" class="login-btn">Welcome, @User.Identity.Name!</a> 
-                <form asp-controller="Member" asp-action="Logout" method="post" id="logoutForm" class="form-inline">
-                    <button type="submit" class="signup-btn">Logout</button>
-                </form>
-            }
-            else
-            {
-                // If the user is not authenticated, show Login and Sign Up
-                <a asp-controller="Member" asp-action="Login" class="login-btn">LOGIN</a>
-                <a asp-controller="Member" asp-action="Register" class="signup-btn">Sign Up</a>
-            }
-        </div>
-    </header>
+<header>
+    
+    <div class="logo">
+       <a href="/home"> <img src="https://placehold.co/40x40/6200ea/ffffff?text=Logo" alt="Bookstore Logo"></a>
+     <a href="/book">   <span>Bookstore</span></a>
+    </div>
+    <nav>
+        <ul>
+            <li><a href="/home">Home</a></li>
+            <li><a href="/book">Book</a></li>
+            <li><a href="/privacy">Vision</a></li>
+            <li><a href="/book">Book</a></li>
+        </ul>
+    </nav>
+    <form asp-controller="Book" asp-action="Index" method="get" class="search-bar">
+        <input type="text" name="searchString" placeholder="Search">
+        <button type="submit">🔍</button>
+    </form>
+    <div class="user-actions">
+        @if (User.Identity.IsAuthenticated)
+        {
+            <div class="dropdown">
+                <span class="dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                    🔔
+                </span>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li><h6 class="dropdown-header">Welcome, @User.Identity.Name!</h6></li>
+                    <li><a class="dropdown-item" href="/shoppingcartitems/profile">My Profile</a></li>
+                    <li><a class="dropdown-item" href="/orders/profile">My Orders</a></li>
+                    <li><a class="dropdown-item" href="/bookmarks/mybookmark">My Bookmarks</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form asp-controller="Member" asp-action="Logout" method="post" id="logoutFormDropdown" class="dropdown-item">
+                            <button type="submit" class="btn btn-link p-0 border-0 bg-transparent text-decoration-none text-dark">Logout</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        }
+        else
+        {
+            <span>🔔</span> <a asp-controller="Member" asp-action="Login" class="login-btn">LOGIN</a>
+            <a asp-controller="Member" asp-action="Register" class="signup-btn">Sign Up</a>
+        }
+    </div>
+</header>
 
     <div class="container flex-grow-1 main-content">
         <main role="main" class="py-4">
