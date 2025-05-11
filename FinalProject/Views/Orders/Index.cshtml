@@ -1,46 +1,220 @@
-@model IEnumerable<FinalProject.Models.Order>
+@model FinalProject.ViewModels.OrderListViewModel
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Orders List"; // Adjusted title for clarity
 }
 
-<h1>Index</h1>
+@* Add a style block for CSS rules *@
+<style>
+    body {
+        font-family: 'Inter', sans-serif; /* Sans-serif font, Inter suggested */
+        background-color: #f2f4f8; /* Light purple/blue from reference */
+        margin: 0;
+        padding: 0;
+    }
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
+    .container {
+        max-width: 1200px; /* Limit content width */
+        margin: 20px auto; /* Center the container with margin */
+        padding: 20px;
+        background-color: #ffffff; /* White background for the content area */
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1); /* Soft shadow for depth */
+    }
+
+    .ui-heading {
+        color: #333; /* Dark grey for text */
+        font-size: 2.5em; /* Large heading size */
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .button-container {
+        text-align: center; /* Center the button */
+        margin-bottom: 20px;
+    }
+
+    .ui-button {
+        display: inline-block;
+        background-color: #ff8a65; /* Coral/Orange button color */
+        color: white;
+        padding: 12px 24px; /* Adjusted padding */
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        transition: background-color 0.3s ease; /* Smooth transition on hover */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Added shadow */
+        border: none; /* Remove default button border */
+        cursor: pointer; /* Indicate it's clickable */
+    }
+
+    .ui-button:hover {
+        background-color: #ff7043; /* Slightly darker orange on hover */
+    }
+
+    .ui-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px; /* Space above the table */
+    }
+
+    .ui-table thead tr {
+        background-color: #00a398; /* Teal/Green header background */
+        color: white;
+        text-align: left;
+    }
+
+    .ui-table th, .ui-table td {
+        padding: 15px; /* Increased padding for better spacing */
+        border-bottom: 1px solid #eee; /* Light border between rows/cells */
+    }
+
+    .ui-table th {
+        font-weight: bold; /* Ensure headers are bold */
+    }
+
+    .ui-table tbody tr:nth-child(even) {
+        background-color: #f9f9f9; /* Light grey for even rows */
+    }
+
+    .ui-table tbody tr:nth-child(odd) {
+        background-color: #ffffff; /* White for odd rows */
+    }
+
+    .ui-table tbody tr:hover {
+        background-color: #e0e0e0; /* Subtle hover effect */
+    }
+
+    .ui-table td:last-child {
+        text-align: center; /* Center action links */
+    }
+
+    .ui-table a {
+        text-decoration: none; /* Remove underline from links */
+        margin: 0 5px; /* Space between links */
+        transition: color 0.3s ease; /* Added transition for hover effect */
+    }
+
+    .ui-table a:hover {
+        text-decoration: underline; /* Add underline on hover for links */
+    }
+
+    .ui-table a[asp-action="AdminEditView"] { /* Updated action name for Edit link */
+        color: #ff8a65; /* Coral/Orange for Edit */
+    }
+
+    .ui-table a[asp-action="Details"] {
+        color: #00a398; /* Teal/Green for Details */
+    }
+
+    .ui-table a[asp-action="Delete"] {
+        color: #e57373; /* Soft red for Delete */
+    }
+
+    /* Styling for pagination */
+    .pagination {
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .pagination a, .pagination span {
+        display: inline-block;
+        padding: 8px 16px;
+        margin: 0 4px;
+        color: #333;
+        text-decoration: none;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+    }
+
+    .pagination a:hover {
+        background-color: #ddd;
+    }
+
+    .pagination .active {
+        background-color: #00a398; /* Teal/Green for active page */
+        color: white;
+        border-color: #00a398;
+    }
+
+    .pagination .disabled {
+        color: #ccc;
+        pointer-events: none; /* Disable clicking */
+        border-color: #eee;
+    }
+
+    /* Style for the success message */
+    .alert-success {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        color: #155724; /* Dark green text */
+        background-color: #d4edda; /* Light green background */
+        border-color: #c3e6cb; /* Green border */
+    }
+</style>
+
+@* Add a container div for the main content area *@
+<div class="container">
+
+    @* Apply heading style *@
+    <h1 class="ui-heading">Order List</h1> @* Adjusted heading text *@
+
+    @* --- Add this section to display the success message from TempData --- *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @* --- End of success message section --- *@
+
+    @* Container for the button *@
+    @* <div class="button-container"> *@
+    @* @* Style the "Create New" link as a button *@
+    @* <a asp-action="Create" class="ui-button">Create New Order</a> @* Adjusted link text and styled as a button *@
+    @* </div> *@
+
+    @* Apply table styling *@
+    <table class="table ui-table">
+        <thead>
+        @* Apply header row styling *@
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.OrderDate)
+                @* DisplayNameFor now uses the Order model from the ViewModel's list property *@
+                @Html.DisplayNameFor(model => model.Orders.FirstOrDefault().OrderDate)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.OrderStatus)
+                @Html.DisplayNameFor(model => model.Orders.FirstOrDefault().OrderStatus)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.TotalAmount)
+                @Html.DisplayNameFor(model => model.Orders.FirstOrDefault().TotalAmount)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.DiscountApplied)
+                @Html.DisplayNameFor(model => model.Orders.FirstOrDefault().DiscountApplied)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ClaimCode)
+                @Html.DisplayNameFor(model => model.Orders.FirstOrDefault().ClaimCode)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.DateAdded)
+                @Html.DisplayNameFor(model => model.Orders.FirstOrDefault().DateAdded)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.DateUpdated)
+                @Html.DisplayNameFor(model => model.Orders.FirstOrDefault().DateUpdated)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Member)
+                @Html.DisplayNameFor(model => model.Orders.FirstOrDefault().Member)
             </th>
-            <th></th>
+            <th>Actions</th> @* Descriptive header for action column *@
         </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
+        </thead>
+        <tbody>
+        @* Loop through the list of Orders within the ViewModel *@
+        @foreach (var item in Model.Orders)
+        {
+        @* Apply alternating row colors for readability *@
         <tr>
             <td>
                 @Html.DisplayFor(modelItem => item.OrderDate)
@@ -67,11 +241,51 @@
                 @Html.DisplayFor(modelItem => item.Member.MemberId)
             </td>
             <td>
-                <a asp-action="Edit" asp-route-id="@item.OrderId">Edit</a> |
+                @* Style the action links *@
+                <a asp-action="AdminEditView" asp-route-id="@item.OrderId">Edit</a> | @* Ensure this links to your AdminEditView GET action *@
                 <a asp-action="Details" asp-route-id="@item.OrderId">Details</a> |
                 <a asp-action="Delete" asp-route-id="@item.OrderId">Delete</a>
             </td>
         </tr>
-}
-    </tbody>
-</table>
+        }
+        </tbody>
+    </table>
+
+    @* Pagination Controls *@
+    <div class="pagination">
+        @* Link to the previous page *@
+        @{
+        var prevDisabled = !Model.Orders.Any() || Model.PageNumber <= 1 ? "disabled" : "";
+        }
+        <a asp-action="Index"
+           asp-route-pageNumber="@(Model.PageNumber - 1)"
+           asp-route-pageSize="@Model.PageSize"
+           class="@prevDisabled">
+            Previous
+        </a>
+
+        @* Display page numbers *@
+        @for (int i = 1; i <= Model.TotalPages; i++)
+        {
+        var activeClass = i == Model.PageNumber ? "active" : "";
+        <a asp-action="Index"
+           asp-route-pageNumber="@i"
+           asp-route-pageSize="@Model.PageSize"
+           class="@activeClass">
+            @i
+        </a>
+        }
+
+        @* Link to the next page *@
+        @{
+        var nextDisabled = !Model.Orders.Any() || Model.PageNumber >= Model.TotalPages ? "disabled" : "";
+        }
+        <a asp-action="Index"
+           asp-route-pageNumber="@(Model.PageNumber + 1)"
+           asp-route-pageSize="@Model.PageSize"
+           class="@nextDisabled">
+            Next
+        </a>
+    </div>
+
+</div> @* Close the main container div *@

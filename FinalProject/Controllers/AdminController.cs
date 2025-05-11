@@ -18,7 +18,7 @@ namespace FinalProject.Controllers
 {
     // Apply Authorize attribute to the entire controller to require authentication by default
     // Actions that should be publicly accessible will use [AllowAnonymous]
-    [Authorize(AuthenticationSchemes = AdminAuthScheme, Roles = "Admin")] // Require Admin role for most actions in this controller
+    [Authorize(AuthenticationSchemes = AdminAuthScheme)] // Require Admin role for most actions in this controller
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;

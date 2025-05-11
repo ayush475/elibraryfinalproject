@@ -1,0 +1,191 @@
+@model FinalProject.Models.Order
+
+@{
+    ViewData["Title"] = "Admin Edit Order"; // Set the page title
+    // If not using a specific admin layout, you might use your main layout
+    // or remove this line if layout is handled by _ViewStart.cshtml
+}
+
+@* Add a style block for CSS rules (using the styles from the previous Index view for consistency) *@
+<style>
+    body {
+        font-family: 'Inter', sans-serif; /* Sans-serif font, Inter suggested */
+        background-color: #f2f4f8; /* Light purple/blue from reference */
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        max-width: 800px; /* Adjusted max-width for an edit form */
+        margin: 20px auto; /* Center the container with margin */
+        padding: 20px;
+        background-color: #ffffff; /* White background for the content area */
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1); /* Soft shadow for depth */
+    }
+
+    .ui-heading {
+        color: #333; /* Dark grey for text */
+        font-size: 2em; /* Heading size */
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .form-group {
+        margin-bottom: 15px; /* Space between form groups */
+    }
+
+    .form-group label {
+        display: block; /* Label on its own line */
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #555; /* Slightly lighter color for labels */
+    }
+
+    .form-control {
+        width: 100%; /* Full width input */
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box; /* Include padding and border in element's total width and height */
+        font-size: 1em;
+    }
+
+    .form-control[readonly] {
+        background-color: #f0f0f0; /* Grey background for read-only fields */
+        cursor: not-allowed; /* Indicate not editable */
+    }
+
+    .ui-button {
+        display: inline-block;
+        background-color: #ff8a65; /* Coral/Orange button color */
+        color: white;
+        padding: 12px 24px; /* Adjusted padding */
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        transition: background-color 0.3s ease; /* Smooth transition on hover */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Added shadow */
+        border: none; /* Remove default button border */
+        cursor: pointer; /* Indicate it's clickable */
+    }
+
+    .ui-button:hover {
+        background-color: #ff7043; /* Slightly darker orange on hover */
+    }
+
+    .back-link {
+        display: block;
+        margin-top: 20px;
+        text-align: center;
+        color: #00a398; /* Teal/Green color for back link */
+        text-decoration: none;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+
+    .text-danger {
+        color: #e57373; /* Soft red for validation messages */
+        font-size: 0.9em;
+    }
+</style>
+
+<div class="container">
+
+    <h1 class="ui-heading">Edit Order</h1>
+
+    @* Form for editing the order *@
+    @* Using asp-route-id to include the OrderId in the POST URL. *@
+    <form asp-action="AdminEdit" asp-controller="Orders" asp-route-id="@Model.OrderId">
+        @* Include anti-forgery token for security *@
+        @Html.AntiForgeryToken()
+
+        @* Validation summary to display any model errors *@
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        @* Display Order Details (Read-Only) - These fields are NOT submitted back to the server *@
+        @* IMPORTANT CHANGE: Removed asp-for from readonly inputs to prevent them from being submitted. *@
+
+        <div class="form-group">
+            <label asp-for="OrderId"></label>
+            @* Display OrderId as read-only - value comes from the Model *@
+            <input value="@Model.OrderId" class="form-control" readonly />
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Member.MemberId"></label>
+            @* Display MemberId from the included Member navigation property *@
+            <input value="@Model.Member?.MemberId" class="form-control" readonly />
+        </div>
+
+        <div class="form-group">
+            <label asp-for="OrderDate"></label>
+            @* Removed asp-for, using value directly *@
+            <input value="@Model.OrderDate" class="form-control" readonly />
+        </div>
+
+        <div class="form-group">
+            <label asp-for="TotalAmount"></label>
+            @* Removed asp-for, using value directly *@
+            <input value="@Model.TotalAmount" class="form-control" readonly />
+        </div>
+
+        <div class="form-group">
+            <label asp-for="DiscountApplied"></label>
+            @* Removed asp-for, using value directly *@
+            <input value="@Model.DiscountApplied" class="form-control" readonly />
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ClaimCode"></label>
+            @* Removed asp-for, using value directly *@
+            <input value="@Model.ClaimCode" class="form-control" readonly />
+        </div>
+
+        <div class="form-group">
+            <label asp-for="DateAdded"></label>
+            @* Removed asp-for, using value directly *@
+            <input value="@Model.DateAdded" class="form-control" readonly />
+        </div>
+
+        <div class="form-group">
+            <label asp-for="DateUpdated"></label>
+            @* Removed asp-for, using value directly *@
+            <input value="@Model.DateUpdated" class="form-control" readonly />
+        </div>
+
+
+        @* Editable Field: Order Status *@
+        <div class="form-group">
+            <label asp-for="OrderStatus"></label>
+            @* Keep asp-for here, as this is the field we want to submit *@
+            <select asp-for="OrderStatus" class="form-control">
+                <option value="Pending">Pending</option>
+                <option value="Processing">Processing</option>
+                <option value="Shipped">Shipped</option>
+                <option value="Delivered">Delivered</option>
+                <option value="Cancelled">Cancelled</option>
+                @* Add other relevant status options here *@
+            </select>
+            <span asp-validation-for="OrderStatus" class="text-danger"></span> @* Display validation errors for OrderStatus *@
+        </div>
+
+        @* Submit Button *@
+        <div class="form-group">
+            <input type="submit" value="Save" class="ui-button" />
+        </div>
+    </form>
+
+    @* Link back to the Admin Order List *@
+    <div>
+        @* Updated asp-action and asp-controller to target the Index method in OrdersController *@
+        <a asp-action="Index" asp-controller="Orders" class="back-link">Back to List</a> @* Link back to the admin index action *@
+    </div>
+
+</div>
+
+@section Scripts {
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");} @* Include client-side validation scripts *@
+}

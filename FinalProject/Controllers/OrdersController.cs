@@ -15,7 +15,6 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace FinalProject.Controllers // Adjust namespace as needed
 {
-    [Authorize] // Ensure only authenticated users can access this controller's actions
     public class OrdersController : Controller // Renamed from OrderController to OrdersController based on user's provided code
     {
         private readonly ApplicationDbContext _context; // Replace ApplicationDbContext
@@ -88,30 +87,45 @@ namespace FinalProject.Controllers // Adjust namespace as needed
         // Optionally add [Authorize] here if only logged-in users should see their orders
         [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 10)
         {
-            // If you want to show only the logged-in user's orders:
-            // if (User.Identity.IsAuthenticated)
-            // {
-            //     var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            //     if (int.TryParse(memberIdString, out int memberId))
-            //     {
-            //         var memberOrders = await _context.Orders
-            //             .Include(o => o.Member)
-            //             .Where(o => o.MemberId == memberId)
-            //             .ToListAsync();
-            //         return View(memberOrders);
-            //     }
-            // }
-            // // Fallback for non-authenticated or if MemberId is missing (maybe show nothing or a message)
-            // // Or if this Index is for Admins, keep the original logic
-            // var applicationDbContext = _context.Orders.Include(o => o.Member);
-            // return View(await applicationDbContext.ToListAsync());
+            // Ensure pageNumber is at least 1
+            pageNumber = Math.Max(1, pageNumber);
+            // Ensure pageSize is within a reasonable range (optional, but good practice)
+            pageSize = Math.Max(1, pageSize); // Minimum page size of 1
+            pageSize = Math.Min(50, pageSize); // Maximum page size of 50 (adjust as needed)
 
-            // Keeping the original logic for now, assuming this Index might be for admins or show all
-            var applicationDbContext = _context.Orders.Include(o => o.Member);
-            return View(await applicationDbContext.ToListAsync());
+
+            // Get the total number of items
+            // Ensure this count is performed BEFORE Skip and Take
+            var totalItems = await _context.Orders.CountAsync();
+
+            // Calculate the number of items to skip
+            var skipCount = (pageNumber - 1) * pageSize;
+
+            // Retrieve the paginated data
+            var orders = await _context.Orders
+                .Include(o => o.Member) // Include related Member data as in your original code
+                .OrderBy(o => o.OrderId) // Add an OrderBy clause for consistent pagination (replace OrderId with a suitable column if needed)
+                .Skip(skipCount)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Create the ViewModel to pass data and pagination info to the view
+            var viewModel = new OrderListViewModel // Assuming you have a ViewModel named OrderListViewModel
+            {
+                Orders = orders,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalItems = totalItems
+                // TotalPages is calculated in the ViewModel based on TotalItems and PageSize
+            };
+
+            // Pass the ViewModel to the view
+            return View(viewModel);
         }
+
+
         //stepone ko barema
 
 public async Task<IActionResult> OrderStepOne()
@@ -668,9 +682,6 @@ public async Task<IActionResult> PlaceOrder()
             order.DateAdded = DateTime.UtcNow;
             order.DateUpdated = DateTime.UtcNow;
 
-            // Note: Discount and TotalAmount calculation should ideally happen based on OrderItems
-            // added *after* the order is created, or in a separate checkout process.
-            // This Create action as is, doesn't handle OrderItems.
 
             if (ModelState.IsValid)
             {
@@ -683,7 +694,7 @@ public async Task<IActionResult> PlaceOrder()
         }
 
         // GET: Orders/Edit/5
-        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] 
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -700,13 +711,180 @@ public async Task<IActionResult> PlaceOrder()
 
             return View(order);
         }
+       
+    //get:orders/admineditview/5
+    public async Task<IActionResult> AdminEditView(int? id)
+    {
+        // Check if an ID was provided
+        if (id == null)
+        {
+            return NotFound();
+        }
+
+        // Fetch the order from the database
+        // Include related entities if you need to display them in the admin edit view
+        var order = await _context.Orders
+            .Include(o => o.Member) // Include Member if you want to display member info
+            // .Include(o => o.OrderItems) // Include OrderItems if you want to display them
+            //    .ThenInclude(oi => oi.Book) // Include Book details for items if needed
+            .FirstOrDefaultAsync(m => m.OrderId == id);
+
+        // Check if the order was found
+        if (order == null)
+        {
+            return NotFound();
+        }
+
+        // No ownership check needed here for the admin view
+
+        // Pass the order model to the view
+        return View(order);
+    }
+    // POST: Orders/AdminEdit/5
+        // This action handles the form submission from AdminEditView to update the order status.
+        [HttpPost]
+        [ValidateAntiForgeryToken] // Protect against CSRF attacks
+
+   public async Task<IActionResult> AdminEdit(int id, [Bind("OrderId,OrderStatus")] Order order)
+{
+    Console.WriteLine("--- AdminEdit POST Action Start ---"); // Start of the method
+    Console.WriteLine($"1. Received id from route: {id}");
+    // Console.WriteLine($"2. Received order.OrderId from bound model: {order.OrderId}"); // Removed as order.OrderId is not used for ID check
+    Console.WriteLine($"3. Received order.OrderStatus from bound model: {order.OrderStatus}");
+
+    // The ID from the route (int id) is the authoritative identifier for the order.
+    // We no longer check if it matches order.OrderId from the bound model,
+    // as order.OrderId is not reliably populated from the form body after removing the hidden input.
+    // The check `if (id != order.OrderId)` is removed.
+
+    // Fetch the existing order from the database based on the route ID.
+    // This is crucial to get all the original data (MemberId, TotalAmount, etc.)
+    // and to ensure we are updating an existing entity tracked by the context.
+    // Include Member again here if you need it when returning the view on validation failure.
+    Console.WriteLine($"7. Fetching existing order with ID: {id} from database.");
+    var existingOrder = await _context.Orders
+                              .Include(o => o.Member) // Include Member if your view needs it for display on error
+                              // .Include(o => o.OrderItems) // Include OrderItems if your view displays them
+                              //    .ThenInclude(oi => oi.Book) // Include Book details for items if needed
+                              .FirstOrDefaultAsync(o => o.OrderId == id);
+    Console.WriteLine("8. Finished fetching existing order.");
+
+    // Check if the order was found in the database
+    Console.WriteLine("9. Checking if existing order was found.");
+    if (existingOrder == null)
+    {
+        Console.WriteLine("10. Existing order not found. Returning NotFound.");
+        // Log that the order was not found
+        // _logger.LogWarning("AdminEdit POST: Order with ID {OrderId} not found for editing.", id);
+        return NotFound(); // Order not found in the database
+    }
+    Console.WriteLine("11. Existing order found.");
+
+    // --- Update only the allowed properties from the submitted 'order' model ---
+    // This is done BEFORE checking ModelState.IsValid.
+    // If validation fails, existingOrder will contain the user's submitted status,
+    // allowing the view to redisplay it correctly.
+    Console.WriteLine($"12. Updating existingOrder.OrderStatus to: {order.OrderStatus}");
+    existingOrder.OrderStatus = order.OrderStatus;
+    Console.WriteLine("13. OrderStatus updated on existingOrder entity.");
+
+    // Check for model state validity before attempting to save.
+    // This primarily validates the OrderStatus field based on any model annotations.
+    Console.WriteLine("14. Checking ModelState.IsValid.");
+    if (ModelState.IsValid)
+    {
+        Console.WriteLine("15. ModelState is valid. Proceeding to save changes.");
+        try
+        {
+            Console.WriteLine("16. Inside try block.");
+            // existingOrder.OrderStatus is already updated above
+
+            // Update the DateUpdated timestamp to reflect the change
+            Console.WriteLine("17. Updating DateUpdated timestamp.");
+            existingOrder.DateUpdated = DateTime.UtcNow;
+            Console.WriteLine("18. DateUpdated timestamp updated.");
+
+            // Entity Framework is already tracking 'existingOrder' because we fetched it.
+            // It will detect the change to OrderStatus and DateUpdated.
+            // No need to explicitly set state to Modified.
+
+            Console.WriteLine("19. Calling _context.SaveChangesAsync().");
+            await _context.SaveChangesAsync(); // Save the changes to the database
+            Console.WriteLine("20. _context.SaveChangesAsync() completed.");
+
+            // Optional: Add a success message to TempData for display on the next page
+            Console.WriteLine("21. Adding success message to TempData.");
+            TempData["SuccessMessage"] = $"Order #{existingOrder.OrderId} status updated to {existingOrder.OrderStatus}.";
+            Console.WriteLine("22. Success message added to TempData.");
+
+            Console.WriteLine("23. Redirecting to Index action.");
+            // Redirect to the Admin Order List page after successful update.
+            // This follows the Post/Redirect/Get pattern.
+            return RedirectToAction(nameof(Index)); // Assuming Index is your admin list view
+            // Or redirect to an Admin Details page if you have one:
+            // return RedirectToAction(nameof(Details), new { id = existingOrder.OrderId });
+        }
+        catch (DbUpdateConcurrencyException concurrencyEx) // Catch specific concurrency exception
+        {
+            Console.WriteLine($"24. Caught DbUpdateConcurrencyException: {concurrencyEx.Message}");
+            // Handle concurrency issues if the order was changed by someone else
+            // Check if the order still exists (wasn't deleted concurrently)
+            Console.WriteLine($"25. Checking if order {order.OrderId} still exists."); // Note: order.OrderId will be 0 here
+            if (!OrderExists(id)) // Use the route 'id' here to check existence
+            {
+                Console.WriteLine("26. Order was concurrently deleted. Returning NotFound.");
+                // Log that the order was deleted concurrently
+                // _logger.LogWarning("AdminEdit POST: Order with ID {OrderId} was concurrently deleted during update attempt.", id);
+                return NotFound(); // Order was deleted by another process
+            }
+            else
+            {
+                Console.WriteLine("27. Other concurrency issue. Re-throwing exception.");
+                // Log other concurrency issues
+                // _logger.LogError("AdminEdit POST: Concurrency error updating order status for OrderId {OrderId}", id);
+                throw; // Re-throw the exception if it's a different concurrency issue
+            }
+        }
+        catch (Exception ex) // Catch any other unexpected errors during the save process
+        {
+            Console.WriteLine($"28. Caught general Exception: {ex.Message}");
+            // Log the exception (use your logging framework)
+            // _logger.LogError(ex, "AdminEdit POST: Error updating order status for OrderId {OrderId}", id);
+
+            // Add an error message to TempData
+            Console.WriteLine("29. Adding error message to TempData.");
+            TempData["ErrorMessage"] = "An error occurred while updating the order status. Please try again.";
+            Console.WriteLine("30. Error message added to TempData.");
+
+            // Return to the view to show the error.
+            // 'existingOrder' already has the user's submitted status and potentially validation errors.
+            // The .Include(o => o.Member) above ensures Member is available if needed by the view.
+            Console.WriteLine("31. Returning AdminEditView with existingOrder model.");
+            return View("AdminEditView", existingOrder); // Return the existing order (with user's status) to the view
+        }
+    }
+    else // if (ModelState.IsValid) is false
+    {
+        Console.WriteLine("32. ModelState is NOT valid. Falling through to return view.");
+        // If ModelState is NOT valid (e.g., validation error on OrderStatus), fall through here.
+        // 'existingOrder' now holds the original data + the user's submitted OrderStatus.
+        // The .Include(o => o.Member) above ensures Member is available if needed by the view.
+        // Validation errors will be displayed by asp-validation-summary and asp-validation-for tag helpers.
+        Console.WriteLine("33. Returning AdminEditView with existingOrder model (due to invalid model state).");
+        return View("AdminEditView", existingOrder); // Return the existing order (with user's status) to the view so user can correct input
+    }
+     // This line will only be reached if there's no valid return path above (shouldn't happen in this structure)
+    // Console.WriteLine("--- AdminEdit POST Action End (Unexpected Path) ---");
+    // return something appropriate if needed, though the above returns cover all cases.
+}
+
 
         // POST: Orders/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize] // Only authorized users can post to edit
+        [Authorize] 
         public async Task<IActionResult> Edit(int id, [Bind("OrderId,OrderDate,OrderStatus,TotalAmount,DiscountApplied,ClaimCode,DateAdded,DateUpdated")] Order order)
         {
             if (id != order.OrderId)
