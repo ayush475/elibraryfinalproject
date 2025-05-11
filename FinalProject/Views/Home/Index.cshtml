@@ -26,7 +26,7 @@
     .welcome-page-container {
         background: linear-gradient(180deg, #e0e7ff 0%, #f8f9fa 100%); /* Subtle gradient background */
         padding: 60px 20px; /* Increased padding */
-        min-height: calc(100vh - var(--header-height, 0px) - var(--footer-height, 0px)); /* Ensure it takes available height */
+        min-height: 20vh; /* Ensure it takes available height */
         display: flex; /* Use flexbox for the main content layout */
         align-items: center; /* Vertically center content */
         justify-content: center; /* Horizontally center content */
@@ -846,6 +846,16 @@
     }
 
 </style>
+@* Announcement Section - Display if an announcement is available *@
+@if (announcement != null)
+{
+    @* Added custom styling to the alert class directly in CSS *@
+    <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+        <h4 class="alert-heading">@announcement.Title</h4>
+        <p>@announcement.Message</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 
 @* Main container for the welcome page content *@
 <div class="welcome-page-container">
