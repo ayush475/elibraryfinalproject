@@ -40,10 +40,10 @@ namespace FinalProject.Models
 
         // The Member who wrote the review.
         [ForeignKey("MemberId")]
-        public virtual  required Member Member { get; set; }
+        public virtual Member? Member { get; set; }
 
         // The Book being reviewed.
         [ForeignKey("BookId")]
-        public virtual  required Book Book { get; set; }
+        public virtual Book? Book { get; set; }  
     }
 }

@@ -68,16 +68,24 @@ namespace FinalProject.Controllers
         [HttpPost]
         [Authorize] 
         [ValidateAntiForgeryToken] 
-        public async Task<IActionResult> Create([Bind("BookId,Rating,Comment")] Review review)
+        public async Task<IActionResult> CreateReview([Bind("BookId,Rating,Comment")] Review review)
         {
             // Debugging line to trace action start.
-            Debug.WriteLine($"ReviewsController.Create action called for Book ID: {review.BookId}");
 
+            Console.WriteLine($"---> Start CreateReview action."); // Added log
+            Console.WriteLine($"---> After Model Binding: review.BookId={review.BookId}, review.Rating={review.Rating}, review.Comment={review.Comment}"); // Added log after initial bind
+            Console.WriteLine($"---> Review object state after model binding (from client payload):");
+            Console.WriteLine($"     ReviewId: {review.ReviewId}"); // Likely 0
+            Console.WriteLine($"     MemberId: {review.MemberId}"); // Likely 0 initially (not bound)
+            Console.WriteLine($"     BookId: {review.BookId}");     // Populated from client payload via [Bind]
+            Console.WriteLine($"     Rating: {review.Rating}");     // Populated from client payload via [Bind]
+            Console.WriteLine($"     Comment: {review.Comment}");   // Populated from client payload via [Bind]
+            Console.WriteLine($"     ReviewDate: {review.ReviewDate}"); // Likely default (DateTime.MinValue or C# default initializer)
+            Console.WriteLine($"     DateUpdated: {review.DateUpdated}");// Likely default (DateTime.MinValue or C# default initializer)
             // 1. Get the authenticated user's MemberId from their claims.
             // ClaimTypes.NameIdentifier is typically used to store the user's unique ID (like the primary key).
             var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            Debug.WriteLine($"MemberId claim string: {memberIdString}");
-
+            Console.WriteLine($"---> Retrieved memberIdString from claims: {memberIdString ?? "null"}");
             // Determine the return URL. Prioritize the Referer header if available and local.
             // Otherwise, default to the Book Details page for the book being reviewed.
             // This is where the user likely came from when submitting the review.
@@ -99,11 +107,22 @@ namespace FinalProject.Controllers
                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme); 
                 return RedirectToAction("Login", "Member"); 
             }
-
+            Console.WriteLine($"---> Member ID validated successfully. Parsed memberId: {memberId}");
             review.MemberId = memberId;
+            Console.WriteLine($"member id ni heram na k chha sir ={review.MemberId}");
+            Console.WriteLine($"---> Review object state after assigning MemberId:");
+            Console.WriteLine($"     ReviewId: {review.ReviewId}"); // Still 0
+            Console.WriteLine($"     MemberId: {review.MemberId}"); // Now populated from claims
+            Console.WriteLine($"     BookId: {review.BookId}");     // Populated from client
+            Console.WriteLine($"     Rating: {review.Rating}");     // Populated from client
+            Console.WriteLine($"     Comment: {review.Comment}");   // Populated from client
+            Console.WriteLine($"     ReviewDate: {review.ReviewDate}"); // Same as before
+            Console.WriteLine($"     DateUpdated: {review.DateUpdated}");// Same as before
+            Console.WriteLine($"     Member (Navigation): {(review.Member == null ? "null" : "populated")}"); // Still null
+            Console.WriteLine($"     Book (Navigation): {(review.Book == null ? "null" : "populated")}");   // Still null
 
             var hasPurchased = await HasUserPurchasedBookAsync(review.MemberId, review.BookId);
-            Debug.WriteLine($"User has purchased book check result: {hasPurchased}");
+            Console.WriteLine($"User has purchased book check result: {hasPurchased}");
 
             if (!hasPurchased)
             {
@@ -115,11 +134,12 @@ namespace FinalProject.Controllers
                 // Redirect the user back to the page they came from (likely book details).
                 return Redirect(returnUrl);
             }
+            Console.WriteLine($"---> Purchase check passed. Checking for existing review.");
 
 
             var existingReview = await _context.Reviews
                 .AnyAsync(r => r.MemberId == review.MemberId && r.BookId == review.BookId);
-            Debug.WriteLine($"Existing review check result: {existingReview}");
+            Console.WriteLine($"Existing review check result: {existingReview}");
 
             if (existingReview)
             {
@@ -130,25 +150,54 @@ namespace FinalProject.Controllers
                 // Redirect the user back to the page they came from.
                 return Redirect(returnUrl);
             }
+            
+            Console.WriteLine($"---> Existing review check passed. Checking ModelState.IsValid.");
+            Console.WriteLine($"---> Current ModelState.IsValid: {ModelState.IsValid}");
 
             
             if (ModelState.IsValid)
             {
+                Console.WriteLine($"---> ModelState IS valid. Proceeding to set dates and save.");
+
+                // Log state just before setting dates (after checks, before final assignments)
+                Console.WriteLine($"---> Review object state before setting dates:");
+                Console.WriteLine($"     ReviewId: {review.ReviewId}"); // Still 0
+                Console.WriteLine($"     MemberId: {review.MemberId}"); // Populated
+                Console.WriteLine($"     BookId: {review.BookId}");     // Populated
+                Console.WriteLine($"     Rating: {review.Rating}");     // Populated
+                Console.WriteLine($"     Comment: {review.Comment}");   // Populated
+                Console.WriteLine($"     ReviewDate: {review.ReviewDate}"); // Likely C# default or min value
+                Console.WriteLine($"     DateUpdated: {review.DateUpdated}");// Likely C# default or min value
+                Console.WriteLine($"     Member (Navigation): {(review.Member == null ? "null" : "populated")}"); // Still null
+                Console.WriteLine($"     Book (Navigation): {(review.Book == null ? "null" : "populated")}");   // Still null
+
+
                 review.ReviewDate = DateTime.Now;
                 review.DateUpdated = DateTime.Now; 
+                Console.WriteLine($"---> After setting dates: review.ReviewDate={review.ReviewDate}, review.DateUpdated={review.DateUpdated}");
 
+                Console.WriteLine($"---> Adding review to context.");
                 
                 _context.Add(review);
                 await _context.SaveChangesAsync();
-                Debug.WriteLine($"Review saved successfully for Book ID: {review.BookId}");
 
                 await UpdateBookRatingAsync(review.BookId);
-                Debug.WriteLine($"Book rating updated for Book ID: {review.BookId}");
 
                 TempData["Message"] = "Your review has been submitted successfully!";
                 return RedirectToAction("Details", "Book", new { id = review.BookId });
-            } 
-            Debug.WriteLine("ModelState is invalid. Review not saved.");
+            }
+            Console.WriteLine($"---> Listing ModelState errors:");
+            foreach (var state in ModelState)
+            {
+                // state.Key is the name of the property (e.g., "Rating", "Comment") or an empty string for model-level errors
+                // state.Value is the ModelStateEntry for that property
+                foreach (var error in state.Value.Errors)
+                {
+                    Console.WriteLine($"     Field: {state.Key}");
+                    Console.WriteLine($"     Error: {error.ErrorMessage}");
+                }
+            }
+            Console.WriteLine($"---> ModelState IS NOT valid. Review not saved.");
             TempData["Message"] = "Review submission failed. Please check your rating and comment."; 
 
             return Redirect(returnUrl);

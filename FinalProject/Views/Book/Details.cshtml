@@ -13,6 +13,9 @@
     // Assuming ViewBag.HasPurchased is set in the controller action
     // This boolean determines if the user has purchased the book.
     var hasPurchased = ViewBag.HasPurchased != null && (bool)ViewBag.HasPurchased;
+    
+    // Check if the user has already submitted a review for this book
+    var hasUserReviewed = ViewBag.HasUserReviewed != null && (bool)ViewBag.HasUserReviewed;
 }
 
 @* Assuming Bootstrap CSS and Font Awesome are already included in your layout file (_Layout.cshtml) *@
@@ -32,6 +35,15 @@
     {
         <div class="alert alert-info alert-dismissible fade show shadow-sm mb-4" role="alert"> @* Bootstrap alert styling with shadow and margin bottom *@
             @TempData["Message"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @* Display validation summary if there are any model errors *@
+    @if (ViewData.ModelState.ErrorCount > 0)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert">
+            <div asp-validation-summary="All" class="text-danger"></div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
@@ -286,7 +298,6 @@
         @if (Model.Reviews != null && Model.Reviews.Any())
         {
             <div class="review-list">
-                @* FIX: Iterate over Model.Reviews, not Models.Review *@
                 @foreach (var review in Model.Reviews.OrderByDescending(r => r.ReviewDate))
                 {
                     <div class="review-item border-bottom mb-3 pb-3">
@@ -300,7 +311,7 @@
                             {
                                 <i class="far fa-star text-warning"></i> @* Empty star *@
                             }
-                            <span class="ms-2 text-muted">(@review.Rating}/5)</span> @* Display numerical rating *@
+                            <span class="ms-2 text-muted">(@review.Rating/5)</span> @* Display numerical rating *@
                         </div>
                         <p class="mt-2">@review.Comment</p>
                         <small class="text-muted">Reviewed on: @review.ReviewDate.ToShortDateString()</small>
@@ -317,34 +328,20 @@
 
 
     @* --- Conditional "Add Review" Section --- *@
-    @* Check the ViewBag.HasPurchased value set in the controller.
-       Only show the review form/button if the user is authenticated AND has purchased the book. *@
-    @if (User?.Identity?.IsAuthenticated == true && hasPurchased)
+    @* Check if the user is authenticated, has purchased the book, and hasn't already reviewed it *@
+    @if (User?.Identity?.IsAuthenticated == true && hasPurchased && !hasUserReviewed)
     {
-        @* Add a check here too if the user *already* submitted a review?
-           This would require another check in the controller and ViewBag value (e.g., ViewBag.HasUserAlreadyReviewed).
-           For now, we only check purchase. *
-
         <div class="add-review-section mt-5 p-4 border rounded-3 bg-light shadow-sm"> @* Added styling for the section *@
             <h3 class="mb-3 text-secondary">Leave Your Review</h3>
             <p class="text-muted">Share your thoughts on this book after purchasing it.</p>
             <hr class="mb-4"/>
 
-            @*
-                // Place your review submission form here.
-                // This form should post to your ReviewController's CreateReview action.
-                // Ensure you include the BookId as a hidden input or route value.
-                // Example simple form structure:
-            *@
-            <form asp-controller="Reviews" asp-action="Create" method="post">
+            <form asp-controller="Reviews" asp-action="CreateReview" method="post">
                 <input type="hidden" name="BookId" value="@Model.BookId" />
 
                 <div class="mb-3"> @* Bootstrap margin bottom *@
                     <label for="Rating" class="form-label">Rating</label> @* Bootstrap form label *@
-                    @* REMOVED the 'required' attribute from the select tag.
-                       The server-side [Required] and [Range(1, 5)] annotations on the Review model
-                       will handle the validation. *@
-                    <select name="Rating" id="Rating" class="form-select">
+                    <select name="Rating" id="Rating" class="form-select" required>
                         <option value="1">Select Rating</option>
                         <option value="1">1 - Poor</option>
                         <option value="2">2 - Fair</option>
@@ -352,15 +349,13 @@
                         <option value="4">4 - Very Good</option>
                         <option value="5">5 - Excellent</option>
                     </select>
-                    @* Optional: Add validation message span for Rating *@
-                     @* <span asp-validation-for="Rating" class="text-danger"></span> *@
+                    <span class="text-danger field-validation-valid" data-valmsg-for="Rating" data-valmsg-replace="true"></span>
                 </div>
 
                 <div class="mb-3"> @* Bootstrap margin bottom *@
                     <label for="Comment" class="form-label">Your Comment</label> @* Bootstrap form label *@
-                    <textarea name="Comment" id="Comment" class="form-control" rows="5" required></textarea> @* Bootstrap form control, added required *@
-                     @* Optional: Add validation message span for Comment *@
-                     @* <span asp-validation-for="Comment" class="text-danger"></span> *@
+                    <textarea name="Comment" id="Comment" class="form-control" rows="5" required></textarea>
+                    <span class="text-danger field-validation-valid" data-valmsg-for="Comment" data-valmsg-replace="true"></span>
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-lg mt-3">Submit Review</button> @* Bootstrap button styling *@
@@ -368,23 +363,45 @@
                 @* Include the anti-forgery token for security on POST forms *@
                 @Html.AntiForgeryToken()
             </form>
-
+        </div>
+    }
+    else if (User?.Identity?.IsAuthenticated == true && hasPurchased && hasUserReviewed)
+    {
+        <div class="add-review-section mt-5 p-4 border rounded-3 bg-light shadow-sm text-center">
+            <p class="lead text-muted">You have already reviewed this book. Thank you for your feedback!</p>
+        </div>
+    }
+    else if (User?.Identity?.IsAuthenticated == true)
+    {
+        <div class="add-review-section mt-5 p-4 border rounded-3 bg-light shadow-sm text-center">
+            <p class="lead text-muted">You must purchase this book to leave a review.</p>
+        </div>
     }
     else
     {
-        @* Display a message if the user cannot review *@
-        <div class="add-review-section mt-5 p-4 border rounded-3 bg-light shadow-sm text-center"> @* Added styling for the section *@
-            @if (User?.Identity?.IsAuthenticated == true)
-            {
-                <p class="lead text-muted">You must purchase this book to leave a review.</p>
-            }
-            else
-            {
-                <p class="lead text-muted"><a asp-controller="Account" asp-action="Login">Login</a> or register to purchase and review books.</p> @* Adjust controller/action name if needed *@
-            }
+        <div class="add-review-section mt-5 p-4 border rounded-3 bg-light shadow-sm text-center">
+            <p class="lead text-muted"><a asp-controller="Member" asp-action="Login">Login</a> or register to purchase and review books.</p>
         </div>
     }
     @* --- End Conditional "Add Review" Section --- *@
 
-
 </div> @* End container *@
+
+@section Scripts {
+    <script>
+        // Enable dismissible alerts
+        document.addEventListener('DOMContentLoaded', function() {
+            var alerts = document.querySelectorAll('.alert-dismissible .btn-close');
+            alerts.forEach(function(alert) {
+                alert.addEventListener('click', function() {
+                    this.parentElement.classList.remove('show');
+                    setTimeout(function() {
+                        this.parentElement.remove();
+                    }.bind(this), 150);
+                });
+            });
+        });
+    </script>
+    
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
