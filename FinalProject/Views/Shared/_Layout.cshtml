@@ -285,8 +285,20 @@
         </div>
         <div class="user-actions">
             <span>🔔</span>
-            <a href="#" class="login-btn">LOGIN</a>
-            <a href="#" class="signup-btn">Sign Up</a>
+            @if (User.Identity.IsAuthenticated)
+            {
+                // If the user is authenticated, show something else, maybe a welcome message and a logout button
+                <a href="#" class="login-btn">Welcome, @User.Identity.Name!</a> 
+                <form asp-controller="Member" asp-action="Logout" method="post" id="logoutForm" class="form-inline">
+                    <button type="submit" class="signup-btn">Logout</button>
+                </form>
+            }
+            else
+            {
+                // If the user is not authenticated, show Login and Sign Up
+                <a asp-controller="Member" asp-action="Login" class="login-btn">LOGIN</a>
+                <a asp-controller="Member" asp-action="Register" class="signup-btn">Sign Up</a>
+            }
         </div>
     </header>
 
