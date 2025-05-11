@@ -1,120 +1,311 @@
 @model FinalProject.ViewModels.ProfileViewModel
 
 @{
-    ViewData["Title"] = "Member Profile"; // Descriptive title
+ViewData["Title"] = "Member Profile"; // Descriptive title
 }
 
-@* Assuming Bootstrap CSS and Font Awesome are already included in your layout file (_Layout.cshtml) *@
+@* Assuming Bootstrap CSS (v5+) and Bootstrap Icons are already included in your layout file (_Layout.cshtml) *@
 @* If not, you would need to add the CDN links: *@
 @* <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> *@
-@* <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> *@
-@* And the Bootstrap JS bundle (for alerts, etc.): *@
+@* <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet"> *@
+@* And the Bootstrap JS bundle (for dropdowns, etc.): *@
 @* <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> *@
 
 
-<div class="container mt-4 py-4"> @* Use Bootstrap container, margin top, and vertical padding *@
+<style>
+    /* Custom styles to match the bookstore dashboard layout */
+    body {
+        /* Removed overflow-x: hidden; */
+        background-color: #f8f9fa; /* Light background color */
+    }
 
-    <h1 class="mb-2 text-center text-primary">Member Profile</h1> @* Bootstrap heading, centered, primary color *@
-    <h4 class="mb-4 text-center text-secondary">Your Account Details</h4> @* Subtitle, centered, secondary color *@
-    <hr class="mb-4"/>
+    .app-container {
+        display: flex; /* Use flexbox for sidebar and main content */
+        min-height: 100vh; /* Ensure container takes at least full viewport height */
+        width: 100%; /* Ensure the container takes full width */
+    }
 
-    @* Introductory Information Section *@
-    <div class="alert alert-info shadow-sm mb-4" role="alert">
-        <h5 class="alert-heading"><i class="fas fa-user-circle me-2"></i> Your Profile Information</h5>
-        <p>View and manage your account details below.</p>
+    .sidebar {
+        width: 250px; /* Fixed width for the sidebar */
+        background-color: #ffffff; /* White background for sidebar */
+        padding: 15px;
+        /* Removed position: fixed, height: 100vh, z-index */
+        overflow-y: auto; /* Scrollable if content exceeds height */
+        box-shadow: 2px 0 5px rgba(0,0,0,.05); /* Subtle shadow on the right */
+        flex-shrink: 0; /* Prevent sidebar from shrinking */
+    }
+
+    .main-content {
+        /* Removed margin-left */
+        padding: 20px; /* Padding around the main content */
+        width: 100%; /* Allow main content to take available width */
+        flex-grow: 1; /* Allow main content to grow */
+        /* Removed padding-top adjustment for fixed navbar */
+    }
+
+    /* Removed media queries for sidebar toggling and fixed navbar */
+
+
+    .sidebar-heading {
+        padding: 0.875rem 1.25rem;
+        font-size: 1.4rem; /* Slightly larger heading */
+        font-weight: bold;
+        color: #ff7f50; /* Coral-like color from the image */
+    }
+
+    .list-group-item {
+        border: none; /* Remove default list item borders */
+        border-radius: 8px; /* Rounded corners for list items */
+        margin-bottom: 5px; /* Space between list items */
+        transition: background-color 0.2s ease; /* Smooth hover effect */
+    }
+
+    .list-group-item.active {
+        background-color: #ffe0cc; /* Light orange background for active item */
+        color: #333; /* Darker text color for active item */
+        font-weight: bold;
+    }
+
+    .list-group-item:hover:not(.active) {
+        background-color: #f0f0f0; /* Light gray hover effect */
+    }
+
+    .navbar-custom {
+        background-color: #ffffff; /* White background for navbar */
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,.08);
+        margin-bottom: 20px; /* Space below navbar */
+        border-radius: 8px; /* Rounded corners for navbar */
+        /* Removed position: fixed, top, left, right, z-index */
+    }
+
+
+    .card.profile-details-card {
+        border: none; /* Remove default card border */
+        border-radius: 12px; /* More rounded corners for the main card */
+        box-shadow: 0 5px 15px rgba(0,0,0,.1); /* Larger shadow */
+    }
+
+    .alert-info-custom {
+        background-color: #e0f7fa; /* Light cyan background */
+        border-color: #b2ebf2; /* Slightly darker border color */
+        color: #006064; /* Dark cyan text color */
+        border-radius: 8px; /* Rounded corners */
+    }
+
+    .btn-primary-custom {
+        background-color: #ff7f50; /* Coral-like button color */
+        border-color: #ff7f50;
+        color: white;
+        border-radius: 8px; /* Rounded buttons */
+        padding: 10px 20px; /* Larger padding */
+    }
+
+    .btn-primary-custom:hover {
+        background-color: #ff6347; /* Slightly darker on hover */
+        border-color: #ff6347;
+    }
+
+    .btn-outline-secondary-custom {
+        border-color: #ccc; /* Light gray border */
+        color: #555; /* Dark gray text */
+        border-radius: 8px; /* Rounded buttons */
+        padding: 10px 20px; /* Larger padding */
+    }
+
+    .btn-outline-secondary-custom:hover {
+        background-color: #f0f0f0; /* Light gray background on hover */
+    }
+
+    .text-primary-custom {
+        color: #ff7f50 !important; /* Force custom primary color */
+    }
+
+    .text-secondary-custom {
+        color: #555 !important; /* Force custom secondary color */
+    }
+
+</style>
+
+<div class="app-container">
+
+    <div class="sidebar" id="sidebar-wrapper">
+        <div class="sidebar-heading d-flex align-items-center mb-4 text-primary-custom">
+            <i class="bi bi-book me-2" style="font-size: 1.8rem;"></i> @* Example icon *@
+            Bookstore
+        </div>
+        <div class="list-group list-group-flush">
+            @* Adapting sidebar links to be more dashboard-like while relevant to profile *@
+            @* "My Dashboard" links to the main dashboard *@
+            <a href="#" class="list-group-item list-group-item-action">
+                <i class="bi bi-grid-1x2-fill me-2"></i> My Dashboard @* Using Bootstrap Icons *@
+            </a>
+            @* "My Profile" is the current active page *@
+            <a href="#" class="list-group-item list-group-item-action active">
+                <i class="bi bi-person-circle me-2"></i> My Profile @* Using Bootstrap Icons *@
+            </a>
+            <a href="#" class="list-group-item list-group-item-action">
+                <i class="bi bi-journal-text me-2"></i> My Orders @* Using Bootstrap Icons *@
+            </a>
+            <a href="#" class="list-group-item list-group-item-action">
+                <i class="bi bi-heart me-2"></i> Favourites @* Using Bootstrap Icons *@
+            </a>
+            <a href="#" class="list-group-item list-group-item-action">
+                <i class="bi bi-cart-fill me-2"></i> My Cart @* Using Bootstrap Icons *@
+            </a>
+        </div>
+        <hr class="my-3">
+        <div class="list-group list-group-flush">
+            <a href="#" class="list-group-item list-group-item-action">
+                <i class="bi bi-question-circle me-2"></i> Help @* Using Bootstrap Icons *@
+            </a>
+            <a href="#" class="list-group-item list-group-item-action">
+                <i class="bi bi-gear me-2"></i> Settings @* Using Bootstrap Icons *@
+            </a>
+            <a href="#" class="list-group-item list-group-item-action text-danger">
+                <i class="bi bi-box-arrow-right me-2"></i> Logout @* Using Bootstrap Icons *@
+            </a>
+        </div>
     </div>
+    <div class="main-content" id="page-content-wrapper">
 
-    @* Profile Details Card *@
-    <div class="card shadow-lg border-0 rounded-3"> @* Bootstrap card container for details with larger shadow, no border, rounded corners *@
-        <div class="card-body p-4"> @* Increased padding *@
-            <h4 class="card-title mb-4 text-secondary">Account Details</h4> @* Secondary color for title *@
+        <nav class="navbar navbar-expand-lg navbar-light navbar-custom">
+            <div class="container-fluid">
+                @* Removed sidebar toggle button *@
 
-            <div class="row g-3"> @* Bootstrap row for details layout with larger gap *@
-                @* Full Name *@
-                <div class="col-md-6">
-                    <p class="text-muted mb-1 fw-bold"><i class="fas fa-user me-2"></i> Full Name:</p> @* Muted text, bold, icon *@
-                    <p class="mb-0">@Model.FullName</p> @* Remove bottom margin *@
+                <h1 class="mb-0 text-primary-custom" style="font-size: 1.8rem;">Member Profile</h1> @* Main title in navbar *@
+
+                <div class="d-flex align-items-center ms-auto">
+                     <span class="navbar-text me-3 d-none d-md-block">
+                        @DateTime.Now.ToString("dddd, MMMM dd,yyyy") @* Display current date *@
+                    </span>
+
+                    <ul class="navbar-nav mb-2 mb-lg-0 me-3">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-bell" style="font-size: 1.2rem;"></i> @* Notification icon *@
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            @* Replace with actual avatar image or icon *@
+                            <img src="https://placehold.co/30x30/cccccc/333333?text=JD" alt="User Avatar" class="rounded-circle me-2">
+                            @Model.FullName @* Display user's name *@
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="#">Profile</a></li>
+                            <li><a class="dropdown-item" href="#">Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#">Logout</a></li>
+                        </ul>
+                    </div>
                 </div>
-                @* Email *@
-                <div class="col-md-6">
-                    <p class="text-muted mb-1 fw-bold"><i class="fas fa-envelope me-2"></i> Email:</p> @* Muted text, bold, icon *@
-                    <p class="mb-0">@Model.Email</p> @* Remove bottom margin *@
-                </div>
-                @* Membership ID *@
-                <div class="col-md-6">
-                    <p class="text-muted mb-1 fw-bold"><i class="fas fa-id-card me-2"></i> Membership ID:</p> @* Muted text, bold, icon *@
-                    <p class="mb-0">@Model.MembershipId</p> @* Remove bottom margin *@
-                </div>
-                @* Registration Date *@
-                <div class="col-md-6">
-                    <p class="text-muted mb-1 fw-bold"><i class="fas fa-calendar-alt me-2"></i> Registration Date:</p> @* Muted text, bold, icon *@
-                    <p class="mb-0">@Model.RegistrationDate.ToShortDateString()</p> @* Remove bottom margin *@
-                </div>
-                @* Last Login *@
-                <div class="col-md-6">
-                    <p class="text-muted mb-1 fw-bold"><i class="fas fa-clock me-2"></i> Last Login:</p> @* Muted text, bold, icon *@
-                    <p class="mb-0">@(Model.LastLogin.HasValue ? Model.LastLogin.Value.ToString("yyyy-MM-dd HH:mm") : "Never")</p> @* Format date/time, remove bottom margin *@
-                </div>
-                @* Total Orders *@
-                <div class="col-md-6">
-                    <p class="text-muted mb-1 fw-bold"><i class="fas fa-shopping-bag me-2"></i> Total Orders:</p> @* Muted text, bold, icon *@
-                    <p class="mb-0">@Model.OrderCount</p> @* Remove bottom margin *@
-                </div>
-                 @* Stackable Discount *@
-                <div class="col-md-6">
-                    <p class="text-muted mb-1 fw-bold"><i class="fas fa-percent me-2"></i> Stackable Discount:</p> @* Muted text, bold, icon *@
-                    <p class="mb-0">@Model.StackableDiscount.ToString("P")</p> @* Format as percentage, remove bottom margin *@
-                </div>
-                 @* Add more profile details here as needed *@
-                 @* Example: Address *@
-                 @*
-                 <div class="col-md-6">
-                     <p class="text-muted mb-1 fw-bold"><i class="fas fa-map-marker-alt me-2"></i> Address:</p>
-                     <p class="mb-0">@Model.Address</p>
-                 </div>
-                 *@
+            </div>
+        </nav>
+        <div class="container-fluid"> @* Use fluid container for full width *@
+
+            @* Introductory Information Section *@
+            <div class="alert alert-info-custom shadow-sm mb-4" role="alert">
+                <h5 class="alert-heading"><i class="bi bi-info-circle me-2"></i> Your Profile Information</h5> @* Using Bootstrap Icons *@
+                <p class="mb-0">View and manage your account details below.</p> @* Remove bottom margin *@
             </div>
 
-            @* Optional: Add sections for recent orders, reviews, etc. *@
-            @* Example for recent orders (if you added RecentOrders to ViewModel): *@
-            @*
-            @if (Model.RecentOrders != null && Model.RecentOrders.Any())
-            {
-                <h4 class="mt-4 mb-3 text-secondary">Recent Orders</h4>
-                <ul class="list-group list-group-flush"> // Use list-group-flush for no borders between items
-                    @foreach (var order in Model.RecentOrders)
-                    {
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Order #@order.OrderId - @order.OrderDate.ToShortDateString()
-                            // Optional: Add a link to view order details
-                            // <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.OrderId" class="btn btn-sm btn-outline-primary">Details</a>
-                        </li>
-                    }
-                </ul>
-            }
-            *@
+            @* Profile Details Card *@
+            <div class="card profile-details-card"> @* Custom class for styling *@
+                <div class="card-body p-4"> @* Increased padding *@
+                    <h4 class="card-title mb-4 text-secondary-custom">Account Details</h4> @* Custom secondary color *@
 
-            @* Action Buttons *@
-            <div class="d-flex flex-wrap gap-3 mt-4"> @* Bootstrap flex container for buttons with larger gap, margin top *@
-                @* Example links for editing profile or changing password *@
-                @* Uncomment and adjust asp-action and asp-route-id as needed *@
-                @* Assuming MemberId is available in your ViewModel *@
-                 @*
-                 <a asp-action="Edit" asp-route-id="@Model.MemberId" class="btn btn-primary btn-lg shadow-sm">
-                     <i class="fas fa-edit me-2"></i> Edit Profile
-                 </a>
-                 <a asp-action="ChangePassword" class="btn btn-secondary btn-lg shadow-sm">
-                      <i class="fas fa-key me-2"></i> Change Password
-                 </a>
-                 *@
-                 @* Example Back to Home/Dashboard Button *@
-                 <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary btn-lg shadow-sm">
-                      <i class="fas fa-home me-2"></i> Back to Home
-                 </a>
+                    <div class="row g-3"> @* Bootstrap row for details layout with larger gap *@
+                        @* Full Name *@
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1 fw-bold"><i class="bi bi-person me-2"></i> Full Name:</p> @* Using Bootstrap Icons *@
+                            <p class="mb-0">@Model.FullName</p> @* Remove bottom margin *@
+                        </div>
+                        @* Email *@
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1 fw-bold"><i class="bi bi-envelope me-2"></i> Email:</p> @* Using Bootstrap Icons *@
+                            <p class="mb-0">@Model.Email</p> @* Remove bottom margin *@
+                        </div>
+                        @* Membership ID *@
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1 fw-bold"><i class="bi bi-card-list me-2"></i> Membership ID:</p> @* Using Bootstrap Icons *@
+                            <p class="mb-0">@Model.MembershipId</p> @* Remove bottom margin *@
+                        </div>
+                        @* Registration Date *@
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1 fw-bold"><i class="bi bi-calendar-event me-2"></i> Registration Date:</p> @* Using Bootstrap Icons *@
+                            <p class="mb-0">@Model.RegistrationDate.ToShortDateString()</p> @* Remove bottom margin *@
+                        </div>
+                        @* Last Login *@
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1 fw-bold"><i class="bi bi-clock me-2"></i> Last Login:</p> @* Using Bootstrap Icons *@
+                            <p class="mb-0">@(Model.LastLogin.HasValue ? Model.LastLogin.Value.ToString("yyyy-MM-dd HH:mm") : "Never")</p> @* Format date/time, remove bottom margin *@
+                        </div>
+                        @* Total Orders *@
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1 fw-bold"><i class="bi bi-bag me-2"></i> Total Orders:</p> @* Using Bootstrap Icons *@
+                            <p class="mb-0">@Model.OrderCount</p> @* Remove bottom margin *@
+                        </div>
+                        @* Stackable Discount *@
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1 fw-bold"><i class="bi bi-percent me-2"></i> Stackable Discount:</p> @* Using Bootstrap Icons *@
+                            <p class="mb-0">@Model.StackableDiscount.ToString("P")</p> @* Format as percentage, remove bottom margin *@
+                        </div>
+                        @* Add more profile details here as needed *@
+                        @* Example: Address *@
+                        @*
+                         <div class="col-md-6">
+                             <p class="text-muted mb-1 fw-bold"><i class="bi bi-geo-alt me-2"></i> Address:</p> // Using Bootstrap Icons
+                             <p class="mb-0">@Model.Address</p>
+                         </div>
+                         *@
+                    </div>
+
+                    @* Optional: Add sections for recent orders, reviews, etc. *@
+                    @* Example for recent orders (if you added RecentOrders to ViewModel): *@
+                    @*
+                    @if (Model.RecentOrders != null && Model.RecentOrders.Any())
+                    {
+                        <h4 class="mt-4 mb-3 text-secondary-custom">Recent Orders</h4> // Custom secondary color
+                        <ul class="list-group list-group-flush"> // Use list-group-flush for no borders between items
+                            @foreach (var order in Model.RecentOrders)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Order #@order.OrderId - @order.OrderDate.ToShortDateString()
+                                    // Optional: Add a link to view order details
+                                    // <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.OrderId" class="btn btn-sm btn-outline-primary-custom">Details</a> // Custom button style
+                                </li>
+                            }
+                        </ul>
+                    }
+                    *@
+
+                    @* Action Buttons *@
+                    <div class="d-flex flex-wrap gap-3 mt-4"> @* Bootstrap flex container for buttons with larger gap, margin top *@
+                        @* Example links for editing profile or changing password *@
+                        @* Uncomment and adjust asp-action and asp-route-id as needed *@
+                        @* Assuming MemberId is available in your ViewModel *@
+                        @*
+                         <a asp-action="Edit" asp-route-id="@Model.MemberId" class="btn btn-primary-custom btn-lg shadow-sm"> // Custom button style
+                             <i class="bi bi-pencil-square me-2"></i> Edit Profile // Using Bootstrap Icons
+                         </a>
+                         <a asp-action="ChangePassword" class="btn btn-outline-secondary-custom btn-lg shadow-sm"> // Custom button style
+                              <i class="bi bi-key me-2"></i> Change Password // Using Bootstrap Icons
+                         </a>
+                         *@
+                        @* Example Back to Home/Dashboard Button *@
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary-custom btn-lg shadow-sm"> @* Custom button style *@
+                            <i class="bi bi-house me-2"></i> Back to Home @* Using Bootstrap Icons *@
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+@* Removed JavaScript for sidebar toggling *@
 
 @* Optional: Link to Bootstrap JS if needed for components like dropdowns, modals, etc. *@
 @* <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> *@

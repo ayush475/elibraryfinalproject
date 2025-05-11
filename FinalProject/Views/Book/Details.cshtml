@@ -13,7 +13,7 @@
     // Assuming ViewBag.HasPurchased is set in the controller action
     // This boolean determines if the user has purchased the book.
     var hasPurchased = ViewBag.HasPurchased != null && (bool)ViewBag.HasPurchased;
-    
+
     // Check if the user has already submitted a review for this book
     var hasUserReviewed = ViewBag.HasUserReviewed != null && (bool)ViewBag.HasUserReviewed;
 }
@@ -25,10 +25,214 @@
 @* And the Bootstrap JS bundle (for alerts, etc.): *@
 @* <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> *@
 
+<head>
+    @* Add Font Awesome for icons (assuming it's not already in your layout) *@
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Page Background Gradient */
+        body {
+             background: linear-gradient(to bottom right, #F5F5FC, #E0E0F8); /* Subtle gradient from light purple/grey to a slightly darker shade */
+             min-height: 100vh; /* Ensure gradient covers the full viewport height */
+             margin: 0; /* Remove default body margin */
+             padding: 0; /* Remove default body padding */
+             font-family: 'Inter', sans-serif; /* Use a clean sans-serif font */
+         }
+
+        /* Load Inter font if not already loaded */
+         @@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+
+         /* Custom styles based on reference UI colors */
+         .text-primary-custom {
+             color: #FF7F50 !important; /* Vibrant Orange from reference */
+         }
+
+          .btn-primary-custom {
+             background-color: #FF7F50 !important; /* Vibrant Orange from reference */
+             border-color: #FF7F50 !important; /* Vibrant Orange from reference */
+             color: white !important; /* White text for contrast */
+             border-radius: .3rem; /* Slightly more rounded buttons */
+             transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out; /* Add transition for hover */
+         }
+
+          .btn-primary-custom:hover {
+              background-color: #FF6347 !important; /* Slightly darker orange on hover */
+              border-color: #FF6347 !important;
+          }
+
+           .btn-outline-primary-custom {
+             color: #FF7F50 !important; /* Vibrant Orange text from reference */
+             border-color: #FF7F50 !important; /* Vibrant Orange border from reference */
+             background-color: transparent !important;
+             border-radius: .3rem; /* Slightly more rounded buttons */
+              transition: color 0.3s ease-in-out, background-color 0.3s ease-in-out, border-color 0.3s ease-in-out; /* Add transition for hover */
+         }
+
+         .btn-outline-primary-custom:hover {
+             color: white !important;
+             background-color: #FF7F50 !important; /* Vibrant Orange background on hover */
+             border-color: #FF7F50 !important;
+         }
+
+          .text-secondary-custom {
+             color: #6c757d !important; /* Bootstrap secondary - fits the muted tone */
+         }
+
+         .border-primary-custom {
+             border-color: #FF7F50 !important; /* Vibrant Orange border */
+         }
+
+         .text-success-custom {
+             color: #28a745 !important; /* Bootstrap success - fits the green tone */
+         }
+
+         .text-danger-custom {
+             color: #dc3545 !important; /* Bootstrap danger - fits the red tone */
+         }
+
+
+         /* Enhanced card styling */
+         .card {
+             border-radius: .75rem; /* More rounded corners for the card */
+             box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; /* Default shadow */
+             background-color: #ffffff; /* Ensure card background is white */
+             border: none; /* Remove default border */
+         }
+
+        .card-body {
+            padding: 2.5rem; /* Increased padding for more space inside the card */
+        }
+
+         .card-img-top {
+             border-radius: .5rem; /* Slightly rounded corners for image */
+             box-shadow: 0 .25rem .75rem rgba(0,0,0,.1); /* Subtle shadow for image */
+         }
+
+         .card-footer {
+             border-bottom-left-radius: .75rem; /* Match bottom footer corners to card */
+             border-bottom-right-radius: .75rem; /* Match bottom footer corners to card */
+             background-color: #f8f9fa; /* Slightly lighter footer background */
+         }
+
+         /* Professional UI adjustments */
+         .form-control, .form-select {
+             border-radius: .3rem; /* Slightly rounded form elements */
+         }
+
+         .btn {
+             border-radius: .3rem; /* Slightly rounded buttons */
+         }
+
+         .reviews-section h2,
+         .add-review-section h3 {
+             color: #FF7F50; /* Orange color for section headings */
+             margin-bottom: 1.5rem; /* Increased margin below section headings */
+         }
+
+         .review-item {
+             border-bottom: 1px solid #e9ecef; /* Lighter border for review items */
+             padding-bottom: 1.5rem; /* Increased padding below review item */
+             margin-bottom: 1.5rem; /* Increased margin below review item */
+         }
+
+         .review-item:last-child {
+             border-bottom: none; /* No border on the last review item */
+             margin-bottom: 0;
+             padding-bottom: 0;
+         }
+
+         .rating i {
+             color: #ffc107; /* Bootstrap warning color for stars */
+         }
+
+         .add-review-section {
+             background-color: #ffffff; /* White background for the review form section */
+             border: 1px solid #dee2e6; /* Light border */
+             border-radius: .5rem; /* Rounded corners */
+             padding: 2rem; /* Increased padding */
+             box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); /* Subtle shadow */
+             margin-top: 3rem; /* Increased top margin for the review section */
+         }
+
+         /* Custom button group spacing and alignment */
+         .action-buttons-group {
+             display: flex;
+             flex-wrap: wrap;
+             gap: 1.5rem; /* Increased gap between buttons */
+             margin-top: 3rem; /* Increased top margin */
+             justify-content: center; /* Center buttons horizontally */
+         }
+
+         .action-buttons-group .btn,
+         .action-buttons-group form {
+             flex-grow: 0; /* Prevent buttons from growing */
+             flex-shrink: 0; /* Prevent buttons from shrinking */
+         }
+
+         /* Specific styles for book details layout */
+         .book-details-header {
+             display: flex;
+             align-items: center;
+             margin-bottom: 1.5rem; /* Increased space below the header block */
+             padding-bottom: 1rem; /* Add padding below the header block */
+             border-bottom: 1px solid #e9ecef; /* Add a subtle separator line */
+         }
+
+         .book-details-header h4 {
+             margin-bottom: 0.25rem; /* Less margin below title */
+         }
+
+         .book-details-header .rating {
+             margin-left: auto; /* Push rating and buttons to the right */
+             display: flex;
+             align-items: center;
+             gap: 0.75rem; /* Increased space between rating stars and buttons */
+         }
+
+         .book-details-header .rating .btn-group {
+             margin-left: 1rem; /* Increased space between rating and buttons */
+         }
+
+         .book-description {
+             margin-top: 1.5rem; /* Space above description */
+             margin-bottom: 2rem; /* Increased space below description */
+             line-height: 1.6; /* Improve readability */
+             color: #555; /* Slightly darker grey for body text */
+         }
+
+         .book-details-list {
+             margin-top: 2rem; /* Increased space above the details list */
+         }
+
+         .book-details-list dt {
+             font-weight: 500; /* Medium font weight for labels */
+             color: #495057; /* Slightly darker muted text */
+         }
+
+         .book-details-list dd {
+             color: #343a40; /* Darker text for values */
+         }
+
+         /* Spacing for form elements in review section */
+         .add-review-section .form-label {
+             margin-bottom: 0.5rem; /* Space below form labels */
+             font-weight: 500; /* Medium font weight for labels */
+         }
+
+         .add-review-section .form-control,
+         .add-review-section .form-select {
+             margin-bottom: 1rem; /* Space below form inputs/select */
+         }
+
+
+    </style>
+</head>
+
 
 <div class="container mt-4 py-4"> @* Use Bootstrap container, margin top, and vertical padding *@
 
-    <h1 class="mb-4 text-center text-primary">@Html.DisplayFor(model => model.Title)</h1> @* Bootstrap heading with margin bottom, centered, primary color *@
+    @* Applied custom primary color to the heading *@
+    <h1 class="mb-4 text-center text-primary-custom">@Html.DisplayFor(model => model.Title)</h1>
 
     @* Display TempData message if it exists *@
     @if (TempData["Message"] != null)
@@ -48,132 +252,37 @@
         </div>
     }
 
+    @* Applied enhanced card styling *@
     <div class="card shadow-lg border-0 rounded-3"> @* Bootstrap card container for details with larger shadow, no border, rounded corners *@
-        <div class="card-body p-4"> @* Increased padding *@
+        @* Increased padding *@
+        <div class="card-body p-4">
 
-            <div class="row g-4"> @* Bootstrap row for details layout with larger gap *@
+            @* Bootstrap row for details layout with larger gap *@
+            <div class="row g-4">
                 @* Book Cover Image Section *@
-                <div class="col-md-4 d-flex justify-content-center align-items-start"> @* Responsive column, centering *@
+                @* Responsive column, centering *@
+                <div class="col-md-4 d-flex justify-content-center"> @* Removed align-items-start to center vertically if needed *; kept justify-content-center *@
+                    @* Bootstrap image classes, rounded, shadow, light border, increased max-height, object-fit *@
+                    @* Applied enhanced image styling *@
                     <img src="@(string.IsNullOrEmpty(Model.CoverImageUrl) ? placeholderImageUrl : Model.CoverImageUrl)"
                          alt="Book Cover"
-                         class="img-fluid rounded shadow-sm border border-light" style="max-height: 400px; object-fit: cover;" /> @* Bootstrap image classes, rounded, shadow, light border, increased max-height, object-fit *@
+                         class="img-fluid rounded shadow-sm border border-light" style="max-height: 400px; object-fit: cover;" />
                 </div>
 
-                @* Book Details List Section *@
+                @* Book Details Content Section *@
                 <div class="col-md-8"> @* Responsive column *@
-                    <h4 class="card-title mb-3 text-secondary">Book Information</h4> @* Secondary color for title *@
-                    <hr class="mb-4"/>
 
-                    <dl class="row g-3"> @* Bootstrap row for definition list with larger gap *@
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-barcode me-2"></i> @Html.DisplayNameFor(model => model.Isbn) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.Isbn)
-                        </dd>
-
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-align-left me-2"></i> @Html.DisplayNameFor(model => model.Description) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.Description)
-                        </dd>
-
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-calendar-alt me-2"></i> @Html.DisplayNameFor(model => model.PublicationDate) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.PublicationDate)
-                        </dd>
-
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-dollar-sign me-2"></i> @Html.DisplayNameFor(model => model.ListPrice) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9 fw-bold text-success fs-5"> @* Bold, green color, larger font size *@
-                            @Html.DisplayFor(model => model.ListPrice)
-                        </dd>
-
-                        @* Display Sale Information if applicable *@
-                        @if (Model.OnSale && Model.SaleDiscount.HasValue)
-                        {
-                            <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                                <i class="fas fa-tags me-2"></i> Sale Price @* Icon added *@
-                            </dt>
-                            <dd class="col-sm-9 fw-bold text-danger fs-5"> @* Bold, red color, larger font size *@
-                                @((Model.ListPrice * (1 - Model.SaleDiscount.Value)).ToString("C")) @* Calculate and display sale price *@
-                            </dd>
-                             <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                                <i class="fas fa-percent me-2"></i> Sale Discount @* Icon added *@
-                            </dt>
-                            <dd class="col-sm-9">
-                                @(Model.SaleDiscount.Value.ToString("P0")) @* Display discount as percentage *@
-                            </dd>
-                             @if(Model.SaleStartDate.HasValue && Model.SaleEndDate.HasValue)
-                             {
-                                 <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                                    <i class="fas fa-clock me-2"></i> Sale Dates @* Icon added *@
-                                </dt>
-                                <dd class="col-sm-9">
-                                    @Model.SaleStartDate.Value.ToString("yyyy-MM-dd") to @Model.SaleEndDate.Value.ToString("yyyy-MM-dd")
-                                </dd>
-                             }
-                        }
-
-
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-user me-2"></i> @Html.DisplayNameFor(model => model.Author) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9">
-                            @(Model.Author != null ? $"{Model.Author.FirstName} {Model.Author.LastName}" : "Unknown Author")
-                        </dd>
-
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-building me-2"></i> @Html.DisplayNameFor(model => model.Publisher) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9">
-                            @(Model.Publisher != null ? Model.Publisher.Name : "Unknown Publisher")
-                        </dd>
-
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-book me-2"></i> @Html.DisplayNameFor(model => model.Genre) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9">
-                            @(Model.Genre != null ? Model.Genre.Name : "Unknown Genre")
-                        </dd>
-
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-language me-2"></i> @Html.DisplayNameFor(model => model.Language) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.Language)
-                        </dd>
-
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-file-alt me-2"></i> @Html.DisplayNameFor(model => model.Format) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.Format)
-                        </dd>
-
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-warehouse me-2"></i> @Html.DisplayNameFor(model => model.AvailabilityStock) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.AvailabilityStock)
-                        </dd>
-
-                         <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-book-reader me-2"></i> @Html.DisplayNameFor(model => model.AvailabilityLibrary) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9">
-                            @Html.DisplayFor(model => model.AvailabilityLibrary)
-                        </dd>
-
-                        @* Rating Display *@
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
-                            <i class="fas fa-star me-2"></i> @Html.DisplayNameFor(model => model.Rating) @* Icon added *@
-                        </dt>
-                        <dd class="col-sm-9">
+                    @* Header block with Title, Author, Rating, Bookmark, and Add to Cart *@
+                    <div class="book-details-header">
+                        <div>
+                            @* Applied custom primary color for title *@
+                            <h4 class="card-title mb-1 text-primary-custom">@Html.DisplayFor(model => model.Title)</h4>
+                            @* Author name bolded, muted text *@
+                            <p class="card-text text-muted small mb-0">
+                                by <span class="fw-semibold">@(Model.Author != null ? $"{Model.Author.FirstName} {Model.Author.LastName}" : "Unknown Author")</span>
+                            </p>
+                        </div>
+                        <div class="rating">
                              @if (Model.Rating.HasValue)
                             {
                                 @* Display stars based on rating *@
@@ -195,36 +304,196 @@
                             {
                                 <span>No rating available</span>
                             }
+
+                            @* Bookmark and Add to Cart buttons placed near rating *@
+                             <div class="btn-group ms-3" role="group" aria-label="Book Actions">
+                                @if (User?.Identity?.IsAuthenticated == true)
+                                {
+                                    @* Bookmark Button *@
+                                    @if (isBookmarked)
+                                    {
+                                        <span class="btn btn-sm btn-success disabled shadow-sm" title="You have bookmarked this book.">
+                                            <i class="fas fa-bookmark"></i>
+                                        </span> @* Bootstrap success button (disabled), small size, shadow *@
+                                    }
+                                    else
+                                    {
+                                        @* Create a form for the Bookmark action *@
+                                        @* Applied custom outline primary button style *@
+                                        <form asp-controller="Book" asp-action="Bookmark" method="post" style="display:inline;">
+                                            <input type="hidden" name="bookId" value="@Model?.BookId" />
+                                            @Html.AntiForgeryToken() @* Include the anti-forgery token *@
+                                            <button type="submit" class="btn btn-sm btn-outline-primary-custom shadow-sm" title="Bookmark this book">
+                                                 <i class="far fa-bookmark"></i>
+                                            </button>
+                                        </form>
+                                    }
+
+                                    @* Add to Cart Button *@
+                                    @* Applied custom primary button style *@
+                                    <form asp-controller="Book" asp-action="AddToCart" method="post" style="display:inline;">
+                                        <input type="hidden" name="bookId" value="@Model?.BookId" />
+                                        @Html.AntiForgeryToken() @* Include the anti-forgery token *@
+                                        <button type="submit" class="btn btn-sm btn-primary-custom shadow-sm" title="Add this book to your shopping cart">
+                                            <i class="fas fa-shopping-cart"></i> Add to Cart
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    @* Show disabled buttons for unauthenticated users *@
+                                    <span class="btn btn-sm btn-outline-secondary disabled shadow-sm" title="Login to bookmark books">
+                                        <i class="far fa-bookmark"></i>
+                                    </span> @* Bootstrap outline secondary button (disabled), small size, shadow *@
+                                     <span class="btn btn-sm btn-outline-secondary disabled shadow-sm" title="Login to add to cart">
+                                        <i class="fas fa-shopping-cart"></i> Add to Cart
+                                    </span> @* Bootstrap outline secondary button (disabled), small size, shadow *@
+                                }
+                             </div>
+
+                        </div>
+                    </div>
+
+                    @* Book Description *@
+                    <p class="book-description">
+                        @Html.DisplayFor(model => model.Description)
+                    </p>
+
+                    @* Remaining Book Details List *@
+                    <h5 class="mt-4 mb-3 text-secondary-custom">Additional Details</h5>
+                    <hr class="mb-4"/>
+                     <dl class="row g-3 book-details-list"> @* Added custom class for list styling *@
+                        <dt class="col-sm-3"> @* Removed muted text class here for slightly darker labels *@
+                            <i class="fas fa-barcode me-2"></i> @Html.DisplayNameFor(model => model.Isbn) @* Icon added *@
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.Isbn)
                         </dd>
 
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                        <dt class="col-sm-3"> @* Removed muted text class here *@
+                            <i class="fas fa-calendar-alt me-2"></i> @Html.DisplayNameFor(model => model.PublicationDate) @* Icon added *@
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.PublicationDate)
+                        </dd>
+
+                        <dt class="col-sm-3"> @* Removed muted text class here *@
+                            <i class="fas fa-dollar-sign me-2"></i> @Html.DisplayNameFor(model => model.ListPrice) @* Icon added *@
+                        </dt>
+                        @* Applied custom success color and larger font size *@
+                        <dd class="col-sm-9 fw-bold text-success-custom fs-5">
+                            @Html.DisplayFor(model => model.ListPrice)
+                        </dd>
+
+                        @* Display Sale Information if applicable *@
+                        @if (Model.OnSale && Model.SaleDiscount.HasValue)
+                        {
+                            <dt class="col-sm-3"> @* Removed muted text class here *@
+                                <i class="fas fa-tags me-2"></i> Sale Price @* Icon added *@
+                            </dt>
+                            @* Applied custom danger color and larger font size *@
+                            <dd class="col-sm-9 fw-bold text-danger-custom fs-5">
+                                @((Model.ListPrice * (1 - Model.SaleDiscount.Value)).ToString("C")) @* Calculate and display sale price *@
+                            </dd>
+                             <dt class="col-sm-3"> @* Removed muted text class here *@
+                                <i class="fas fa-percent me-2"></i> Sale Discount @* Icon added *@
+                            </dt>
+                            <dd class="col-sm-9">
+                                @(Model.SaleDiscount.Value.ToString("P0")) @* Display discount as percentage *@
+                            </dd>
+                             @if(Model.SaleStartDate.HasValue && Model.SaleEndDate.HasValue)
+                             {
+                                 <dt class="col-sm-3"> @* Removed muted text class here *@
+                                    <i class="fas fa-clock me-2"></i> Sale Dates @* Icon added *@
+                                </dt>
+                                <dd class="col-sm-9">
+                                    @Model.SaleStartDate.Value.ToString("yyyy-MM-dd") to @Model.SaleEndDate.Value.ToString("yyyy-MM-dd")
+                                </dd>
+                             }
+                        }
+
+
+                        <dt class="col-sm-3"> @* Removed muted text class here *@
+                            <i class="fas fa-user me-2"></i> @Html.DisplayNameFor(model => model.Author) @* Icon added *@
+                        </dt>
+                        <dd class="col-sm-9">
+                            @(Model.Author != null ? $"{Model.Author.FirstName} {Model.Author.LastName}" : "Unknown Author")
+                        </dd>
+
+                        <dt class="col-sm-3"> @* Removed muted text class here *@
+                            <i class="fas fa-building me-2"></i> @Html.DisplayNameFor(model => model.Publisher) @* Icon added *@
+                        </dt>
+                        <dd class="col-sm-9">
+                            @(Model.Publisher != null ? Model.Publisher.Name : "Unknown Publisher")
+                        </dd>
+
+                        <dt class="col-sm-3"> @* Removed muted text class here *@
+                            <i class="fas fa-book me-2"></i> @Html.DisplayNameFor(model => model.Genre) @* Icon added *@
+                        </dt>
+                        <dd class="col-sm-9">
+                            @(Model.Genre != null ? Model.Genre.Name : "Unknown Genre")
+                        </dd>
+
+                        <dt class="col-sm-3"> @* Removed muted text class here *@
+                            <i class="fas fa-language me-2"></i> @Html.DisplayNameFor(model => model.Language) @* Icon added *@
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.Language)
+                        </dd>
+
+                        <dt class="col-sm-3"> @* Removed muted text class here *@
+                            <i class="fas fa-file-alt me-2"></i> @Html.DisplayNameFor(model => model.Format) @* Icon added *@
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.Format)
+                        </dd>
+
+                        <dt class="col-sm-3"> @* Removed muted text class here *@
+                            <i class="fas fa-warehouse me-2"></i> @Html.DisplayNameFor(model => model.AvailabilityStock) @* Icon added *@
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.AvailabilityStock)
+                        </dd>
+
+                         <dt class="col-sm-3"> @* Removed muted text class here *@
+                            <i class="fas fa-book-reader me-2"></i> @Html.DisplayNameFor(model => model.AvailabilityLibrary) @* Icon added *@
+                        </dt>
+                        <dd class="col-sm-9">
+                            @Html.DisplayFor(model => model.AvailabilityLibrary)
+                        </dd>
+
+                        @* Rating Count Display *@
+                        <dt class="col-sm-3"> @* Removed muted text class here *@
                             <i class="fas fa-users me-2"></i> @Html.DisplayNameFor(model => model.RatingCount) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.RatingCount)
                         </dd>
 
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                        <dt class="col-sm-3"> @* Removed muted text class here *@
                             <i class="fas fa-calendar-plus me-2"></i> @Html.DisplayNameFor(model => model.DateAdded) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.DateAdded)
                         </dd>
 
-                        <dt class="col-sm-3 text-muted"> @* Muted text for labels *@
+                        <dt class="col-sm-3"> @* Removed muted text class here *@
                             <i class="fas fa-edit me-2"></i> @Html.DisplayNameFor(model => model.DateUpdated) @* Icon added *@
                         </dt>
                         <dd class="col-sm-9">
                             @Html.DisplayFor(model => model.DateUpdated)
                         </dd>
                     </dl>
+
+
                 </div>
             </div>
         </div>
     </div>
 
-    @* Action Buttons *@
-    <div class="d-flex flex-wrap gap-3 mt-4 justify-content-center"> @* Bootstrap flex container for buttons with larger gap, margin top, centered *@
+    @* Action Buttons Below the Card *@
+    @* Applied custom button styles and increased gap, centered the group *@
+    <div class="action-buttons-group"> @* Custom class for button group styling *@
 
         @* Edit Button *@
         @* <a asp-action="Edit" asp-route-id="@Model?.BookId" class="btn btn-warning btn-lg shadow-sm"> *@
@@ -236,61 +505,16 @@
             <i class="fas fa-arrow-left me-2"></i> Back to List
         </a> @* Bootstrap secondary button, large size, shadow *@
 
-        @* Conditional Buttons for Authenticated Users *@
-        @if (User?.Identity?.IsAuthenticated == true)
+        @* Conditional Delete Button (e.g., for Admin users) *@
+        @if (User?.Identity?.IsAuthenticated == true && canDelete)
         {
-            @* Bookmark Button *@
-            @if (isBookmarked)
-            {
-                <span class="btn btn-success btn-lg disabled shadow-sm" title="You have bookmarked this book.">
-                    <i class="fas fa-bookmark me-2"></i> Bookmarked
-                </span> @* Bootstrap success button (disabled), large size, shadow *@
-            }
-            else
-            {
-                @* Create a form for the Bookmark action *@
-                <form asp-controller="Book" asp-action="Bookmark" method="post" class="d-inline-block">
-                    <input type="hidden" name="bookId" value="@Model?.BookId" />
-                    @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                    <button type="submit" class="btn btn-outline-primary btn-lg shadow-sm" title="Bookmark this book">
-                         <i class="far fa-bookmark me-2"></i> Bookmark
-                    </button> @* Bootstrap outline primary button, large size, shadow *@
-                </form>
-            }
-
-            @* Add to Cart Button *@
-            @* Form targets BookController and AddToCart action (assuming this action exists) *@
-            <form asp-controller="Book" asp-action="AddToCart" method="post" class="d-inline-block">
-                <input type="hidden" name="bookId" value="@Model?.BookId" />
-                @* Optional: Add a quantity input if needed, default is 1 in the controller *@
-                @* <input type="number" name="quantity" value="1" min="1" style="width: 50px;" /> *@
-                @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                <button type="submit" class="btn btn-primary btn-lg shadow-sm" title="Add this book to your shopping cart">
-                    <i class="fas fa-shopping-cart me-2"></i> Add to Cart
-                </button> @* Bootstrap primary button, large size, shadow *@
-            </form>
-
-           
-            @* Conditional Delete Button (e.g., for Admin users) *@
-            @if (canDelete)
-            {
-                 <a asp-action="Delete" asp-route-id="@Model?.BookId" class="btn btn-danger btn-lg shadow-sm">
-                     <i class="fas fa-trash-alt me-2"></i> Delete
-                 </a> @* Bootstrap danger button, large size, shadow *@
-            }
-        }
-        else
-        {
-            @* Show disabled buttons or messages for unauthenticated users *@
-            <span class="btn btn-outline-secondary btn-lg disabled shadow-sm" title="Login to bookmark books">
-                <i class="far fa-bookmark me-2"></i> Bookmark
-            </span> @* Bootstrap outline secondary button (disabled), large size, shadow *@
-             <span class="btn btn-outline-secondary btn-lg disabled shadow-sm" title="Login to add to cart">
-                <i class="fas fa-shopping-cart me-2"></i> Add to Cart
-            </span> @* Bootstrap outline secondary button (disabled), large size, shadow *@
+             <a asp-action="Delete" asp-route-id="@Model?.BookId" class="btn btn-danger btn-lg shadow-sm">
+                 <i class="fas fa-trash-alt me-2"></i> Delete
+             </a> @* Bootstrap danger button, large size, shadow *@
         }
     </div>
 
+    @* Applied custom styling to the reviews section *@
     <div class="reviews-section mt-5">
         <h2 class="mb-3 text-center text-secondary">Customer Reviews</h2>
         <hr class="mb-4"/>
@@ -300,9 +524,10 @@
             <div class="review-list">
                 @foreach (var review in Model.Reviews.OrderByDescending(r => r.ReviewDate))
                 {
-                    <div class="review-item border-bottom mb-3 pb-3">
+                    @* Applied custom styling to individual review items *@
+                    <div class="review-item border-bottom pb-3 mb-3"> @* Adjusted padding and margin bottom *@
                         <h5> @(review.Member?.FirstName ?? "Anonymous User")</h5> @* Display member's username if available *@
-                        <div class="rating">
+                        <div class="rating mb-2"> @* Added margin bottom to rating *@
                             @for (int i = 0; i < review.Rating; i++)
                             {
                                 <i class="fas fa-star text-warning"></i> @* Full star *@
@@ -313,7 +538,7 @@
                             }
                             <span class="ms-2 text-muted">(@review.Rating/5)</span> @* Display numerical rating *@
                         </div>
-                        <p class="mt-2">@review.Comment</p>
+                        <p class="mt-2 mb-2">@review.Comment</p> @* Adjusted margins for comment *@
                         <small class="text-muted">Reviewed on: @review.ReviewDate.ToShortDateString()</small>
                     </div>
                 }
@@ -331,6 +556,7 @@
     @* Check if the user is authenticated, has purchased the book, and hasn't already reviewed it *@
     @if (User?.Identity?.IsAuthenticated == true && hasPurchased && !hasUserReviewed)
     {
+        @* Applied custom styling for the section *@
         <div class="add-review-section mt-5 p-4 border rounded-3 bg-light shadow-sm"> @* Added styling for the section *@
             <h3 class="mb-3 text-secondary">Leave Your Review</h3>
             <p class="text-muted">Share your thoughts on this book after purchasing it.</p>
@@ -342,7 +568,7 @@
                 <div class="mb-3"> @* Bootstrap margin bottom *@
                     <label for="Rating" class="form-label">Rating</label> @* Bootstrap form label *@
                     <select name="Rating" id="Rating" class="form-select" required>
-                        <option value="1">Select Rating</option>
+                        <option value="">Select Rating</option> @* Changed default option value to empty *@
                         <option value="1">1 - Poor</option>
                         <option value="2">2 - Fair</option>
                         <option value="3">3 - Good</option>
@@ -358,7 +584,8 @@
                     <span class="text-danger field-validation-valid" data-valmsg-for="Comment" data-valmsg-replace="true"></span>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-lg mt-3">Submit Review</button> @* Bootstrap button styling *@
+                @* Applied custom primary button style *@
+                <button type="submit" class="btn btn-primary-custom btn-lg mt-3">Submit Review</button> @* Bootstrap button styling *@
 
                 @* Include the anti-forgery token for security on POST forms *@
                 @Html.AntiForgeryToken()
@@ -367,18 +594,21 @@
     }
     else if (User?.Identity?.IsAuthenticated == true && hasPurchased && hasUserReviewed)
     {
+        @* Applied custom styling for the section *@
         <div class="add-review-section mt-5 p-4 border rounded-3 bg-light shadow-sm text-center">
             <p class="lead text-muted">You have already reviewed this book. Thank you for your feedback!</p>
         </div>
     }
     else if (User?.Identity?.IsAuthenticated == true)
     {
+        @* Applied custom styling for the section *@
         <div class="add-review-section mt-5 p-4 border rounded-3 bg-light shadow-sm text-center">
             <p class="lead text-muted">You must purchase this book to leave a review.</p>
         </div>
     }
     else
     {
+        @* Applied custom styling for the section *@
         <div class="add-review-section mt-5 p-4 border rounded-3 bg-light shadow-sm text-center">
             <p class="lead text-muted"><a asp-controller="Member" asp-action="Login">Login</a> or register to purchase and review books.</p>
         </div>
@@ -402,6 +632,6 @@
             });
         });
     </script>
-    
+
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }

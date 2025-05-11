@@ -19,38 +19,160 @@
 <head>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* Page Background Gradient */
+        body {
+             background: linear-gradient(to bottom right, #F5F5FC, #E0E0F8); /* Subtle gradient from light purple/grey to a slightly darker shade */
+             min-height: 100vh; /* Ensure gradient covers the full viewport height */
+             margin: 0; /* Remove default body margin */
+             padding: 0; /* Remove default body padding */
+         }
+
         /* Custom styles for card hover effect */
         .card {
             transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            /* Increased default shadow for a more lifted look */
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+            border-radius: .75rem; /* More rounded corners for the card */
+            position: relative; /* Needed for pseudo-element positioning */
+            overflow: hidden; /* Hide pseudo-element overflow */
+            background-color: #ffffff; /* Ensure card background is white */
+            border: none; /* Remove default border */
         }
+
+        /* Card Boundary Gradient using pseudo-element */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: .75rem; /* Match card border radius */
+            padding: 3px; /* Thickness of the gradient border */
+            background: linear-gradient(45deg, #FF7F50, #FFA07A, #F5F5FC); /* Gradient colors */
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: exclude;
+            mask-composite: exclude;
+            z-index: -1; /* Place behind the card content */
+        }
+
+
         .card:hover {
-            transform: translateY(-5px); /* Slightly lift the card on hover */
-            box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important; /* Larger shadow on hover */
+            transform: translateY(-8px); /* Slightly more lift on hover */
+            box-shadow: 0 2rem 5rem rgba(0,0,0,.25)!important; /* Larger, darker shadow on hover */
         }
         /* Style for the price to ensure it's always at the bottom */
         .card-body {
             display: flex;
             flex-direction: column;
+            padding: 1.25rem; /* Adjusted padding for better spacing */
+            padding-bottom: 0.75rem; /* Add some padding at the bottom of the body */
         }
         .card-text.price {
             margin-top: auto; /* Pushes the price to the bottom */
+            margin-bottom: 0; /* Remove bottom margin from price */
+            font-size: 1.3rem; /* Slightly larger price font */
         }
         /* Adjust button group spacing on small screens */
-        .btn-group.flex-wrap .btn,
-        .btn-group.flex-wrap form {
-             margin-bottom: 0.25rem; /* Add a small gap below buttons when they wrap */
-             margin-right: 0.25rem; /* Add a small gap to the right of buttons */
-        }
-         .btn-group.flex-wrap .btn:last-child,
-         .btn-group.flex-wrap form:last-child {
-              margin-bottom: 0; /* No gap for the last item */
-               margin-right: 0; /* No gap for the last item */
+        /* Removed previous horizontal spacing rules as buttons will be vertical */
+
+
+         /* Custom styles based on reference UI colors */
+
+         .text-primary-custom {
+             color: #FF7F50 !important; /* Vibrant Orange from reference */
          }
-          /* Further refine button group spacing for better alignment */
-         .card-footer .d-flex .btn-group {
-             flex-basis: 0; /* Allow the button group to shrink */
-             flex-grow: 1; /* Allow the button group to grow */
-             min-width: 0; /* Prevent overflow */
+
+          .btn-primary-custom {
+             background-color: #FF7F50 !important; /* Vibrant Orange from reference */
+             border-color: #FF7F50 !important; /* Vibrant Orange from reference */
+             color: white !important; /* White text for contrast */
+             border-radius: .3rem; /* Slightly more rounded buttons */
+             transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out; /* Add transition for hover */
+         }
+
+          .btn-primary-custom:hover {
+              background-color: #FF6347 !important; /* Slightly darker orange on hover */
+              border-color: #FF6347 !important;
+          }
+
+           .btn-outline-primary-custom {
+             color: #FF7F50 !important; /* Vibrant Orange text from reference */
+             border-color: #FF7F50 !important; /* Vibrant Orange border from reference */
+             background-color: transparent !important;
+             border-radius: .3rem; /* Slightly more rounded buttons */
+              transition: color 0.3s ease-in-out, background-color 0.3s ease-in-out, border-color 0.3s ease-in-out; /* Add transition for hover */
+         }
+
+         .btn-outline-primary-custom:hover {
+             color: white !important;
+             background-color: #FF7F50 !important; /* Vibrant Orange background on hover */
+             border-color: #FF7F50 !important;
+         }
+
+          .text-secondary-custom {
+             color: #6c757d !important; /* Bootstrap secondary - fits the muted tone */
+         }
+
+         .border-primary-custom {
+             border-color: #FF7F50 !important; /* Vibrant Orange border */
+         }
+
+         .text-success-custom {
+             color: #28a745 !important; /* Bootstrap success - fits the green tone */
+         }
+
+         .page-link-custom {
+             color: #FF7F50 !important; /* Orange for pagination links */
+             transition: background-color 0.3s ease-in-out, border-color 0.3s ease-in-out, color 0.3s ease-in-out; /* Add transition for hover */
+         }
+
+         .page-item.active .page-link-custom {
+             background-color: #FF7F50 !important; /* Orange background for active page */
+             border-color: #FF7F50 !important; /* Orange border for active page */
+             color: white !important;
+         }
+
+         .page-item.disabled .page-link-custom {
+             color: #6c757d !important; /* Muted color for disabled links */
+         }
+
+         /* Enhanced card styling */
+         /* Border radius moved to the main card rule */
+
+
+         .card-img-top {
+             border-top-left-radius: .7rem; /* Match top image corners to card */
+             border-top-right-radius: .7rem; /* Match top image corners to card */
+         }
+
+         .card-footer {
+             border-bottom-left-radius: .7rem; /* Match bottom footer corners to card */
+             border-bottom-right-radius: .7rem; /* Match bottom footer corners to card */
+             background-color: #f8f9fa; /* Slightly lighter footer background */
+         }
+
+         /* Style for vertical button group */
+         .btn-group-vertical-custom .btn,
+         .btn-group-vertical-custom form {
+             width: 100%; /* Make buttons full width in the vertical group */
+             margin-bottom: 0.5rem; /* Add vertical spacing */
+             margin-right: 0; /* Ensure no horizontal margin */
+         }
+
+         .btn-group-vertical-custom .btn:last-child,
+         .btn-group-vertical-custom form:last-child {
+              margin-bottom: 0; /* No bottom margin for the last item */
+         }
+
+         /* Professional UI adjustments */
+         .form-control-lg, .form-select-lg {
+             padding: .5rem 1rem; /* Slightly adjusted padding for form elements */
+         }
+
+         .btn-lg {
+             padding: .5rem 1rem; /* Slightly adjusted padding for large buttons */
          }
 
 
@@ -58,40 +180,46 @@
 </head>
 
 @* Add a container for better centering and padding *@
+@* Removed inline background color as it's now on the body *@
 <div class="container py-4">
 
-    <h1 class="mb-4 text-center text-secondary">Book Catalog</h1> @* Secondary color for heading *@
-
-    @* $1$ Create New Book Button #1# *@
-    @* <p class="text-center mb-4"> $1$ Added bottom margin #1# *@
-    @*     <a asp-action="Create" class="btn btn-success btn-lg shadow"> *@
-    @*         <i class="fas fa-plus-circle me-2"></i> Add New Book $1$ Icon added #1# *@
-    @*     </a> *@
-    @* </p> *@
+    @* Changed heading color to use a muted secondary color or custom secondary *@
+    <h1 class="mb-4 text-center text-secondary-custom">Book Catalog</h1>
 
     @* Search and Filter Form *@
     @* Add the search and filter form with improved layout and colors *@
-    <form asp-controller="Book" asp-action="Index" method="get" class="mb-4 p-4 bg-white rounded shadow-lg border border-primary"> @* White background, larger padding, larger shadow, primary border *@
-        <div class="row g-4 align-items-end"> @* Use g-4 for larger consistent spacing and align-items-end for button alignment *@
+    @* Applied white background, larger padding, larger shadow, and a custom primary border *@
+    <form asp-controller="Book" asp-action="Index" method="get" class="mb-4 p-4 bg-white rounded shadow-lg border border-primary-custom">
+        @* Use g-4 for larger consistent spacing and align-items-end for button alignment *@
+        <div class="row g-4 align-items-end">
             <div class="col-md-4">
-                <label for="searchString" class="form-label fw-bold text-primary">Find by title, author, or ISBN:</label> @* Primary color for label *@
-                <input type="text" name="searchString" id="searchString" value="@searchString" class="form-control form-control-lg border-secondary" placeholder="Search..." /> @* Larger input, placeholder, secondary border *@
+                @* Applied custom primary color for label *@
+                <label for="searchString" class="form-label fw-bold text-primary-custom">Find by title, author, or ISBN:</label>
+                @* Larger input, placeholder, secondary border - keeping secondary border for input fields for contrast *@
+                <input type="text" name="searchString" id="searchString" value="@searchString" class="form-control form-control-lg border-secondary" placeholder="Search..." />
             </div>
             <div class="col-md-3">
-                <label for="genreId" class="form-label fw-bold text-primary">Genre:</label> @* Primary color for label *@
-                <select name="genreId" id="genreId" asp-items="@ViewBag.Genres" class="form-select form-select-lg border-secondary"> @* Larger select, secondary border *@
+                @* Applied custom primary color for label *@
+                <label for="genreId" class="form-label fw-bold text-primary-custom">Genre:</label>
+                @* Larger select, secondary border *@
+                <select name="genreId" id="genreId" asp-items="@ViewBag.Genres" class="form-select form-select-lg border-secondary">
                     <option value="">-- All Genres --</option> @* Add "All" option *@
                 </select>
             </div>
             <div class="col-md-3">
-                <label for="authorId" class="form-label fw-bold text-primary">Author:</label> @* Primary color for label *@
-                <select name="authorId" id="authorId" asp-items="@ViewBag.Authors" class="form-select form-select-lg border-secondary"> @* Larger select, secondary border *@
+                @* Applied custom primary color for label *@
+                <label for="authorId" class="form-label fw-bold text-primary-custom">Author:</label>
+                @* Larger select, secondary border *@
+                <select name="authorId" id="authorId" asp-items="@ViewBag.Authors" class="form-select form-select-lg border-secondary">
                      <option value="">-- All Authors --</option> @* Add "All" option *@
                 </select>
             </div>
-            <div class="col-md-2 d-grid gap-3"> @* Use d-grid and gap-3 for stackable buttons on small screens, larger gap *@
-                 <button type="submit" class="btn btn-primary btn-lg shadow-sm"><i class="fas fa-search me-2"></i> Filter/Search</button> @* Larger button, icon added *@
-                 <a asp-action="Index" class="btn btn-outline-secondary btn-lg shadow-sm"><i class="fas fa-sync-alt me-2"></i> Clear</a> @* Changed to outline-secondary, larger button, icon added, FIXED closing tag *@
+            @* Use d-grid and gap-3 for stackable buttons on small screens, larger gap *@
+            <div class="col-md-2 d-grid gap-3">
+                 @* Applied custom primary button style *@
+                 <button type="submit" class="btn btn-primary-custom btn-lg shadow-sm"><i class="fas fa-search me-2"></i> Filter/Search</button>
+                 @* Changed to outline-secondary, larger button, icon added *@
+                 <a asp-action="Index" class="btn btn-outline-secondary btn-lg shadow-sm"><i class="fas fa-sync-alt me-2"></i> Clear</a>
             </div>
         </div>
     </form>
@@ -100,7 +228,8 @@
     @* Display TempData message with improved styling *@
     @if (TempData["Message"] != null)
     {
-        <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert"> @* Added shadow *@
+        @* Added shadow and ensured alert color fits generally (Bootstrap info is blue) *@
+        <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
             @TempData["Message"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
@@ -110,52 +239,64 @@
     @if (Model.Any())
     {
         @* Display books in a card layout with enhanced styling *@
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4"> @* Use g-4 for larger gap between cards *@
+        @* Changed row-cols-lg-4 to row-cols-lg-3 to make cards wider on large screens *@
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-3 g-4">
             @foreach (var item in Model)
             {
                 <div class="col">
-                    <div class="card h-100 shadow-lg border-0 rounded-3"> @* Larger shadow, no border, rounded corners *@
+                    @* Larger shadow, no border, rounded corners *@
+                    <div class="card h-100 shadow-lg border-0 rounded-3"> @* Adjusted rounded corners class *@
+                        @* Rounded top corners for image *@
+                        @* Increased fixed height for better visual *@
                         <img src="@(string.IsNullOrEmpty(item.CoverImageUrl) ? placeholderImageUrl : item.CoverImageUrl)"
-                             class="card-img-top rounded-top" alt="Book Cover" @* Rounded top corners for image *@
-                             style="height: 280px; object-fit: cover;"> @* Increased fixed height for better visual *@
+                             class="card-img-top rounded-top-3" alt="Book Cover" @* Adjusted rounded corners class *@
+                             style="height: 280px; object-fit: cover;">
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title text-primary mb-1">@Html.DisplayFor(modelItem => item.Title)</h5> @* Primary color for title *@
+                            @* Applied custom primary color for title *@
+                            <h5 class="card-title text-primary-custom mb-1">@Html.DisplayFor(modelItem => item.Title)</h5>
+                            @* Author name bolded, muted text *@
                             <p class="card-text text-muted small mb-1">
-                                by <span class="fw-semibold">@(item.Author != null ? $"{item.Author.FirstName} {item.Author.LastName}" : "Unknown Author")</span> @* Author name bolded *@
+                                by <span class="fw-semibold">@(item.Author != null ? $"{item.Author.FirstName} {item.Author.LastName}" : "Unknown Author")</span>
                             </p>
-                             <p class="card-text text-muted small mb-2"> @* Increased bottom margin *@
-                                Genre: <span class="fw-semibold">@(item.Genre != null ? item.Genre.Name : "Unknown Genre")</span> @* Genre name bolded *@
+                            @* Increased bottom margin, muted text *@
+                             <p class="card-text text-muted small mb-2">
+                                Genre: <span class="fw-semibold">@(item.Genre != null ? item.Genre.Name : "Unknown Genre")</span>
                             </p>
-                            <p class="card-text fw-bold text-success fs-5 price">@Html.DisplayFor(modelItem => item.ListPrice)</p> @* Green color and larger font for price, push price to bottom, added price class for custom style *@
+                            @* Applied custom success color and larger font for price, push price to bottom *@
+                            <p class="card-text fw-bold text-success-custom fs-5 price">@Html.DisplayFor(modelItem => item.ListPrice)</p>
                         </div>
-                         <div class="card-footer bg-light border-top rounded-bottom py-3"> @* Light background, rounded bottom for footer, added vertical padding *@
-                            <div class="d-flex justify-content-between align-items-center">
-                                 <div class="btn-group flex-wrap" role="group" aria-label="Book Actions"> @* Use flex-wrap for buttons on small screens *@
-                                    <a asp-action="Details" asp-route-id="@item.BookId" class="btn btn-sm btn-outline-secondary" title="View book details"><i class="fas fa-info-circle me-1"></i> Details</a> @* Icon added *@
+                         @* Light background, rounded bottom for footer, added vertical padding *@
+                         <div class="card-footer bg-light border-top rounded-bottom-3 py-3"> @* Adjusted rounded corners class *@
+                            @* Changed to flex-column for vertical button stacking *@
+                            <div class="d-flex flex-column justify-content-between align-items-center">
+                                 @* Removed flex-wrap as buttons are now vertical, added custom class for vertical spacing *@
+                                 <div class="btn-group-vertical-custom" role="group" aria-label="Book Actions">
+                                    @* Added mb-2 for bottom margin on the button *@
+                                    <a asp-action="Details" asp-route-id="@item.BookId" class="btn btn-sm btn-outline-secondary mb-2" title="View book details"><i class="fas fa-info-circle me-1"></i> Details</a>
 
                                     @* Display Bookmark button or Bookmarked status *@
                                     @if (User.Identity.IsAuthenticated)
                                     {
                                         // Check if the current book's ID is in the list of bookmarked IDs
-                                        // Check if the current book's ID is in the list of bookmarked IDs
                                         var isBookmarked = bookmarkedBookIds != null && bookmarkedBookIds.Contains(item.BookId);
 
                                         @* Create a small form for the Bookmark action (add or remove) *@
-                                        <form asp-controller="Book" asp-action="Bookmark" method="post" style="display:inline;">
+                                        @* Added mb-2 for bottom margin on the form *@
+                                        <form asp-controller="Book" asp-action="Bookmark" method="post" style="display:inline;" class="mb-2">
                                             <input type="hidden" name="bookId" value="@item.BookId" />
                                             @Html.AntiForgeryToken() @* Include the anti-forgery token *@
 
                                             @if (isBookmarked)
                                             {
-                                                @* If bookmarked, show button to REMOVE bookmark *@
+                                                @* If bookmarked, show button to REMOVE bookmark with success color *@
                                                 <button type="submit" class="btn btn-sm btn-success" title="Remove bookmark">
                                                     <i class="fas fa-bookmark me-1"></i> Bookmarked
                                                 </button>
                                             }
                                             else
                                             {
-                                                @* If NOT bookmarked, show button to ADD bookmark *@
-                                                <button type="submit" class="btn btn-sm btn-outline-primary" title="Bookmark this book">
+                                                @* If NOT bookmarked, show button to ADD bookmark with outline primary custom color *@
+                                                <button type="submit" class="btn btn-sm btn-outline-primary-custom" title="Bookmark this book">
                                                     <i class="far fa-bookmark me-1"></i> Bookmark
                                                 </button>
                                             }
@@ -163,12 +304,14 @@
 
                                         @* --- Add to Cart Button (Calls AddToCart in BookController) --- *@
                                         @* Form targets BookController and AddToCart action as per your provided code *@
-                                        <form asp-controller="Book" asp-action="AddToCart" method="post" style="display:inline;">
+                                        @* Added mb-0 for no bottom margin on the last form *@
+                                        <form asp-controller="Book" asp-action="AddToCart" method="post" style="display:inline;" class="mb-0">
                                             <input type="hidden" name="bookId" value="@item.BookId" />
                                             @* Optional: Add a quantity input if needed, default is 1 in the controller *@
                                             @* <input type="number" name="quantity" value="1" min="1" style="width: 50px;" /> *@
                                             @Html.AntiForgeryToken() @* Include the anti-forgery token *@
-                                            <button type="submit" class="btn btn-sm btn-primary" title="Add this book to your shopping cart"><i class="fas fa-shopping-cart me-1"></i> Add to Cart</button> @* Icon added *@
+                                            @* Applied custom primary button style for add to cart *@
+                                            <button type="submit" class="btn btn-sm btn-primary-custom" title="Add this book to your shopping cart"><i class="fas fa-shopping-cart me-1"></i> Add to Cart</button> @* Icon added *@
                                         </form>
                                         @* --- End Add to Cart Button --- *@
 
@@ -176,12 +319,16 @@
                                     }
                                     else
                                     {
-                                        @* Show disabled buttons for unauthenticated users *@
-                                        <span class="btn btn-sm btn-outline-secondary disabled" title="Login to bookmark books"><i class="far fa-bookmark me-1"></i> Bookmark</span> @* Icon added *@
-                                        <span class="btn btn-sm btn-outline-secondary disabled" title="Login to add to cart"><i class="fas fa-shopping-cart me-1"></i> Add to Cart</span> @* Icon added *@
+                                        @* Show disabled buttons for unauthenticated users with outline secondary *@
+                                        @* Added mb-2 for bottom margin on the span *@
+                                        <span class="btn btn-sm btn-outline-secondary disabled mb-2" title="Login to bookmark books"><i class="far fa-bookmark me-1"></i> Bookmark</span> @* Icon added *@
+                                        @* Added mb-0 for no bottom margin on the last span *@
+                                        <span class="btn btn-sm btn-outline-secondary disabled mb-0" title="Login to add to cart"><i class="fas fa-shopping-cart me-1"></i> Add to Cart</span> @* Icon added *@
                                     }
                                  </div>
-                                 <small class="text-muted flex-shrink-0 ms-2"><i class="fas fa-calendar-alt me-1"></i> Added: @item.DateAdded.ToString("yyyy-MM-dd")</small> @* Icon added, flex-shrink to prevent wrapping, ms-2 for left margin *@
+                                 @* Icon added, flex-shrink to prevent wrapping, ms-2 for left margin, muted text *@
+                                 @* Adjusted margin-top for spacing from the vertical button group *@
+                                 <small class="text-muted flex-shrink-0 mt-2"><i class="fas fa-calendar-alt me-1"></i> Added: @item.DateAdded.ToString("yyyy-MM-dd")</small>
                             </div>
                         </div>
                     </div>
@@ -192,6 +339,7 @@
     else
     {
         @* Display message when no books are found *@
+        @* Ensured warning alert styling fits generally *@
         <div class="alert alert-warning text-center mt-4 shadow-sm" role="alert">
             <h4 class="alert-heading"><i class="fas fa-info-circle me-2"></i> No Books Found</h4>
             <p>Your search/filter criteria did not match any books.</p>
@@ -208,9 +356,11 @@
         var nextDisabled = (currentPage >= totalPages) ? "disabled" : "";
     }
 
-    @if (totalPages > 1 && Model.Any()) // Only show pagination if there's more than one page AND results are displayed
+    @* Only show pagination if there's more than one page AND results are displayed *@
+    @if (totalPages > 1 && Model.Any())
     {
-        <nav aria-label="Page navigation example" class="mt-5"> @* Increased top margin *@
+        @* Increased top margin *@
+        <nav aria-label="Page navigation example" class="mt-5">
             <ul class="pagination justify-content-center">
                 <li class="page-item @prevDisabled">
                      <a asp-action="Index"
@@ -218,9 +368,9 @@
                        asp-route-searchString="@searchString"
                        asp-route-genreId="@selectedGenreId"
                        asp-route-authorId="@selectedAuthorId"
-                       class="page-link"
+                       class="page-link page-link-custom"
                        aria-label="Previous"> @* Added aria-label *@
-                        <span aria-hidden="true">&laquo;</span> Previous @* Added arrow and text *@
+                        <span aria-hidden="true">&laquo;</span> Previous @* Added text and arrow *@
                     </a>
                 </li>
 
@@ -233,7 +383,7 @@
                            asp-route-searchString="@searchString"
                            asp-route-genreId="@selectedGenreId"
                            asp-route-authorId="@selectedAuthorId"
-                           class="page-link">
+                           class="page-link page-link-custom">
                             @i
                         </a>
                     </li>
@@ -246,7 +396,7 @@
                        asp-route-searchString="@searchString"
                        asp-route-genreId="@selectedGenreId"
                        asp-route-authorId="@selectedAuthorId"
-                       class="page-link"
+                       class="page-link page-link-custom"
                        aria-label="Next"> @* Added aria-label *@
                         Next <span aria-hidden="true">&raquo;</span> @* Added text and arrow *@
                     </a>
@@ -254,7 +404,8 @@
             </ul>
         </nav>
 
-        <div class="text-center mt-3 mb-4 text-muted"> @* Added margin-top and bottom, and muted text *@
+        @* Added margin-top and bottom, and muted text *@
+        <div class="text-center mt-3 mb-4 text-muted">
             Page @currentPage of @totalPages
         </div>
     }
