@@ -1,51 +1,374 @@
 @model IEnumerable<FinalProject.Models.Admin>
 
 @{
-    ViewData["Title"] = "Admin Dashboard";
+    ViewData["Title"] = "Admin Dashboard - Prototype with ID Input";
+    // Define color variables based on the image's theme
+    var primaryColor = "#007bff"; // A standard blue, can be adjusted
+    var accentColor = "#28a745"; // A standard green, can be adjusted
+    var sidebarBg = "#eef2f7"; // Light blue-grey from the image
+    var mainContentBg = "#ffffff"; // White
+    var textColor = "#343a0"; // Dark grey for text
+    var lightTextColor = "#6c757d"; // Muted grey for secondary text
+    var cardBg = "#ffffff"; // Card background
+    var cardBorder = "#dee2e6"; // Light grey border
 }
 
-<h1>Admin Dashboard</h1>
+@* Apply basic body styles and layout structure *******************************************@
+<style>
+    body {
+        font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* Clean sans-serif font */
+        background-color: @mainContentBg;
+        color: @textColor;
+        margin: 0;
+        padding: 0;
+    }
 
-<p>
-    Welcome to the Admin Dashboard! You can only see this page if you are logged in as an administrator.
-</p>
+    .dashboard-container {
+        display: flex; /* Use flexbox for side-by-side layout */
+        min-height: 100vh; /* Ensure container takes at least full viewport height */
+    }
 
-@* Optional: Display a list of admins if you want to use the model *@
-@*
-<h2>All Admins</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th>@Html.DisplayNameFor(model => model.Username)</th>
-            <th>@Html.DisplayNameFor(model => model.Email)</th>
-            <th>@Html.DisplayNameFor(model => model.FullName)</th>
-            <th>@Html.DisplayNameFor(model => model.LastLogin)</th>
-            <th>@Html.DisplayNameFor(model => model.DateAdded)</th>
-            <th>@Html.DisplayNameFor(model => model.DateUpdated)</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>@Html.DisplayFor(modelItem => item.Username)</td>
-            <td>@Html.DisplayFor(modelItem => item.Email)</td>
-            <td>@Html.DisplayFor(modelItem => item.FullName)</td>
-            <td>@Html.DisplayFor(modelItem => item.LastLogin)</td>
-            <td>@Html.DisplayFor(modelItem => item.DateAdded)</td>
-            <td>@Html.DisplayFor(modelItem => item.DateUpdated)</td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.AdminId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.AdminId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.AdminId">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    .sidebar {
+        width: 250px; /* Fixed width sidebar */
+        background-color: @sidebarBg;
+        padding: 20px;
+        color: @textColor;
+        display: flex;
+        flex-direction: column; /* Stack items vertically */
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1); /* Subtle shadow on the right */
+    }
+
+    .sidebar h2 {
+        color: @textColor;
+        margin-bottom: 30px;
+        font-size: 1.5rem;
+        border-bottom: 1px solid #ced4da; /* Separator line */
+        padding-bottom: 15px;
+    }
+
+    .sidebar-nav {
+        list-style: none;
+        padding: 0;
+        flex-grow: 1; /* Allow navigation list to take available space */
+    }
+
+    .sidebar-nav li {
+        margin-bottom: 10px;
+        display: flex; /* Use flex for items within the list item */
+        align-items: center; /* Vertically align items */
+    }
+
+    .sidebar-nav a {
+        color: @textColor;
+        text-decoration: none;
+        font-size: 1.1rem;
+        padding: 10px 15px;
+        display: block; /* Make the entire area clickable */
+        border-radius: 5px; /* Rounded corners for links */
+        transition: background-color 0.2s ease, color 0.2s ease; /* Smooth hover effect */
+        flex-grow: 1; /* Allow the link text area to grow */
+    }
+
+    .sidebar-nav a:hover {
+        background-color: darken(@sidebarBg, 5%); /* Slightly darker background on hover */
+        color: @primaryColor; /* Use primary color for text on hover */
+    }
+
+    .sidebar-nav a i {
+         margin-right: 10px; /* Space between icon and text */
+    }
+
+    .sidebar-nav input[type="text"] {
+        width: 60px; /* Fixed width for ID input */
+        padding: 5px 8px;
+        margin-left: 5px; /* Space from the link text */
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+
+    .sidebar-nav button {
+        padding: 5px 10px;
+        margin-left: 5px; /* Space from the input field */
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .sidebar-nav button.edit-btn {
+        background-color: @primaryColor;
+        color: white;
+    }
+
+     .sidebar-nav button.edit-btn:hover {
+        background-color: darken(@primaryColor, 10%);
+     }
+
+    .sidebar-nav button.delete-btn {
+        background-color: #dc3545; /* Bootstrap danger color */
+        color: white;
+    }
+
+    .sidebar-nav button.delete-btn:hover {
+        background-color: darken(#dc3545, 10%);
+    }
+
+
+    .main-content {
+        flex-grow: 1; /* Allow main content to fill the remaining space */
+        padding: 30px;
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between; /* Space out title and date/user info */
+        align-items: center;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #ced4da; /* Separator line */
+        padding-bottom: 20px;
+    }
+
+    .dashboard-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        color: @textColor;
+    }
+
+    .dashboard-header .user-info {
+        font-size: 1rem;
+        color: @lightTextColor;
+    }
+
+    .dashboard-cards {
+        display: grid; /* Use CSS Grid for a responsive card layout */
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive columns */
+        gap: 20px; /* Space between grid items */
+        margin-bottom: 30px;
+    }
+
+    .card {
+        background-color: @cardBg;
+        border: 1px solid @cardBorder;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Subtle shadow */
+    }
+
+    .card h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: @textColor;
+        font-size: 1.3rem;
+    }
+
+    .card p {
+        color: @lightTextColor;
+    }
+
+    .static-graph-placeholder {
+        background-color: #f8f9fa; /* Light background for the placeholder area */
+        border: 1px dashed #ced4da; /* Dashed border to indicate it's a placeholder */
+        min-height: 200px; /* Minimum height for the placeholder */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: @lightTextColor;
+        font-style: italic;
+        border-radius: 5px;
+    }
+
+     .logout-form {
+         margin-top: auto; /* Push the logout form to the bottom of the sidebar */
+         padding-top: 20px; /* Add some space above the logout button */
+         border-top: 1px solid #ced4da; /* Separator above logout */
+     }
+
+     .logout-form button {
+         width: 100%; /* Make the logout button full width */
+         border-radius: 5px; /* Rounded corners for the button */
+     }
+
+     /* Responsive adjustments */
+     @@media (max-width: 768px) {
+         .dashboard-container {
+             flex-direction: column; /* Stack sidebar and main content on smaller screens */
+         }
+         .sidebar {
+             width: 100%; /* Full width sidebar on small screens */
+             box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Shadow at the bottom */
+         }
+         .main-content {
+             padding: 20px; /* Reduce padding on small screens */
+         }
+         .dashboard-cards {
+             grid-template-columns: 1fr; /* Single column for cards on small screens */
+         }
+          .sidebar-nav li {
+              flex-direction: column; /* Stack items vertically in sidebar on small screens */
+              align-items: flex-start;
+          }
+          .sidebar-nav input[type="text"],
+          .sidebar-nav button {
+              margin-left: 0;
+              margin-top: 5px;
+              width: auto; /* Auto width for inputs/buttons on small screens */
+          }
+     }
+
+</style>
+
+@* Dashboard Layout **************************************************@
+<div class="dashboard-container">
+
+    @* Sidebar - Navigation Links *@
+    <div class="sidebar">
+        <h2>Admin Panel</h2>
+        <ul class="sidebar-nav">
+            @* Add icons - requires a library like Font Awesome. Add <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> in your _Layout.cshtml head *@
+            <li><a href="#"><i class="fas fa-tachometer-alt"></i> Dashboard Home</a></li>
+            <li><a href="/orders"><i class="fas fa-shopping-cart"></i> Manage Orders</a></li>
+            <li><a href="/book/create"><i class="fas fa-book"></i> Create Book</a></li>
+
+            @* Edit Book with ID Input *@
+            <li>
+                <a href="#" class="sidebar-link"><i class="fas fa-edit"></i> Edit Book</a>
+                <input type="text" class="book-id-input" placeholder="ID" data-action="edit">
+                <button class="edit-btn" data-action="edit">Go</button>
+            </li>
+
+            @* Delete Book with ID Input *@
+            <li>
+                <a href="#" class="sidebar-link"><i class="fas fa-trash-alt"></i> Delete Book</a>
+                <input type="text" class="book-id-input" placeholder="ID" data-action="delete">
+                <button class="delete-btn" data-action="delete">Go</button>
+            </li>
+        </ul>
+
+        @* Logout form moved to sidebar *@
+        <div class="logout-form">
+             <form asp-controller="Admin" asp-action="Logout" method="post">
+                <button type="submit" class="btn btn-danger"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </form>
+        </div>
+    </div>
+
+    @* Main Content - Static Items and Placeholders *@
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h1>Admin Dashboard</h1>
+             @* Placeholder for date and user info *@
+            <div class="user-info">
+                Hello, Admin User | @DateTime.Now.ToShortDateString()
+            </div>
+        </div>
+
+        <p>
+            Welcome to the Admin Dashboard prototype. Use the links in the sidebar to navigate to different sections. For editing or deleting a book, enter the Book ID next to the respective link and click "Go".
+        </p>
+
+        @* Few Static Cards with Key Metrics *********************************@
+        <h2>Key Metrics (Static)</h2>
+        <div class="dashboard-cards">
+            <div class="card">
+                <h3>Total Items</h3>
+                @* Static placeholder data *@
+                <p><strong>1,500</strong></p>
+            </div>
+             <div class="card">
+                <h3>Pending Actions</h3>
+                 @* Static placeholder data *@
+                <p><strong>50</strong></p>
+            </div>
+        </div>
+
+        @* Single Static Graph Placeholder *************************************@
+        <h2>Activity Overview (Static)</h2>
+        <div class="dashboard-cards"> @* Using card layout for graph containers *@
+            <div class="card">
+                <h3>Recent Activity Trend</h3>
+                <div class="static-graph-placeholder">
+                    [Placeholder for Activity Chart]
+                </div>
+            </div>
+        </div>
+
+        @* Optional: Display a list of admins - kept commented out for 'static approach' focus *@
+        @*
+        <h2 class="mt-4">All Admins</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>@Html.DisplayNameFor(model => model.Username)</th>
+                    <th>@Html.DisplayNameFor(model => model.Email)</th>
+                    <th>@Html.DisplayNameFor(model => model.FullName)</th>
+                    <th>@Html.DisplayNameFor(model => model.LastLogin)</th>
+                    <th>@Html.DisplayFor(modelItem => item.DateAdded)</th>
+                    <th>@Html.DisplayFor(modelItem => item.DateUpdated)</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+        @foreach (var item in Model) {
+                <tr>
+                    <td>@Html.DisplayFor(modelItem => item.Username)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                    <td>@Html.DisplayFor(modelItem => item.FullName)</td>
+                    <td>@Html.DisplayFor(modelItem => item.LastLogin)</td>
+                    <td>@Html.DisplayFor(modelItem => item.DateAdded)</td>
+                    <td>@Html.DisplayFor(modelItem => item.DateUpdated)</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.AdminId">Edit</a> |
+                        <a asp-action="Details" asp-route-id="@item.AdminId">Details</a> |
+                        <a asp-action="Delete" asp-route-id="@item.AdminId">Delete</a>
+                    </td>
+                </tr>
+        }
+            </tbody>
+        </table>
+        *@
+
+    </div>
+</div>
+
+@* JavaScript for handling ID input and navigation ***************************@
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Get all 'Go' buttons for edit and delete
+        const goButtons = document.querySelectorAll('.sidebar-nav button[data-action]');
+
+        goButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const action = this.getAttribute('data-action'); // 'edit' or 'delete'
+                // Find the input field associated with this button's action
+                const input = this.closest('li').querySelector(`.book-id-input[data-action="${action}"]`);
+
+                if (input) {
+                    const bookId = input.value.trim(); // Get the entered ID and remove whitespace
+
+                    if (bookId) {
+                        // Construct the URL and navigate
+                        const url = `/book/${action}/${bookId}`;
+                        window.location.href = url; // Navigate to the constructed URL
+                    } else {
+                        // Optionally, provide feedback to the user if the ID is empty
+                        alert(`Please enter a Book ID to ${action}.`); // Using alert for simplicity in prototype
+                    }
+                }
+            });
+        });
+    });
+</script>
+
+@* Notes:
+1.  This code includes inline <style> and <script> tags for demonstration purposes. For a production application, it's best practice to move these styles to a separate CSS file (e.g., wwwroot/css/admin-dashboard.css) and the script to a separate JS file (e.g., wwwroot/js/admin-dashboard.js) and link them in your _Layout.cshtml file.
+2.  This example uses Bootstrap 5 classes for some elements like buttons (`btn`, `btn-danger`). Ensure you have Bootstrap included in your project's _Layout.cshtml file.
+3.  Icons are added using Font Awesome classes (`fas fa-...`). To display these icons, you need to include the Font Awesome CSS library in the <head> section of your _Layout.cshtml file. You can use a CDN link like: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+4.  The areas for graphs are static placeholders (`div` elements with dashed borders and text). To display actual dynamic charts, you would need to integrate a JavaScript charting library (such as Chart.js, Plotly.js, or ApexCharts) and write code to fetch and render data within these placeholder divs.
+5.  The `@model` directive is retained, but the code to display a list of admins from the model is kept commented out to align with the request for a more static initial view. You can uncomment and style this table if you need to display dynamic data later.
+6.  Added input fields and "Go" buttons next to the "Edit Book" and "Delete Book" links.
+7.  Included a simple JavaScript block that listens for clicks on the "Go" buttons, reads the value from the corresponding input field, and navigates to the appropriate URL (`/book/edit/{id}` or `/book/delete/{id}`).
+8.  Added basic styling for the input fields and buttons within the sidebar.
+9.  Included a basic alert for demonstration if the ID input is empty. In a real application, you might use a more user-friendly notification method.
 *@
-
-@* Add a link to logout *@
-<form asp-controller="Admin" asp-action="Logout" method="post">
-    <button type="submit" class="btn btn-danger">Logout</button>
-</form>
