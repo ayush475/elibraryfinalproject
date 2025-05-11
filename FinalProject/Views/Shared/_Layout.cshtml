@@ -279,10 +279,10 @@
                 <li><a href="#">Contact Us</a></li>
             </ul>
         </nav>
-        <div class="search-bar">
-            <input type="text" placeholder="Search">
+        <form asp-controller="Book" asp-action="Index" method="get" class="search-bar">
+            <input type="text" name="searchString" placeholder="Search">
             <button type="submit">🔍</button>
-        </div>
+        </form>
         <div class="user-actions">
             <span>🔔</span>
             @if (User.Identity.IsAuthenticated)
