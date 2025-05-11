@@ -9,7 +9,6 @@ namespace FinalProject.Controllers
     // Apply Authorize attribute to the entire controller to require authentication
     // Only users authenticated with the "AdminCookieAuth" scheme and having the "Admin" role
     // can access actions within this controller, *unless* an action is marked with [AllowAnonymous].
-    [Authorize(AuthenticationSchemes = AdminController.AdminAuthScheme, Roles = "Admin")]
     public class AnnouncementController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -58,6 +57,8 @@ namespace FinalProject.Controllers
         // GET: Announcement
         // This action is now protected by the [Authorize] attribute on the controller level.
         // Only authenticated admins with the "Admin" role can access this.
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         public async Task<IActionResult> Index()
         {
             return View(await _context.Announcements.ToListAsync());
@@ -89,6 +90,8 @@ namespace FinalProject.Controllers
         /// <returns>The Create view.</returns>
         [HttpGet]
         // This action is now protected by the [Authorize] attribute on the controller level.
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         public IActionResult Create()
         {
             return View();
@@ -99,7 +102,7 @@ namespace FinalProject.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        // This action is now protected by the [Authorize] attribute on the controller level.
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
         public async Task<IActionResult> Create([Bind("AnnouncementId,Title,Message,StartTime,EndTime,IsActive")] Announcement announcement) // Removed DateAdded, DateUpdated from Bind as they should be set by the controller/model
         {
             if (ModelState.IsValid)
@@ -117,6 +120,8 @@ namespace FinalProject.Controllers
 
         // GET: Announcement/Edit/5
         // This action is now protected by the [Authorize] attribute on the controller level.
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -139,6 +144,8 @@ namespace FinalProject.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         // This action is now protected by the [Authorize] attribute on the controller level.
         public async Task<IActionResult> Edit(int id, [Bind("AnnouncementId,Title,Message,StartTime,EndTime,IsActive")] Announcement announcement) // Removed DateAdded, DateUpdated from Bind
         {
@@ -189,6 +196,8 @@ namespace FinalProject.Controllers
 
         // GET: Announcement/Delete/5
         // This action is now protected by the [Authorize] attribute on the controller level.
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -209,6 +218,8 @@ namespace FinalProject.Controllers
         // POST: Announcement/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         // This action is now protected by the [Authorize] attribute on the controller level.
         public async Task<IActionResult> DeleteConfirmed(int id)
         {

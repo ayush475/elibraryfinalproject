@@ -328,6 +328,8 @@ private async Task GetAndSetUserSpecificBookViewDataAsync(int bookId, ClaimsPrin
 // --- End Helper Methods for Details Action ---
 
         // GET: Book/Create
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         public IActionResult Create()
         {
             // Add null checks for Author properties when creating SelectList (Fixes CS8602 warning)
@@ -361,6 +363,8 @@ private async Task GetAndSetUserSpecificBookViewDataAsync(int bookId, ClaimsPrin
         }
 
         // GET: Book/Edit/5
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -379,12 +383,14 @@ private async Task GetAndSetUserSpecificBookViewDataAsync(int bookId, ClaimsPrin
             ViewData["PublisherId"] = new SelectList(_context.Publishers.OrderBy(p => p.Name), "PublisherId", "Name", book.PublisherId);
             return View(book);
         }
-
+        
         // POST: Book/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         public async Task<IActionResult> Edit(int id, [Bind("BookId,Isbn,Title,Description,CoverImageUrl,PublicationDate,ListPrice,AuthorId,PublisherId,GenreId,Language,Format,AvailabilityStock,AvailabilityLibrary,Rating,RatingCount,OnSale,SaleDiscount,SaleStartDate,SaleEndDate,DateAdded,DateUpdated")] Book book)
         {
             if (id != book.BookId)
@@ -422,6 +428,8 @@ private async Task GetAndSetUserSpecificBookViewDataAsync(int bookId, ClaimsPrin
         }
 
         // GET: Book/Delete/5
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -445,6 +453,8 @@ private async Task GetAndSetUserSpecificBookViewDataAsync(int bookId, ClaimsPrin
         // POST: Book/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var book = await _context.Books.FindAsync(id);

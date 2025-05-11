@@ -86,6 +86,8 @@ namespace FinalProject.Controllers // Adjust namespace as needed
 
         // GET: Orders
         // Optionally add [Authorize] here if only logged-in users should see their orders
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
+
         public async Task<IActionResult> Index()
         {
             // If you want to show only the logged-in user's orders:
@@ -111,7 +113,6 @@ namespace FinalProject.Controllers // Adjust namespace as needed
             return View(await applicationDbContext.ToListAsync());
         }
         //stepone ko barema
-       // Assuming this is within your OrdersController.cs
 
 public async Task<IActionResult> OrderStepOne()
 {
@@ -629,42 +630,7 @@ public async Task<IActionResult> PlaceOrder()
      
 
 
-        // GET: Orders/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var order = await _context.Orders
-                .Include(o => o.Member)
-                .Include(o => o.OrderItems) // Include OrderItems to show items in the order
-                    .ThenInclude(oi => oi.Book) // Include Book details for each OrderItem
-                .FirstOrDefaultAsync(m => m.OrderId == id);
-
-            if (order == null)
-            {
-                return NotFound();
-            }
-
-            // Optional: Add authorization check to ensure logged-in user owns this order
-            // if (User.Identity.IsAuthenticated)
-            // {
-            //     var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            //     if (int.TryParse(memberIdString, out int memberId))
-            //     {
-            //         if (order.MemberId != memberId)
-            //         {
-            //             return Forbid(); // Or challenge, or redirect to an access denied page
-            //         }
-            //     }
-            // }
-
-
-            return View(order);
-        }
-
+      
         // GET: Orders/Create
         // You might want to restrict who can create orders directly
         [Authorize] // Only authorized users can initiate order creation
@@ -717,7 +683,7 @@ public async Task<IActionResult> PlaceOrder()
         }
 
         // GET: Orders/Edit/5
-        [Authorize] // Only authorized users can edit orders
+        [Authorize(AuthenticationSchemes = "AdminCookieAuth")] // Only authorized admins can edit orders
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -730,32 +696,8 @@ public async Task<IActionResult> PlaceOrder()
             {
                 return NotFound();
             }
-            // Ensure the logged-in user is authorized to edit this specific order
-             if (User.Identity.IsAuthenticated)
-             {
-                 var memberIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                 if (int.TryParse(memberIdString, out int memberId))
-                 {
-                     if (order.MemberId != memberId)
-                     {
-                         return Forbid(); // Prevent editing orders that don't belong to the user
-                     }
-                 }
-                 else
-                 {
-                     // Authenticated but MemberId claim missing/invalid - treat as unauthorized
-                     return Forbid();
-                 }
-             }
-             else
-             {
-                 // Not authenticated, but action requires [Authorize] - this case should ideally
-                 // be handled by the [Authorize] attribute itself redirecting to login.
-                 // Including this check defensively.
-                 return Unauthorized();
-             }
 
-            // ViewData["MemberId"] = new SelectList(_context.Members, "MemberId", "MemberId", order.MemberId); // Not needed if MemberId is fixed by user
+
             return View(order);
         }
 
